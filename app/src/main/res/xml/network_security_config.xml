@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+
+    <!-- Production: HTTPS only with certificate pinning (pins updated in Phase 11 release prep) -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">crm.globusdemos.com</domain>
+        <!--
+        <pin-set expiration="2026-12-31">
+            <pin digest="SHA-256">REPLACE_WITH_REAL_PROD_PIN_HASH=</pin>
+            <pin digest="SHA-256">REPLACE_WITH_BACKUP_PIN_HASH=</pin>
+        </pin-set>
+        -->
+    </domain-config>
+
+    <!-- Debug only: allow cleartext to local dev servers (AVD emulator + LAN device) -->
+    <debug-overrides>
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </debug-overrides>
+
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+
+</network-security-config>

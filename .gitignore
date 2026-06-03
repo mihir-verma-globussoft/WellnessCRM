@@ -1,0 +1,72 @@
+# ── Gradle ───────────────────────────────────────────────────────────────────
+.gradle/
+**/build/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# ── Android Studio / IntelliJ ─────────────────────────────────────────────────
+*.iml
+.idea/
+!.idea/codeStyles/
+!.idea/inspectionProfiles/
+!.idea/copyright/
+.DS_Store
+captures/
+.externalNativeBuild/
+.cxx/
+
+# ── Local config (machine-specific, contains SDK paths) ──────────────────────
+local.properties
+
+# ── Sensitive / Credentials ───────────────────────────────────────────────────
+# Firebase — must be added manually via Firebase Console
+google-services.json
+
+# Signing keystores — never commit; use CI secrets
+*.jks
+*.keystore
+release.keystore
+debug.keystore
+
+# Environment secrets
+.env
+.env.local
+.env.*.local
+sentry.properties
+
+# ── Kotlin ───────────────────────────────────────────────────────────────────
+.kotlin/
+
+# ── ProGuard / R8 ────────────────────────────────────────────────────────────
+# Mapping files are generated per release; store in release artifacts, not git
+app/mapping.txt
+**/mapping.txt
+
+# ── Room database schema exports ──────────────────────────────────────────────
+# Room schema JSON files SHOULD be committed — they enable migration validation.
+# Do NOT add app/schemas/ here.
+
+# ── Test results / reports ───────────────────────────────────────────────────
+**/test-results/
+**/reports/
+
+# ── OS artefacts ─────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ── APK / AAB build outputs ───────────────────────────────────────────────────
+*.apk
+*.aab
+*.ap_
+
+# ── NDK ──────────────────────────────────────────────────────────────────────
+obj/
+
+# ── Claude Code session files ─────────────────────────────────────────────────
+# CLAUDE.md and STATUS.md are intentionally committed (project docs).
+# Exclude the auto-generated plan files and session transcripts.
+.claude/plans/
+.claude/settings.local.json
