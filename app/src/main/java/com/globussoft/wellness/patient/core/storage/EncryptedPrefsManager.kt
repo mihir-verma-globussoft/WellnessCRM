@@ -10,24 +10,24 @@ class EncryptedPrefsManager @Inject constructor(
     @Named("encrypted") private val prefs: SharedPreferences,
 ) {
     companion object {
-        private const val KEY_PATIENT_ID = "patient_id"
-        private const val KEY_PATIENT_NAME = "patient_name"
-        private const val KEY_PATIENT_PHONE = "patient_phone"
+        private const val KEY_USER_ID = "user_id"
+        private const val KEY_USER_NAME = "user_name"
+        private const val KEY_USER_EMAIL = "user_email"
     }
 
-    fun savePatientInfo(id: Int, name: String, phone: String) {
+    fun saveUserInfo(userId: Int, name: String, email: String) {
         prefs.edit()
-            .putInt(KEY_PATIENT_ID, id)
-            .putString(KEY_PATIENT_NAME, name)
-            .putString(KEY_PATIENT_PHONE, phone)
+            .putInt(KEY_USER_ID, userId)
+            .putString(KEY_USER_NAME, name)
+            .putString(KEY_USER_EMAIL, email)
             .apply()
     }
 
-    fun getPatientId(): Int = prefs.getInt(KEY_PATIENT_ID, -1)
+    fun getUserId(): Int = prefs.getInt(KEY_USER_ID, -1)
 
-    fun getPatientName(): String? = prefs.getString(KEY_PATIENT_NAME, null)
+    fun getUserName(): String? = prefs.getString(KEY_USER_NAME, null)
 
-    fun getPatientPhone(): String? = prefs.getString(KEY_PATIENT_PHONE, null)
+    fun getUserEmail(): String? = prefs.getString(KEY_USER_EMAIL, null)
 
     fun clear() {
         prefs.edit().clear().apply()

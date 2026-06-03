@@ -2,13 +2,8 @@ package com.globussoft.wellness.patient.core.navigation
 
 sealed class Screen(val route: String) {
     object Splash : Screen("splash")
-    object PhoneEntry : Screen("phone_entry")
-    object OtpVerify : Screen("otp_verify/{phone}") {
-        fun createRoute(phone: String) = "otp_verify/$phone"
-    }
-    object Register : Screen("register/{phone}") {
-        fun createRoute(phone: String) = "register/$phone"
-    }
+    object Login : Screen("login")
+    object Register : Screen("register")
     object Dashboard : Screen("dashboard")
     object BookAppointment : Screen("book_appointment?serviceId={serviceId}&membershipId={membershipId}") {
         fun createRoute(serviceId: Int? = null, membershipId: Int? = null) =

@@ -4,17 +4,20 @@ import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontLoadingStrategy
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.globussoft.wellness.patient.R
 
+// OptionalLocal: falls back to system font if the downloadable font is not yet cached on device.
+// After the first successful download via Google Fonts provider, the font is used on all subsequent launches.
 val PlayfairDisplay = FontFamily(
-    Font(R.font.playfair_display_regular, FontWeight.Normal),
-    Font(R.font.playfair_display_medium, FontWeight.Medium),
-    Font(R.font.playfair_display_semi_bold, FontWeight.SemiBold),
-    Font(R.font.playfair_display_bold, FontWeight.Bold),
-    Font(R.font.playfair_display_italic, FontWeight.Normal, FontStyle.Italic),
+    Font(R.font.playfair_display_regular, FontWeight.Normal, loadingStrategy = FontLoadingStrategy.OptionalLocal),
+    Font(R.font.playfair_display_medium, FontWeight.Medium, loadingStrategy = FontLoadingStrategy.OptionalLocal),
+    Font(R.font.playfair_display_semi_bold, FontWeight.SemiBold, loadingStrategy = FontLoadingStrategy.OptionalLocal),
+    Font(R.font.playfair_display_bold, FontWeight.Bold, loadingStrategy = FontLoadingStrategy.OptionalLocal),
+    Font(R.font.playfair_display_italic, FontWeight.Normal, FontStyle.Italic, loadingStrategy = FontLoadingStrategy.OptionalLocal),
 )
 
 val WellnessTypography = Typography(

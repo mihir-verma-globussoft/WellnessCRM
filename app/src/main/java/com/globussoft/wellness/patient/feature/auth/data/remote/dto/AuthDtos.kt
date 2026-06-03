@@ -3,41 +3,49 @@ package com.globussoft.wellness.patient.feature.auth.data.remote.dto
 import com.squareup.moshi.JsonClass
 
 @JsonClass(generateAdapter = true)
-data class OtpRequestDto(
-    val phone: String,
+data class LoginRequestDto(
+    val email: String,
+    val password: String,
+    val loginTenantId: Int?,
 )
 
 @JsonClass(generateAdapter = true)
-data class OtpVerifyDto(
-    val phone: String,
-    val otp: String,
+data class UserSummaryDto(
+    val id: Int,
+    val email: String,
+    val name: String,
+    val userType: String,
 )
 
 @JsonClass(generateAdapter = true)
-data class OtpVerifyResponseDto(
-    val token: String,
-    val patient: PatientSummaryDto,
-)
-
-@JsonClass(generateAdapter = true)
-data class PatientSummaryDto(
+data class TenantSummaryDto(
     val id: Int,
     val name: String,
+    val slug: String,
+    val brandColor: String?,
+    val logoUrl: String?,
 )
 
 @JsonClass(generateAdapter = true)
-data class RegisterPatientDto(
-    val phone: String,
+data class LoginResponseDto(
+    val token: String,
+    val user: UserSummaryDto,
+    val tenant: TenantSummaryDto?,
+)
+
+@JsonClass(generateAdapter = true)
+data class RegisterRequestDto(
+    val email: String,
+    val password: String,
     val name: String,
-    val email: String?,
-    val dob: String?,
-    val gender: String?,
+    val registrationTenantId: Int,
 )
 
 @JsonClass(generateAdapter = true)
 data class RegisterResponseDto(
     val token: String,
-    val patient: PatientSummaryDto,
+    val user: UserSummaryDto,
+    val tenant: TenantSummaryDto?,
 )
 
 @JsonClass(generateAdapter = true)
@@ -45,7 +53,13 @@ data class TenantBrandingDto(
     val id: Int,
     val slug: String,
     val name: String,
-    val brandColor: String?,
-    val logoUrl: String?,
-    val tagline: String?,
+    val brandColor: String? = null,
+    val logoUrl: String? = null,
+    val tagline: String? = null,
+)
+
+// Wrapper for GET /public/tenant/{slug} — response shape: { "tenant": {...}, "services": [...] }
+@JsonClass(generateAdapter = true)
+data class TenantBrandingResponseDto(
+    val tenant: TenantBrandingDto,
 )

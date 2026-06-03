@@ -19,8 +19,8 @@ object DateUtil {
     private val apiDate = SimpleDateFormat("yyyy-MM-dd", Locale.US)
     private val apiTime = SimpleDateFormat("HH:mm", Locale.US)
 
-    fun parseIso8601(iso: String?): Date? = iso?.let {
-        runCatching { iso8601.parse(it) }.getOrElse { runCatching { iso8601Short.parse(it) }.getOrNull() }
+    fun parseIso8601(iso: String?): Date? = iso?.let { isoStr ->
+        runCatching { iso8601.parse(isoStr) }.getOrElse { runCatching { iso8601Short.parse(isoStr) }.getOrNull() }
     }
 
     fun toDisplayDate(iso: String?): String = parseIso8601(iso)?.let { displayDate.format(it) } ?: "—"

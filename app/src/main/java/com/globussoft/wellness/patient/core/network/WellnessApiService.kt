@@ -1,11 +1,10 @@
 package com.globussoft.wellness.patient.core.network
 
-import com.globussoft.wellness.patient.feature.auth.data.remote.dto.OtpRequestDto
-import com.globussoft.wellness.patient.feature.auth.data.remote.dto.OtpVerifyDto
-import com.globussoft.wellness.patient.feature.auth.data.remote.dto.OtpVerifyResponseDto
-import com.globussoft.wellness.patient.feature.auth.data.remote.dto.RegisterPatientDto
+import com.globussoft.wellness.patient.feature.auth.data.remote.dto.LoginRequestDto
+import com.globussoft.wellness.patient.feature.auth.data.remote.dto.LoginResponseDto
+import com.globussoft.wellness.patient.feature.auth.data.remote.dto.RegisterRequestDto
 import com.globussoft.wellness.patient.feature.auth.data.remote.dto.RegisterResponseDto
-import com.globussoft.wellness.patient.feature.auth.data.remote.dto.TenantBrandingDto
+import com.globussoft.wellness.patient.feature.auth.data.remote.dto.TenantBrandingResponseDto
 import com.globussoft.wellness.patient.feature.booking.data.remote.dto.AppointmentDto
 import com.globussoft.wellness.patient.feature.booking.data.remote.dto.BookAppointmentDto
 import com.globussoft.wellness.patient.feature.booking.data.remote.dto.BookAppointmentResponseDto
@@ -44,22 +43,17 @@ interface WellnessApiService {
     @GET("public/tenant/{slug}")
     suspend fun getTenantBranding(
         @Path("slug") slug: String,
-    ): Response<TenantBrandingDto>
+    ): Response<TenantBrandingResponseDto>
 
-    // ── Auth ─────────────────────────────────────────────────────────────────
-    @POST("portal/login/request-otp")
-    suspend fun requestOtp(
-        @Body body: OtpRequestDto,
-    ): Response<Map<String, Any>>
+    // ── Auth — absolute paths hit /api/auth/* (not under /api/wellness/) ─────
+    @POST("/api/auth/login")
+    suspend fun login(
+        @Body body: LoginRequestDto,
+    ): Response<LoginResponseDto>
 
-    @POST("portal/login/verify-otp")
-    suspend fun verifyOtp(
-        @Body body: OtpVerifyDto,
-    ): Response<OtpVerifyResponseDto>
-
-    @POST("portal/register")
-    suspend fun registerPatient(
-        @Body body: RegisterPatientDto,
+    @POST("/api/auth/customer/register")
+    suspend fun registerCustomer(
+        @Body body: RegisterRequestDto,
     ): Response<RegisterResponseDto>
 
     // ── Profile ───────────────────────────────────────────────────────────────

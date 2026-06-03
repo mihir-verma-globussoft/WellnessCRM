@@ -53,6 +53,9 @@
             </intent-filter>
         </service>
 
+        <!-- Sentry: disabled until DSN is configured for production release -->
+        <meta-data android:name="io.sentry.dsn" android:value="" />
+
         <!-- FileProvider for serving prescription PDFs via PdfRenderer -->
         <provider
             android:name="androidx.core.content.FileProvider"

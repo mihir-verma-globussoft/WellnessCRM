@@ -1,14 +1,25 @@
 package com.globussoft.wellness.patient.core.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
+import com.globussoft.wellness.patient.feature.auth.presentation.screen.LoginScreen
+import com.globussoft.wellness.patient.feature.auth.presentation.screen.RegisterScreen
+import com.globussoft.wellness.patient.feature.auth.presentation.screen.SplashScreen
+import com.globussoft.wellness.patient.feature.auth.presentation.viewmodel.LoginNavEvent
+import com.globussoft.wellness.patient.feature.auth.presentation.viewmodel.LoginViewModel
+import com.globussoft.wellness.patient.feature.auth.presentation.viewmodel.RegisterNavEvent
+import com.globussoft.wellness.patient.feature.auth.presentation.viewmodel.RegisterViewModel
+import com.globussoft.wellness.patient.feature.auth.presentation.viewmodel.SplashNavEvent
+import com.globussoft.wellness.patient.feature.auth.presentation.viewmodel.SplashViewModel
 
 @Composable
 fun WellnessNavGraph(
@@ -22,25 +33,53 @@ fun WellnessNavGraph(
         modifier = modifier,
     ) {
         composable(Screen.Splash.route) {
-            // TODO Phase 2: SplashScreen()
+            val vm: SplashViewModel = hiltViewModel()
+            val state by vm.uiState.collectAsStateWithLifecycle()
+            LaunchedEffect(Unit) {
+                vm.navEvent.collect { event ->
+                    when (event) {
+                        SplashNavEvent.NavigateToDashboard -> navController.navigate(Screen.Dashboard.route) {
+                            popUpTo(Screen.Splash.route) { inclusive = true }
+                        }
+                        SplashNavEvent.NavigateToLogin -> navController.navigate(Screen.Login.route) {
+                            popUpTo(Screen.Splash.route) { inclusive = true }
+                        }
+                    }
+                }
+            }
+            SplashScreen(state = state)
         }
 
-        composable(Screen.PhoneEntry.route) {
-            // TODO Phase 2: PhoneEntryScreen()
+        composable(Screen.Login.route) {
+            val vm: LoginViewModel = hiltViewModel()
+            val state by vm.uiState.collectAsStateWithLifecycle()
+            LaunchedEffect(Unit) {
+                vm.navEvent.collect { event ->
+                    when (event) {
+                        LoginNavEvent.NavigateToDashboard -> navController.navigate(Screen.Dashboard.route) {
+                            popUpTo(Screen.Login.route) { inclusive = true }
+                        }
+                        LoginNavEvent.NavigateToRegister -> navController.navigate(Screen.Register.route)
+                    }
+                }
+            }
+            LoginScreen(state = state, onEvent = vm::onEvent)
         }
 
-        composable(
-            route = Screen.OtpVerify.route,
-            arguments = listOf(navArgument("phone") { type = NavType.StringType }),
-        ) {
-            // TODO Phase 2: OtpVerifyScreen()
-        }
-
-        composable(
-            route = Screen.Register.route,
-            arguments = listOf(navArgument("phone") { type = NavType.StringType }),
-        ) {
-            // TODO Phase 2: RegisterScreen()
+        composable(Screen.Register.route) {
+            val vm: RegisterViewModel = hiltViewModel()
+            val state by vm.uiState.collectAsStateWithLifecycle()
+            LaunchedEffect(Unit) {
+                vm.navEvent.collect { event ->
+                    when (event) {
+                        RegisterNavEvent.NavigateToDashboard -> navController.navigate(Screen.Dashboard.route) {
+                            popUpTo(Screen.Login.route) { inclusive = true }
+                        }
+                        RegisterNavEvent.NavigateToLogin -> navController.popBackStack()
+                    }
+                }
+            }
+            RegisterScreen(state = state, onEvent = vm::onEvent)
         }
 
         composable(
@@ -52,10 +91,6 @@ fun WellnessNavGraph(
 
         composable(
             route = Screen.BookAppointment.route,
-            arguments = listOf(
-                navArgument("serviceId") { type = NavType.StringType; nullable = true; defaultValue = null },
-                navArgument("membershipId") { type = NavType.StringType; nullable = true; defaultValue = null },
-            ),
             deepLinks = listOf(navDeepLink { uriPattern = "wellnesspatient://screen/book" }),
         ) {
             // TODO Phase 4: BookAppointmentScreen()
@@ -81,7 +116,6 @@ fun WellnessNavGraph(
 
         composable(
             route = Screen.PrescriptionPdf.route,
-            arguments = listOf(navArgument("id") { type = NavType.IntType }),
         ) {
             // TODO Phase 5: PrescriptionPdfScreen()
         }
@@ -115,7 +149,6 @@ fun WellnessNavGraph(
             // TODO Phase 8: NotificationInboxScreen()
         }
 
-        // Phase 2 screens (deferred until backend endpoints are built)
         composable(Screen.TreatmentPlans.route) { /* TODO Phase 2 */ }
         composable(Screen.ConsentForms.route) { /* TODO Phase 2 */ }
         composable(Screen.Loyalty.route) { /* TODO Phase 2 */ }

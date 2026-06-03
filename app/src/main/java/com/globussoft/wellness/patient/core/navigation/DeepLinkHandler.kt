@@ -23,7 +23,7 @@ object DeepLinkHandler {
 
     private fun mapToRoute(screenName: String, id: String?): String? = when (screenName) {
         "splash" -> Screen.Splash.route
-        "phone_entry" -> Screen.PhoneEntry.route
+        "login" -> Screen.Login.route
         "dashboard" -> Screen.Dashboard.route
         "appointments" -> Screen.MyAppointments.route
         "book" -> Screen.BookAppointment.createRoute()

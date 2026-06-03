@@ -3,6 +3,7 @@ package com.globussoft.wellness.patient.core.storage
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
@@ -18,6 +19,7 @@ class DataStoreManager @Inject constructor(
         val KEY_BRAND_COLOR = stringPreferencesKey("tenant_brand_color")
         val KEY_CLINIC_NAME = stringPreferencesKey("tenant_clinic_name")
         val KEY_CLINIC_LOGO = stringPreferencesKey("tenant_clinic_logo_url")
+        val KEY_TENANT_ID = intPreferencesKey("tenant_id")
     }
 
     suspend fun saveToken(token: String) {
@@ -46,4 +48,11 @@ class DataStoreManager @Inject constructor(
 
     suspend fun getClinicName(): String? =
         dataStore.data.map { it[KEY_CLINIC_NAME] }.firstOrNull()
+
+    suspend fun saveTenantId(tenantId: Int) {
+        dataStore.edit { it[KEY_TENANT_ID] = tenantId }
+    }
+
+    suspend fun getTenantId(): Int? =
+        dataStore.data.map { it[KEY_TENANT_ID] }.firstOrNull()
 }
