@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -7,6 +9,14 @@ plugins {
     alias(libs.plugins.google.services)
     alias(libs.plugins.sentry)
     alias(libs.plugins.junit5.plugin)
+}
+
+// Read keystore credentials from keystore.properties (gitignored) — create this file before
+// running bundleRelease. See STATUS.md Phase 11 for keytool + Play Store upload steps.
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(keystorePropertiesFile.reader())
 }
 
 android {
@@ -26,6 +36,19 @@ android {
         buildConfigField("String", "TENANT_SLUG", "\"default\"")
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = keystoreProperties.getProperty("storeFile")?.let { file(it) }
+            storePassword = keystoreProperties.getProperty("storePassword")
+            keyAlias = keystoreProperties.getProperty("keyAlias")
+            keyPassword = keystoreProperties.getProperty("keyPassword")
+        }
+    }
+
+    ksp {
+        arg("room.schemaLocation", "$projectDir/schemas")
+    }
+
     buildTypes {
         debug {
             buildConfigField("String", "BASE_URL", "\"https://crm-staging.globusdemos.com/api/wellness/\"")
@@ -38,8 +61,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("release")
             buildConfigField("String", "BASE_URL", "\"https://crm.globusdemos.com/api/wellness/\"")
-            buildConfigField("String", "TENANT_SLUG", "\"default\"")
+            buildConfigField("String", "TENANT_SLUG", "\"enhanced-wellness\"")
         }
     }
 

@@ -1,7 +1,7 @@
 # WellnessCRM Patient App — Implementation Status
 
-Last updated: 2026-06-04 (session 12 — Phase 10 UI tests: BookAppointmentScreen, MembershipsScreen, PrescriptionsScreen)
-Current phase: Phase 10 — Testing ✅ COMPLETE → Phase 11 Release Prep
+Last updated: 2026-06-04 (session 13 — Phase 11 Release Prep: ProGuard rules, cert pins, Room migration, TENANT_SLUG, signing config)
+Current phase: Phase 11 — Release Prep ✅ COMPLETE (Play Store upload pending manual keystore)
 
 ## Session 9 — Live Device Test Results (2026-06-04)
 
@@ -536,11 +536,13 @@ Requires portal permission `products.read`. Confirm with backend that this is in
 
 | Task | Status |
 |------|--------|
-| R8 full minification enabled + ProGuard rules verified | ⬜ |
-| Cert pinning pins updated for production cert | ⬜ |
-| Room migrations replacing `fallbackToDestructiveMigration` | ⬜ |
-| `TENANT_SLUG` set in release build config | ⬜ |
-| Upload to Play Store internal testing track | ⬜ |
+| R8 full minification enabled + ProGuard rules verified | ✅ `proguard-rules.pro` — Moshi, Retrofit, OkHttp, Room, Hilt, Razorpay, Sentry, coroutines, crash attrs |
+| Cert pinning pins updated for production cert | ✅ leaf `nfis0PDT…` + intermediate `kIdp6NND…` — expires 2026-07-07 |
+| Room migrations replacing `fallbackToDestructiveMigration` | ✅ removed from `DatabaseModule.kt` — v1 first release, no prior schema to migrate |
+| `TENANT_SLUG` set in release build config | ✅ `"enhanced-wellness"` in release; `signingConfigs` + `room.schemaLocation` KSP arg added to `build.gradle.kts` |
+| Upload to Play Store internal testing track | 🔴 BLOCKED — manual steps required: (1) `keytool -genkey -v -keystore wellness-release.jks -alias wellness -keyalg RSA -keysize 2048 -validity 10000` (2) create `keystore.properties` at repo root with storeFile/storePassword/keyAlias/keyPassword (3) `./gradlew bundleRelease` (4) upload `app/build/outputs/bundle/release/app-release.aab` to Play Console → Internal testing track |
+
+✅ Phase 11 complete (code) — 2026-06-04 | `./gradlew assembleRelease` R8 passes (fails only at packageRelease due to missing keystore — expected). 47 unit tests ✅
 
 ---
 
