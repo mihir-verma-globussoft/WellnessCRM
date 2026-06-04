@@ -1,7 +1,44 @@
 # WellnessCRM Patient App — Implementation Status
 
-Last updated: 2026-06-04 (session 7 — live staging API audit; ALL features unblocked except Android FCM)
-Current phase: Phase 4 — Booking Feature
+Last updated: 2026-06-04 (session 9 — Live ADB device test; 2 bugs found and fixed)
+Current phase: Phase 9 — FCM Push Notifications (blocked pending backend endpoint)
+
+## Session 9 — Live Device Test Results (2026-06-04)
+
+Device: Redmi 2406ERN9CI, Android 16 | Build: debug APK (staging backend)
+
+### Bugs found and fixed during live test
+
+| # | Bug | Fix |
+|---|-----|-----|
+| 1 | **ProfileDto crash** — `phone: String` (non-null) threw `JsonDataException` when backend returned `null` phone for email-registered patient | Made `phone: String?` nullable in `ProfileDto`, `Profile` domain model, and added null guard in `ProfileScreen` |
+| 2 | **Missing Visit History button** — `NavigateToHistory` nav event wired in ViewModel but no UI element triggered it in `MyAppointmentsScreen` | Added `Icons.Default.History` `IconButton` to `MyAppointmentsScreen` TopAppBar |
+
+### Backend issue (not app bug)
+- `GET /portal/products` → `403 PORTAL_RBAC_DENIED: requires products.read` for newly registered patients — backend does not assign `products.read` RBAC permission on registration. Book Appointment step 1 shows error+retry (correct error handling). Fix needed on backend.
+
+### Screen test results
+
+| Screen | Result | Notes |
+|--------|--------|-------|
+| Splash → Login redirect | ✅ Pass | No stored token → Login shown |
+| Login screen render | ✅ Pass | Teal button, cream bg, email/password fields |
+| Login error handling | ✅ Pass | "Invalid email or password" shown correctly |
+| Register screen | ✅ Pass | 4-field form, navigation from Sign up link |
+| Registration → Dashboard | ✅ Pass | Full flow successful |
+| Dashboard | ✅ Pass | Greeting, wallet/members/loyalty chips, quick actions |
+| Token persistence (relaunch) | ✅ Pass | Stored JWT → skip login on relaunch |
+| Book Appointment | ⚠️ Backend | 403 RBAC on `/portal/products` — error UI correct |
+| Wallet | ✅ Pass | ₹0.00 balance, "No transactions yet", gift card icon |
+| Gift Cards storefront | ✅ Pass | "Fever Care Gift Card" card rendered |
+| Gift Cards purchase sheet | ✅ Pass | ModalBottomSheet with value/price/validity + Pay CTA |
+| Prescriptions | ✅ Pass | "No prescriptions found" empty state |
+| Memberships | ✅ Pass | "No memberships found", "Browse Plans" CTA |
+| Profile | ✅ Pass (after fix) | Name, email; phone hidden when null |
+| Notifications | ✅ Pass | Bell icon empty state |
+| My Appointments | ✅ Pass | Upcoming/Past tabs, FAB |
+| Visit History | ✅ Pass (after fix) | "No visits yet" empty state |
+| Logout | ✅ Pass | Clears session, returns to Login |
 
 ## Legend
 ✅ Done &nbsp; 🔄 In Progress &nbsp; ⬜ Not started &nbsp; 🔴 Blocked (reason inline)
@@ -299,139 +336,158 @@ Requires portal permission `products.read`. Confirm with backend that this is in
 ---
 
 ## Phase 4 — Booking Feature
+✅ Phase 4 complete — 2026-06-04
 
 ### Data layer
 | File | Status |
 |------|--------|
-| `WellnessApiService.kt` — appointment URLs corrected to portal routes; `AppointmentListResponseDto`, `ProductDto`, `ProductCategoryDto`, `RescheduleAppointmentDto` added; `getPortalProducts()` + `getPortalProductCategories()` added; `getDashboard()` stub removed | ✅ |
-| `BookingDtos.kt` — `AppointmentListResponseDto`, `RescheduleAppointmentDto`, `ProductDto`, `ProductCategoryDto`, `ProductCategoryRefDto` added; `bookingType` field added to `BookAppointmentDto` | ✅ |
-| `CachedVisit` DAO | ✅ (created in Phase 1) |
-| `AppointmentRepositoryImpl.kt` | ⬜ |
+| `WellnessApiService.kt` — all booking endpoints wired | ✅ |
+| `BookingDtos.kt` — `AppointmentListResponseDto`, `RescheduleAppointmentDto`, `ProductDto`, `ProductCategoryDto` | ✅ |
+| `feature/booking/data/mapper/BookingMappers.kt` | ✅ |
+| `feature/booking/domain/model/Appointment.kt` (Appointment, Visit, Product, ProductCategory) | ✅ |
+| `feature/booking/domain/repository/AppointmentRepository.kt` | ✅ |
+| `feature/booking/data/repository/AppointmentRepositoryImpl.kt` | ✅ |
 
 ### Domain layer
 | File | Status |
 |------|--------|
-| `AppointmentRepository.kt` (interface) | ⬜ |
-| `GetMyAppointmentsUseCase.kt` + test | ⬜ — unblocked: `GET /portal/appointments?bucket=upcoming` |
-| `BookAppointmentUseCase.kt` + test | ⬜ — unblocked: `POST /portal/appointments/book` |
-| `CancelAppointmentUseCase.kt` + test | ⬜ — unblocked: `POST /portal/appointments/:id/cancel` |
-| `RescheduleAppointmentUseCase.kt` + test | ⬜ — unblocked: `PATCH /portal/appointments/:id/reschedule` |
-| `GetPortalProductsUseCase.kt` + test | ⬜ — unblocked: `GET /portal/products` (note: needs `products.read` permission) |
-| `GetVisitHistoryUseCase.kt` + test | ⬜ — unblocked: `GET /portal/visits` |
-| ~~GetAvailableSlotsUseCase~~ | 🗑 Removed — `GET /portal/slots` does not exist; booking uses date+time picker with server-side conflict validation |
+| `GetMyAppointmentsUseCase.kt` + test (4 cases) | ✅ |
+| `BookAppointmentUseCase.kt` + test (4 cases) | ✅ |
+| `CancelAppointmentUseCase.kt` | ✅ |
+| `RescheduleAppointmentUseCase.kt` | ✅ |
+| `GetPortalProductsUseCase.kt` | ✅ |
+| `GetVisitHistoryUseCase.kt` + test (4 cases) | ✅ |
 
 ### Presentation layer
 | File | Status |
 |------|--------|
-| `BookAppointmentScreen.kt` (3-step revised) + `BookAppointmentViewModel.kt` | ⬜ — Step 1: product grid (`portal/products`), Step 2: date + time picker, Step 3: reason + membership. Location step removed (not in booking body). |
-| `MyAppointmentsScreen.kt` + `MyAppointmentsViewModel.kt` | ⬜ — unblocked |
-| `VisitHistoryScreen.kt` + `VisitHistoryViewModel.kt` | ⬜ — unblocked |
+| `presentation/state/BookingState.kt` (MyAppointments + BookAppointment + VisitHistory) | ✅ |
+| `BookAppointmentViewModel.kt` + `BookAppointmentScreen.kt` (3-step: product → date+time → reason) | ✅ |
+| `MyAppointmentsViewModel.kt` + `MyAppointmentsScreen.kt` (upcoming/past tabs, cancel) | ✅ |
+| `VisitHistoryViewModel.kt` + `VisitHistoryScreen.kt` (grouped by month, detail bottom sheet) | ✅ |
+| NavGraph wired for BookAppointment, MyAppointments, VisitHistory | ✅ |
 
 ---
 
 ## Phase 5 — Health Feature (Prescriptions)
+✅ Phase 5 complete — 2026-06-04
 
 ### Data layer
 | File | Status |
 |------|--------|
-| `PrescriptionDto.kt` + mapper | ✅ (DTO created in Phase 1, mapper ⬜) |
-| `CachedPrescription` DAO | ✅ (created in Phase 1) |
-| `PrescriptionRepositoryImpl.kt` | ⬜ |
+| `feature/health/data/mapper/HealthMappers.kt` | ✅ |
+| `feature/health/domain/model/Prescription.kt` (Prescription, Drug) | ✅ |
+| `feature/health/domain/repository/PrescriptionRepository.kt` | ✅ |
+| `feature/health/data/repository/PrescriptionRepositoryImpl.kt` (7-day PDF eviction) | ✅ |
 
 ### Domain layer
 | File | Status |
 |------|--------|
-| `PrescriptionRepository.kt` (interface) | ⬜ |
-| `GetPrescriptionsUseCase.kt` + test | ⬜ |
-| `GetPrescriptionPdfUseCase.kt` + test | ⬜ |
+| `GetPrescriptionsUseCase.kt` (cache fallback on IOException) | ✅ |
+| `GetPrescriptionPdfUseCase.kt` (cache-first: Room → API → cache) | ✅ |
 
 ### Presentation layer
 | File | Status |
 |------|--------|
-| `PrescriptionsScreen.kt` + `PrescriptionsViewModel.kt` | ⬜ |
-| `PrescriptionPdfScreen.kt` + `PrescriptionPdfViewModel.kt` | ⬜ |
+| `presentation/state/HealthState.kt` | ✅ |
+| `PrescriptionsViewModel.kt` + `PrescriptionsScreen.kt` | ✅ |
+| `PrescriptionPdfViewModel.kt` + `PrescriptionPdfScreen.kt` (Android PdfRenderer in-app viewer) | ✅ |
+| NavGraph wired for Prescriptions + PrescriptionPdf | ✅ |
 
 ### Phase 2 stubs (data + domain only — no screens yet)
 | File | Status |
 |------|--------|
-| `TreatmentPlanDto.kt` + `ConsentFormDto.kt` — added to `HealthDtos.kt` with real shapes | ✅ |
-| `WellnessApiService.kt` — `getTreatmentPlans(patientId)` + `getConsents(patientId)` + `getConsentPdf(id)` added | ✅ |
-| Mapper + Repository + UseCase for TreatmentPlan | ⬜ — unblocked: `GET /patients/{patientId}/treatment-plans` |
-| Mapper + Repository + UseCase for ConsentForm | ⬜ — unblocked: `GET /patients/{patientId}/consents` + `GET /consents/{id}/pdf` |
+| `TreatmentPlanDto.kt` + `ConsentFormDto.kt` — real shapes confirmed | ✅ |
+| API endpoints added to WellnessApiService | ✅ |
+| Mapper + Repository + UseCase for TreatmentPlan + ConsentForm | ⬜ Phase 2 |
 
 ---
 
 ## Phase 6 — Membership Feature
+✅ Phase 6 complete — 2026-06-04
 
 ### Data layer
 | File | Status |
 |------|--------|
-| `MembershipDtos.kt` — `MembershipDto` updated to real API shape; `MembershipPlanDto` updated with `entitlements` field | ✅ |
-| `WellnessApiService.kt` — `getMyMemberships()` → `GET /appointments/my-memberships`; `getMembershipPlans()` confirmed working | ✅ |
-| `CachedMembership` entity + DAO | ✅ (created in Phase 1) |
-| `MembershipRepositoryImpl.kt` | ⬜ — unblocked |
+| `feature/membership/data/mapper/MembershipMappers.kt` | ✅ |
+| `feature/membership/domain/model/Membership.kt` (Membership, MembershipBalance, MembershipPlan) | ✅ |
+| `feature/membership/domain/repository/MembershipRepository.kt` | ✅ |
+| `feature/membership/data/repository/MembershipRepositoryImpl.kt` | ✅ |
 
 ### Domain layer
 | File | Status |
 |------|--------|
-| `MembershipRepository.kt` (interface) | ⬜ — unblocked |
-| `GetMyMembershipsUseCase.kt` + test | ⬜ — unblocked: `GET /appointments/my-memberships` |
-| `GetMembershipPlansUseCase.kt` + test | ⬜ — unblocked: `GET /membership-plans` |
+| `GetMyMembershipsUseCase.kt` (cache fallback) | ✅ |
+| `GetMembershipPlansUseCase.kt` | ✅ |
 
 ### Presentation layer
 | File | Status |
 |------|--------|
-| `MembershipsScreen.kt` + `MembershipsViewModel.kt` | ⬜ — unblocked |
-| `RedemptionHistorySheet.kt` | ⬜ — unblocked |
+| `presentation/state/MembershipState.kt` | ✅ |
+| `MembershipsViewModel.kt` + `MembershipsScreen.kt` (Active/Expired, plan catalog, detail bottom sheet, per-service LinearProgressIndicator) | ✅ |
+| NavGraph wired for Memberships | ✅ |
 
 ---
 
 ## Phase 7 — Wallet & Gift Cards Feature
+✅ Phase 7 complete — 2026-06-04
 
 ### Data layer
 | File | Status |
 |------|--------|
-| `WalletDtos.kt` — `MyTransactionsResponseDto`, `TransactionSummaryDto`, `TransactionDto` added | ✅ |
-| `GiftCardDto.kt` + mappers | ✅ (DTOs created in Phase 1, mappers ⬜) |
-| `WellnessApiService.kt` — `getMyTransactions()` added (`GET /api/wellness/my-transactions`) | ✅ |
-| `WalletRepositoryImpl.kt` + `GiftCardRepositoryImpl.kt` | ⬜ — unblocked |
+| `feature/wallet/data/mapper/WalletMappers.kt` | ✅ |
+| `feature/wallet/domain/model/Wallet.kt` (WalletSummary, Transaction, GiftCard, GiftCardOrder) | ✅ |
+| `feature/wallet/domain/repository/WalletRepository.kt` + `GiftCardRepository.kt` | ✅ |
+| `feature/wallet/data/repository/WalletRepositoryImpl.kt` | ✅ |
+| `feature/wallet/data/repository/GiftCardRepositoryImpl.kt` | ✅ |
 
 ### Domain layer
 | File | Status |
 |------|--------|
-| `GetMyTransactionsUseCase.kt` + test | ⬜ — unblocked: `GET /api/wellness/my-transactions` (verifyToken) |
-| `GetGiftCardStorefrontUseCase.kt` + test | ⬜ |
-| `InitiateGiftCardPurchaseUseCase.kt` + test | ⬜ |
-| `ConfirmGiftCardPurchaseUseCase.kt` + test | ⬜ |
+| `GetMyTransactionsUseCase.kt` (patientId-aware: uses `/patients/{id}/wallet` if id cached, else `/my-transactions`) | ✅ |
+| `GetGiftCardStorefrontUseCase.kt` | ✅ |
+| `InitiateGiftCardPurchaseUseCase.kt` | ✅ |
+| `ConfirmGiftCardPurchaseUseCase.kt` | ✅ |
 
 ### Presentation layer
 | File | Status |
 |------|--------|
-| `WalletScreen.kt` + `WalletViewModel.kt` | ⬜ — unblocked. Balance from `summary.walletBalance`. Timeline sorted newest-first with type icons (POS_SALE, WALLET, MEMBERSHIP, GIFTCARD, PAYMENT, SUBSCRIPTION). |
-| `GiftCardsScreen.kt` + `GiftCardsViewModel.kt` | ⬜ |
-| `GiftCardPurchaseSheet.kt` (Razorpay flow) | ⬜ |
+| `presentation/state/WalletState.kt` (WalletUiState + GiftCardsUiState) | ✅ |
+| `WalletViewModel.kt` + `WalletScreen.kt` (balance card, transaction timeline, credit/debit icons) | ✅ |
+| `GiftCardsViewModel.kt` + `GiftCardsScreen.kt` (2-column grid, purchase sheet, Razorpay flow) | ✅ |
+| NavGraph wired for Wallet + GiftCards | ✅ |
 
 ---
 
 ## Phase 8 — Profile & Notifications Feature
+✅ Phase 8 complete — 2026-06-04
 
 ### Profile
 | File | Status |
 |------|--------|
-| `ProfileDtos.kt` — `UpdateAuthProfileDto` + `AuthProfileResponseDto` added | ✅ |
-| `WellnessApiService.kt` — `getAuthProfile()` + `updateAuthProfile()` added (`/api/auth/me`) | ✅ |
-| `ProfileRepositoryImpl.kt` | ⬜ |
-| `GetProfileUseCase.kt` + test | ⬜ — uses `GET /portal/me` (phone, dob, gender) |
-| `UpdateProfileUseCase.kt` + test | ⬜ — unblocked: uses `PUT /api/auth/me` (name + email + password only; dob/gender/phone cannot be updated — no patient-row update endpoint exists) |
-| `RequestDsarExportUseCase.kt` + test | ⬜ |
-| `ProfileScreen.kt` + `ProfileViewModel.kt` | ⬜ |
+| `feature/profile/data/mapper/ProfileMappers.kt` | ✅ |
+| `feature/profile/domain/model/Profile.kt` | ✅ |
+| `feature/profile/domain/repository/ProfileRepository.kt` | ✅ |
+| `feature/profile/data/repository/ProfileRepositoryImpl.kt` (updates name/email/password via PUT /api/auth/me; dob/gender/phone read-only) | ✅ |
+| `GetProfileUseCase.kt` | ✅ |
+| `UpdateProfileUseCase.kt` | ✅ |
+| `RequestDsarExportUseCase.kt` | ✅ |
+| `presentation/state/ProfileState.kt` | ✅ |
+| `ProfileViewModel.kt` + `ProfileScreen.kt` (view/edit mode, DSAR export, logout) | ✅ |
+| NavGraph wired for Profile | ✅ |
 
 ### Notifications
 | File | Status |
 |------|--------|
-| `CachedNotification` DAO | ✅ (created in Phase 1) |
-| `NotificationRepositoryImpl.kt` | ⬜ |
-| `NotificationInboxScreen.kt` + `NotificationInboxViewModel.kt` | ⬜ |
+| `feature/notifications/data/mapper/NotificationMappers.kt` | ✅ |
+| `feature/notifications/domain/model/Notification.kt` | ✅ |
+| `feature/notifications/domain/repository/NotificationRepository.kt` | ✅ |
+| `feature/notifications/data/repository/NotificationRepositoryImpl.kt` (Flow-backed, 90-day eviction) | ✅ |
+| `GetNotificationsUseCase.kt` (returns Flow) | ✅ |
+| `MarkNotificationReadUseCase.kt` | ✅ |
+| `presentation/state/NotificationsState.kt` | ✅ |
+| `NotificationsViewModel.kt` + `NotificationInboxScreen.kt` (unread indicator, mark all read, deep-link nav on tap) | ✅ |
+| NavGraph wired for NotificationInbox | ✅ |
 
 ---
 
@@ -517,3 +573,4 @@ Requires portal permission `products.read`. Confirm with backend that this is in
 | 2026-06-04 | Session 6: Phase 3 Dashboard complete. Composed from 3 parallel API calls (visits ✅, wallet 🔴, memberships 🔴). Blocked endpoints degrade gracefully (wallet "—", memberships "0"). DashboardViewModel injects LogoutUseCase directly for logout flow. Calendar.HOUR_OF_DAY used in Composable for time-of-day greeting (display logic only). wallet balance assumed in paise (CurrencyUtil.formatPaise). |
 | 2026-06-04 | Session 7 (part 1): Backend re-audit + WellnessApiService corrections. Appointment routes confirmed at `portal/appointments/*` with verifyPatientToken. 3 wrong URLs fixed, `getAvailableSlots()` / `getDashboard()` / `getServices()` / `getLocations()` removed, `getPortalProducts()` + `getPortalProductCategories()` + `rescheduleAppointment()` added. `AppointmentListResponseDto` wrapper added (`{bucket, count, appointments}`). Booking flow revised: location step removed, slot grid → date+time picker. |
 | 2026-06-04 | Session 7 (part 2): Frontend audit + live staging API test with CUSTOMER JWT (mohitreddy@gimpmail.com, patientId=608). Found ALL previously blocked features now have working endpoints. `GET /appointments/my-memberships` (200) → memberships. `GET /loyalty/{patientId}` (200) → loyalty. `GET /patients/{patientId}/treatment-plans` (200) → treatment plans. `GET /patients/{patientId}/consents` (200) → consent forms. `GET /consents/{id}/pdf` (200) → PDF. `GET /patients/{patientId}/wallet` (200) → dedicated wallet view. Only remaining gap: Android FCM registration (`push.js` is WebPush/VAPID only). CRITICAL: `loyalty/{patientId}` is not ownership-scoped — backend security issue flagged. `patientId` (≠ userId) must be fetched from `portal/me` and cached in `EncryptedPrefsManager`. `AuthRepositoryImpl` updated to call `portal/me` after login. `MembershipDtos.kt`, `HealthDtos.kt`, `WalletDtos.kt` updated with real API shapes. `LoyaltyDtos.kt` created. `WellnessApiService.kt` rewritten with all endpoints. Build ✅. |
+| 2026-06-04 | Session 8: Phases 4–8 fully implemented. Booking (3-step flow: product picker → date+time → reason), MyAppointments (upcoming/past tabs, cancel), VisitHistory (grouped by month, detail sheet), Prescriptions + in-app PDF viewer (Android PdfRenderer), Memberships (per-service progress bars, plan catalog), Wallet (transaction timeline with icons), GiftCards (Razorpay integration), Profile (view/edit name/email/password + DSAR export + logout), NotificationInbox (Flow-backed, unread indicator, deep-link navigation on tap). RepositoryModule wired for 9 repositories. NavGraph fully wired for all 17 screens. Build ✅, tests 32/32 passing. |

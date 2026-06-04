@@ -1,0 +1,67 @@
+package com.globussoft.wellness.patient.feature.booking.presentation.state
+
+import com.globussoft.wellness.patient.feature.booking.domain.model.Appointment
+import com.globussoft.wellness.patient.feature.booking.domain.model.Product
+import com.globussoft.wellness.patient.feature.booking.domain.model.ProductCategory
+import com.globussoft.wellness.patient.feature.booking.domain.model.Visit
+
+// ── My Appointments ───────────────────────────────────────────────────────────
+data class MyAppointmentsUiState(
+    val isLoading: Boolean = true,
+    val error: String? = null,
+    val upcoming: List<Appointment> = emptyList(),
+    val past: List<Appointment> = emptyList(),
+    val cancellingId: Int? = null,
+)
+
+sealed class MyAppointmentsUiEvent {
+    object Refresh : MyAppointmentsUiEvent()
+    data class Cancel(val appointmentId: Int) : MyAppointmentsUiEvent()
+    object NavigateToBook : MyAppointmentsUiEvent()
+    object NavigateToHistory : MyAppointmentsUiEvent()
+    object NavigateBack : MyAppointmentsUiEvent()
+}
+
+// ── Book Appointment (3-step) ─────────────────────────────────────────────────
+data class BookAppointmentUiState(
+    val step: Int = 1,
+    val isLoading: Boolean = true,
+    val error: String? = null,
+    val products: List<Product> = emptyList(),
+    val categories: List<ProductCategory> = emptyList(),
+    val selectedProduct: Product? = null,
+    val selectedDate: Long? = null,
+    val selectedTime: String? = null,
+    val reason: String = "",
+    val membershipId: Int? = null,
+    val isBooking: Boolean = false,
+    val bookingSuccess: Appointment? = null,
+)
+
+sealed class BookAppointmentUiEvent {
+    object LoadProducts : BookAppointmentUiEvent()
+    data class SelectProduct(val product: Product) : BookAppointmentUiEvent()
+    data class SelectDate(val epochMs: Long) : BookAppointmentUiEvent()
+    data class SelectTime(val time: String) : BookAppointmentUiEvent()
+    data class EnterReason(val reason: String) : BookAppointmentUiEvent()
+    data class SelectMembership(val membershipId: Int?) : BookAppointmentUiEvent()
+    object NextStep : BookAppointmentUiEvent()
+    object PreviousStep : BookAppointmentUiEvent()
+    object ConfirmBooking : BookAppointmentUiEvent()
+    object NavigateBack : BookAppointmentUiEvent()
+}
+
+// ── Visit History ─────────────────────────────────────────────────────────────
+data class VisitHistoryUiState(
+    val isLoading: Boolean = true,
+    val error: String? = null,
+    val visits: List<Visit> = emptyList(),
+    val selectedVisit: Visit? = null,
+)
+
+sealed class VisitHistoryUiEvent {
+    object Refresh : VisitHistoryUiEvent()
+    data class SelectVisit(val visit: Visit) : VisitHistoryUiEvent()
+    object DismissDetail : VisitHistoryUiEvent()
+    object NavigateBack : VisitHistoryUiEvent()
+}

@@ -20,9 +20,39 @@ import com.globussoft.wellness.patient.feature.auth.presentation.viewmodel.Regis
 import com.globussoft.wellness.patient.feature.auth.presentation.viewmodel.RegisterViewModel
 import com.globussoft.wellness.patient.feature.auth.presentation.viewmodel.SplashNavEvent
 import com.globussoft.wellness.patient.feature.auth.presentation.viewmodel.SplashViewModel
+import com.globussoft.wellness.patient.feature.booking.presentation.screen.BookAppointmentScreen
+import com.globussoft.wellness.patient.feature.booking.presentation.screen.MyAppointmentsScreen
+import com.globussoft.wellness.patient.feature.booking.presentation.screen.VisitHistoryScreen
+import com.globussoft.wellness.patient.feature.booking.presentation.viewmodel.BookAppointmentNavEvent
+import com.globussoft.wellness.patient.feature.booking.presentation.viewmodel.BookAppointmentViewModel
+import com.globussoft.wellness.patient.feature.booking.presentation.viewmodel.MyAppointmentsNavEvent
+import com.globussoft.wellness.patient.feature.booking.presentation.viewmodel.MyAppointmentsViewModel
+import com.globussoft.wellness.patient.feature.booking.presentation.viewmodel.VisitHistoryNavEvent
+import com.globussoft.wellness.patient.feature.booking.presentation.viewmodel.VisitHistoryViewModel
 import com.globussoft.wellness.patient.feature.dashboard.presentation.screen.DashboardScreen
 import com.globussoft.wellness.patient.feature.dashboard.presentation.viewmodel.DashboardNavEvent
 import com.globussoft.wellness.patient.feature.dashboard.presentation.viewmodel.DashboardViewModel
+import com.globussoft.wellness.patient.feature.health.presentation.screen.PrescriptionPdfScreen
+import com.globussoft.wellness.patient.feature.health.presentation.screen.PrescriptionsScreen
+import com.globussoft.wellness.patient.feature.health.presentation.viewmodel.PrescriptionPdfNavEvent
+import com.globussoft.wellness.patient.feature.health.presentation.viewmodel.PrescriptionPdfViewModel
+import com.globussoft.wellness.patient.feature.health.presentation.viewmodel.PrescriptionsNavEvent
+import com.globussoft.wellness.patient.feature.health.presentation.viewmodel.PrescriptionsViewModel
+import com.globussoft.wellness.patient.feature.membership.presentation.screen.MembershipsScreen
+import com.globussoft.wellness.patient.feature.membership.presentation.viewmodel.MembershipsNavEvent
+import com.globussoft.wellness.patient.feature.membership.presentation.viewmodel.MembershipsViewModel
+import com.globussoft.wellness.patient.feature.notifications.presentation.screen.NotificationInboxScreen
+import com.globussoft.wellness.patient.feature.notifications.presentation.viewmodel.NotificationsNavEvent
+import com.globussoft.wellness.patient.feature.notifications.presentation.viewmodel.NotificationsViewModel
+import com.globussoft.wellness.patient.feature.profile.presentation.screen.ProfileScreen
+import com.globussoft.wellness.patient.feature.profile.presentation.viewmodel.ProfileNavEvent
+import com.globussoft.wellness.patient.feature.profile.presentation.viewmodel.ProfileViewModel
+import com.globussoft.wellness.patient.feature.wallet.presentation.screen.GiftCardsScreen
+import com.globussoft.wellness.patient.feature.wallet.presentation.screen.WalletScreen
+import com.globussoft.wellness.patient.feature.wallet.presentation.viewmodel.GiftCardsNavEvent
+import com.globussoft.wellness.patient.feature.wallet.presentation.viewmodel.GiftCardsViewModel
+import com.globussoft.wellness.patient.feature.wallet.presentation.viewmodel.WalletNavEvent
+import com.globussoft.wellness.patient.feature.wallet.presentation.viewmodel.WalletViewModel
 
 @Composable
 fun WellnessNavGraph(
@@ -35,6 +65,7 @@ fun WellnessNavGraph(
         startDestination = startDestination,
         modifier = modifier,
     ) {
+        // ── Auth ──────────────────────────────────────────────────────────────
         composable(Screen.Splash.route) {
             val vm: SplashViewModel = hiltViewModel()
             val state by vm.uiState.collectAsStateWithLifecycle()
@@ -85,6 +116,7 @@ fun WellnessNavGraph(
             RegisterScreen(state = state, onEvent = vm::onEvent)
         }
 
+        // ── Dashboard ─────────────────────────────────────────────────────────
         composable(
             route = Screen.Dashboard.route,
             deepLinks = listOf(navDeepLink { uriPattern = "wellnesspatient://screen/dashboard" }),
@@ -111,68 +143,188 @@ fun WellnessNavGraph(
             DashboardScreen(state = state, onEvent = vm::onEvent)
         }
 
+        // ── Booking ───────────────────────────────────────────────────────────
         composable(
             route = Screen.BookAppointment.route,
             deepLinks = listOf(navDeepLink { uriPattern = "wellnesspatient://screen/book" }),
         ) {
-            // TODO Phase 4: BookAppointmentScreen()
+            val vm: BookAppointmentViewModel = hiltViewModel()
+            val state by vm.uiState.collectAsStateWithLifecycle()
+            LaunchedEffect(Unit) {
+                vm.navEvent.collect { event ->
+                    when (event) {
+                        BookAppointmentNavEvent.Back -> navController.popBackStack()
+                        BookAppointmentNavEvent.BookingSuccess -> navController.navigate(Screen.MyAppointments.route) {
+                            popUpTo(Screen.BookAppointment.route) { inclusive = true }
+                        }
+                    }
+                }
+            }
+            BookAppointmentScreen(state = state, onEvent = vm::onEvent)
         }
 
         composable(
             route = Screen.MyAppointments.route,
             deepLinks = listOf(navDeepLink { uriPattern = "wellnesspatient://screen/appointments" }),
         ) {
-            // TODO Phase 4: MyAppointmentsScreen()
+            val vm: MyAppointmentsViewModel = hiltViewModel()
+            val state by vm.uiState.collectAsStateWithLifecycle()
+            LaunchedEffect(Unit) {
+                vm.navEvent.collect { event ->
+                    when (event) {
+                        MyAppointmentsNavEvent.ToBook -> navController.navigate(Screen.BookAppointment.createRoute())
+                        MyAppointmentsNavEvent.ToHistory -> navController.navigate(Screen.VisitHistory.route)
+                        MyAppointmentsNavEvent.Back -> navController.popBackStack()
+                    }
+                }
+            }
+            MyAppointmentsScreen(state = state, onEvent = vm::onEvent)
         }
 
         composable(Screen.VisitHistory.route) {
-            // TODO Phase 4: VisitHistoryScreen()
+            val vm: VisitHistoryViewModel = hiltViewModel()
+            val state by vm.uiState.collectAsStateWithLifecycle()
+            LaunchedEffect(Unit) {
+                vm.navEvent.collect { event ->
+                    when (event) {
+                        VisitHistoryNavEvent.Back -> navController.popBackStack()
+                    }
+                }
+            }
+            VisitHistoryScreen(state = state, onEvent = vm::onEvent)
         }
 
+        // ── Health ────────────────────────────────────────────────────────────
         composable(
             route = Screen.Prescriptions.route,
             deepLinks = listOf(navDeepLink { uriPattern = "wellnesspatient://screen/prescriptions" }),
         ) {
-            // TODO Phase 5: PrescriptionsScreen()
+            val vm: PrescriptionsViewModel = hiltViewModel()
+            val state by vm.uiState.collectAsStateWithLifecycle()
+            LaunchedEffect(Unit) {
+                vm.navEvent.collect { event ->
+                    when (event) {
+                        is PrescriptionsNavEvent.ToPdf -> navController.navigate(Screen.PrescriptionPdf.createRoute(event.prescriptionId))
+                        PrescriptionsNavEvent.Back -> navController.popBackStack()
+                    }
+                }
+            }
+            PrescriptionsScreen(state = state, onEvent = vm::onEvent)
         }
 
-        composable(
-            route = Screen.PrescriptionPdf.route,
-        ) {
-            // TODO Phase 5: PrescriptionPdfScreen()
+        composable(route = Screen.PrescriptionPdf.route) {
+            val vm: PrescriptionPdfViewModel = hiltViewModel()
+            val state by vm.uiState.collectAsStateWithLifecycle()
+            LaunchedEffect(Unit) {
+                vm.navEvent.collect { event ->
+                    when (event) {
+                        PrescriptionPdfNavEvent.Back -> navController.popBackStack()
+                    }
+                }
+            }
+            PrescriptionPdfScreen(state = state, onEvent = vm::onEvent)
         }
 
+        // ── Memberships ───────────────────────────────────────────────────────
         composable(
             route = Screen.Memberships.route,
             deepLinks = listOf(navDeepLink { uriPattern = "wellnesspatient://screen/memberships" }),
         ) {
-            // TODO Phase 6: MembershipsScreen()
+            val vm: MembershipsViewModel = hiltViewModel()
+            val state by vm.uiState.collectAsStateWithLifecycle()
+            LaunchedEffect(Unit) {
+                vm.navEvent.collect { event ->
+                    when (event) {
+                        MembershipsNavEvent.Back -> navController.popBackStack()
+                    }
+                }
+            }
+            MembershipsScreen(state = state, onEvent = vm::onEvent)
         }
 
+        // ── Wallet & Gift Cards ───────────────────────────────────────────────
         composable(
             route = Screen.Wallet.route,
             deepLinks = listOf(navDeepLink { uriPattern = "wellnesspatient://screen/wallet" }),
         ) {
-            // TODO Phase 7: WalletScreen()
+            val vm: WalletViewModel = hiltViewModel()
+            val state by vm.uiState.collectAsStateWithLifecycle()
+            LaunchedEffect(Unit) {
+                vm.navEvent.collect { event ->
+                    when (event) {
+                        WalletNavEvent.ToGiftCards -> navController.navigate(Screen.GiftCards.route)
+                        WalletNavEvent.Back -> navController.popBackStack()
+                    }
+                }
+            }
+            WalletScreen(state = state, onEvent = vm::onEvent)
         }
 
         composable(Screen.GiftCards.route) {
-            // TODO Phase 7: GiftCardsScreen()
+            val vm: GiftCardsViewModel = hiltViewModel()
+            val state by vm.uiState.collectAsStateWithLifecycle()
+            LaunchedEffect(Unit) {
+                vm.navEvent.collect { event ->
+                    when (event) {
+                        is GiftCardsNavEvent.LaunchRazorpay -> { /* Razorpay SDK launched from Activity context */ }
+                        GiftCardsNavEvent.Back -> navController.popBackStack()
+                        GiftCardsNavEvent.PurchaseComplete -> navController.navigate(Screen.Wallet.route) {
+                            popUpTo(Screen.GiftCards.route) { inclusive = true }
+                        }
+                    }
+                }
+            }
+            GiftCardsScreen(state = state, onEvent = vm::onEvent)
         }
 
+        // ── Profile ───────────────────────────────────────────────────────────
         composable(Screen.Profile.route) {
-            // TODO Phase 8: ProfileScreen()
+            val vm: ProfileViewModel = hiltViewModel()
+            val state by vm.uiState.collectAsStateWithLifecycle()
+            LaunchedEffect(Unit) {
+                vm.navEvent.collect { event ->
+                    when (event) {
+                        ProfileNavEvent.Back -> navController.popBackStack()
+                        ProfileNavEvent.ToLogin -> navController.navigate(Screen.Login.route) {
+                            popUpTo(Screen.Dashboard.route) { inclusive = true }
+                        }
+                    }
+                }
+            }
+            ProfileScreen(state = state, onEvent = vm::onEvent)
         }
 
+        // ── Notifications ─────────────────────────────────────────────────────
         composable(
             route = Screen.Notifications.route,
             deepLinks = listOf(navDeepLink { uriPattern = "wellnesspatient://screen/notifications" }),
         ) {
-            // TODO Phase 8: NotificationInboxScreen()
+            val vm: NotificationsViewModel = hiltViewModel()
+            val state by vm.uiState.collectAsStateWithLifecycle()
+            LaunchedEffect(Unit) {
+                vm.navEvent.collect { event ->
+                    when (event) {
+                        is NotificationsNavEvent.OpenDeepLink -> {
+                            val route = when (event.screen) {
+                                "appointments" -> Screen.MyAppointments.route
+                                "prescriptions" -> Screen.Prescriptions.route
+                                "memberships" -> Screen.Memberships.route
+                                "wallet" -> Screen.Wallet.route
+                                "book" -> Screen.BookAppointment.createRoute()
+                                else -> null
+                            }
+                            route?.let { navController.navigate(it) }
+                        }
+                        NotificationsNavEvent.Back -> navController.popBackStack()
+                    }
+                }
+            }
+            NotificationInboxScreen(state = state, onEvent = vm::onEvent)
         }
 
-        composable(Screen.TreatmentPlans.route) { /* TODO Phase 2 */ }
-        composable(Screen.ConsentForms.route) { /* TODO Phase 2 */ }
-        composable(Screen.Loyalty.route) { /* TODO Phase 2 */ }
+        // ── Phase 2 placeholders ──────────────────────────────────────────────
+        composable(Screen.TreatmentPlans.route) { /* Phase 2 */ }
+        composable(Screen.ConsentForms.route) { /* Phase 2 */ }
+        composable(Screen.Loyalty.route) { /* Phase 2 */ }
     }
 }

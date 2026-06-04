@@ -6,7 +6,7 @@ import com.squareup.moshi.JsonClass
 data class ProfileDto(
     val id: Int,
     val name: String,
-    val phone: String,
+    val phone: String?,
     val email: String?,
     val dob: String?,
     val gender: String?,
