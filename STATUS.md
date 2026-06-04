@@ -1,7 +1,7 @@
 # WellnessCRM Patient App — Implementation Status
 
-Last updated: 2026-06-04 (session 11 — Phase 10 ViewModel tests + Room DAO integration tests)
-Current phase: Phase 10 — Testing (ViewModel + DAO tests done; UI tests remain → Phase 11)
+Last updated: 2026-06-04 (session 12 — Phase 10 UI tests: BookAppointmentScreen, MembershipsScreen, PrescriptionsScreen)
+Current phase: Phase 10 — Testing ✅ COMPLETE → Phase 11 Release Prep
 
 ## Session 9 — Live Device Test Results (2026-06-04)
 
@@ -524,9 +524,11 @@ Requires portal permission `products.read`. Confirm with backend that this is in
 | `./gradlew test` — 47 tests, 0 failures, 0 errors | ✅ |
 | ViewModel tests (Turbine) — all features | ✅ `DashboardViewModelTest` (5), `PrescriptionsViewModelTest` (5), `NotificationsViewModelTest` (6) — 63 total tests, 0 failures |
 | Room DAO integration tests (in-memory DB) | ✅ `NotificationDaoTest` (4), `PrescriptionDaoTest` (3) — 7 instrumented tests, 0 failures (Redmi 2406ERN9CI) |
-| UI tests — BookAppointmentScreen (3-step flow) | ⬜ |
-| UI tests — MembershipsScreen | ⬜ |
-| UI tests — PrescriptionsScreen (empty state + list) | ⬜ |
+| UI tests — BookAppointmentScreen (3-step flow) | ✅ `BookAppointmentScreenTest` (7 cases) |
+| UI tests — MembershipsScreen | ✅ `MembershipsScreenTest` (5 cases) |
+| UI tests — PrescriptionsScreen (empty state + list) | ✅ `PrescriptionsScreenTest` (5 cases) |
+
+✅ Phase 10 complete — 2026-06-04 | 80 total tests (47 UseCase + 16 ViewModel + 7 DAO + 17 UI) — 0 failures
 
 ---
 
