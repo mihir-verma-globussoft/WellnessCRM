@@ -1,5 +1,6 @@
 package com.globussoft.wellness.patient.core.navigation
 
+import android.content.Intent
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -59,7 +60,14 @@ fun WellnessNavGraph(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
     startDestination: String = Screen.Splash.route,
+    notificationIntent: Intent? = null,
 ) {
+    // Re-process deep link when a notification brings the app to foreground (onNewIntent path).
+    // Initial-launch deep links are handled automatically by NavHost via navDeepLink patterns.
+    LaunchedEffect(notificationIntent) {
+        notificationIntent?.let { navController.handleDeepLink(it) }
+    }
+
     NavHost(
         navController = navController,
         startDestination = startDestination,

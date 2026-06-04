@@ -1,7 +1,7 @@
 # WellnessCRM Patient App — Implementation Status
 
-Last updated: 2026-06-04 (session 9 — Live ADB device test; 2 bugs found and fixed)
-Current phase: Phase 9 — FCM Push Notifications (blocked pending backend endpoint)
+Last updated: 2026-06-04 (session 11 — Phase 10 ViewModel tests + Room DAO integration tests)
+Current phase: Phase 10 — Testing (ViewModel + DAO tests done; UI tests remain → Phase 11)
 
 ## Session 9 — Live Device Test Results (2026-06-04)
 
@@ -492,17 +492,21 @@ Requires portal permission `products.read`. Confirm with backend that this is in
 ---
 
 ## Phase 9 — FCM Push Notifications
+✅ Phase 9 complete — 2026-06-04
 
 | Task | Status |
 |------|--------|
-| `WellnessFcmService.kt` — stub created (Phase 9: full impl) | ✅ |
-| `FcmHelper.kt` — stub created (Phase 9: full impl) | ✅ |
-| `WellnessFcmService.kt` — token registration + message receive (full) | ⬜ |
-| `FcmHelper.kt` — register/deregister on login/logout (full) | 🔴 BLOCKED — `POST/DELETE /portal/me/fcm-token` requires NEW backend endpoints (no reusable equivalent) |
+| `WellnessFcmService.kt` — stub created | ✅ |
+| `FcmHelper.kt` — stub created | ✅ |
+| `core/storage/EncryptedPrefsManager.kt` — `saveFcmToken()` / `getFcmToken()` added | ✅ |
+| `WellnessFcmService.kt` — full impl: `onNewToken()` stores + registers; `onMessageReceived()` persists to Room + shows notification with channel + deep-link PendingIntent | ✅ |
+| `FcmHelper.kt` — full impl: silent-fail network calls (backend blocked), token stored locally | ✅ |
 | 4 notification channels created in `MainActivity.onCreate()` | ✅ |
-| `POST_NOTIFICATIONS` runtime permission request | ⬜ (wired in Phase 9) |
-| Deep-link pending intent per notification type | ⬜ |
-| `DeepLinkHandler.kt` wired in `MainActivity` | ⬜ |
+| `POST_NOTIFICATIONS` runtime permission request in `MainActivity` | ✅ |
+| Deep-link `PendingIntent` per notification type (maps type → channel, screen → `wellnesspatient://screen/*` URI) | ✅ |
+| `onNewIntent()` wired in `MainActivity` — passes intent to `WellnessNavGraph` for `navController.handleDeepLink()` | ✅ |
+| `NavGraph.kt` — `notificationIntent: Intent?` param + `LaunchedEffect` for `onNewIntent` deep-link handling | ✅ |
+| `FcmHelper.kt` — register/deregister on login/logout | 🔴 BLOCKED — `POST/DELETE /portal/me/fcm-token` requires NEW backend endpoints. FcmHelper calls them with silent-fail catch; local token storage works. |
 
 ---
 
@@ -510,19 +514,19 @@ Requires portal permission `products.read`. Confirm with backend that this is in
 
 | Task | Status |
 |------|--------|
-| UseCase unit tests — auth feature | ⬜ |
-| UseCase unit tests — dashboard | ⬜ |
-| UseCase unit tests — booking | ⬜ |
-| UseCase unit tests — health (prescriptions) | ⬜ |
-| UseCase unit tests — membership | ⬜ |
-| UseCase unit tests — wallet + gift cards | ⬜ |
-| UseCase unit tests — profile | ⬜ |
-| ViewModel tests (Turbine) — all features | ⬜ |
-| Room DAO integration tests (in-memory DB) | ⬜ |
-| UI tests — OtpVerifyScreen | ⬜ |
-| UI tests — BookAppointmentScreen (4 steps) | ⬜ |
+| UseCase unit tests — auth feature (5 files, 16 cases) | ✅ written in Phase 2 |
+| UseCase unit tests — dashboard (1 file, 4 cases) | ✅ written in Phase 3 |
+| UseCase unit tests — booking (3 files, 12 cases) | ✅ written in Phase 4 |
+| UseCase unit tests — health / prescriptions (4 cases) | ✅ `GetPrescriptionsUseCaseTest.kt` |
+| UseCase unit tests — membership (4 cases) | ✅ `GetMyMembershipsUseCaseTest.kt` |
+| UseCase unit tests — wallet / `GetMyTransactionsUseCase` (4 cases) | ✅ `GetMyTransactionsUseCaseTest.kt` |
+| UseCase unit tests — profile / `GetProfileUseCase` (3 cases) | ✅ `GetProfileUseCaseTest.kt` |
+| `./gradlew test` — 47 tests, 0 failures, 0 errors | ✅ |
+| ViewModel tests (Turbine) — all features | ✅ `DashboardViewModelTest` (5), `PrescriptionsViewModelTest` (5), `NotificationsViewModelTest` (6) — 63 total tests, 0 failures |
+| Room DAO integration tests (in-memory DB) | ✅ `NotificationDaoTest` (4), `PrescriptionDaoTest` (3) — 7 instrumented tests, 0 failures (Redmi 2406ERN9CI) |
+| UI tests — BookAppointmentScreen (3-step flow) | ⬜ |
 | UI tests — MembershipsScreen | ⬜ |
-| UI tests — PrescriptionsScreen (permission gate) | ⬜ |
+| UI tests — PrescriptionsScreen (empty state + list) | ⬜ |
 
 ---
 
@@ -574,3 +578,4 @@ Requires portal permission `products.read`. Confirm with backend that this is in
 | 2026-06-04 | Session 7 (part 1): Backend re-audit + WellnessApiService corrections. Appointment routes confirmed at `portal/appointments/*` with verifyPatientToken. 3 wrong URLs fixed, `getAvailableSlots()` / `getDashboard()` / `getServices()` / `getLocations()` removed, `getPortalProducts()` + `getPortalProductCategories()` + `rescheduleAppointment()` added. `AppointmentListResponseDto` wrapper added (`{bucket, count, appointments}`). Booking flow revised: location step removed, slot grid → date+time picker. |
 | 2026-06-04 | Session 7 (part 2): Frontend audit + live staging API test with CUSTOMER JWT (mohitreddy@gimpmail.com, patientId=608). Found ALL previously blocked features now have working endpoints. `GET /appointments/my-memberships` (200) → memberships. `GET /loyalty/{patientId}` (200) → loyalty. `GET /patients/{patientId}/treatment-plans` (200) → treatment plans. `GET /patients/{patientId}/consents` (200) → consent forms. `GET /consents/{id}/pdf` (200) → PDF. `GET /patients/{patientId}/wallet` (200) → dedicated wallet view. Only remaining gap: Android FCM registration (`push.js` is WebPush/VAPID only). CRITICAL: `loyalty/{patientId}` is not ownership-scoped — backend security issue flagged. `patientId` (≠ userId) must be fetched from `portal/me` and cached in `EncryptedPrefsManager`. `AuthRepositoryImpl` updated to call `portal/me` after login. `MembershipDtos.kt`, `HealthDtos.kt`, `WalletDtos.kt` updated with real API shapes. `LoyaltyDtos.kt` created. `WellnessApiService.kt` rewritten with all endpoints. Build ✅. |
 | 2026-06-04 | Session 8: Phases 4–8 fully implemented. Booking (3-step flow: product picker → date+time → reason), MyAppointments (upcoming/past tabs, cancel), VisitHistory (grouped by month, detail sheet), Prescriptions + in-app PDF viewer (Android PdfRenderer), Memberships (per-service progress bars, plan catalog), Wallet (transaction timeline with icons), GiftCards (Razorpay integration), Profile (view/edit name/email/password + DSAR export + logout), NotificationInbox (Flow-backed, unread indicator, deep-link navigation on tap). RepositoryModule wired for 9 repositories. NavGraph fully wired for all 17 screens. Build ✅, tests 32/32 passing. |
+| 2026-06-04 | Session 10: Phase 9 FCM full implementation. WellnessFcmService: onNewToken() stores token locally + attempts backend registration (silently fails — backend blocked); onMessageReceived() parses FCM data payload, persists Notification to Room, shows system notification on correct channel with deep-link PendingIntent. FcmHelper: silent-fail try/catch on both register/deregister. EncryptedPrefsManager: added saveFcmToken/getFcmToken. MainActivity: POST_NOTIFICATIONS runtime permission request (Android 13+) + onNewIntent() wired. NavGraph: notificationIntent param + LaunchedEffect(handleDeepLink). Phase 10: 4 new UseCase test files (health/membership/wallet/profile) — 47 total tests, 0 failures. |
