@@ -20,6 +20,9 @@ import com.globussoft.wellness.patient.feature.auth.presentation.viewmodel.Regis
 import com.globussoft.wellness.patient.feature.auth.presentation.viewmodel.RegisterViewModel
 import com.globussoft.wellness.patient.feature.auth.presentation.viewmodel.SplashNavEvent
 import com.globussoft.wellness.patient.feature.auth.presentation.viewmodel.SplashViewModel
+import com.globussoft.wellness.patient.feature.dashboard.presentation.screen.DashboardScreen
+import com.globussoft.wellness.patient.feature.dashboard.presentation.viewmodel.DashboardNavEvent
+import com.globussoft.wellness.patient.feature.dashboard.presentation.viewmodel.DashboardViewModel
 
 @Composable
 fun WellnessNavGraph(
@@ -86,7 +89,26 @@ fun WellnessNavGraph(
             route = Screen.Dashboard.route,
             deepLinks = listOf(navDeepLink { uriPattern = "wellnesspatient://screen/dashboard" }),
         ) {
-            // TODO Phase 3: DashboardScreen()
+            val vm: DashboardViewModel = hiltViewModel()
+            val state by vm.uiState.collectAsStateWithLifecycle()
+            LaunchedEffect(Unit) {
+                vm.navigationEvent.collect { event ->
+                    when (event) {
+                        DashboardNavEvent.ToAppointments -> navController.navigate(Screen.MyAppointments.route)
+                        DashboardNavEvent.ToBooking -> navController.navigate(Screen.BookAppointment.createRoute())
+                        DashboardNavEvent.ToPrescriptions -> navController.navigate(Screen.Prescriptions.route)
+                        DashboardNavEvent.ToProfile -> navController.navigate(Screen.Profile.route)
+                        DashboardNavEvent.ToWallet -> navController.navigate(Screen.Wallet.route)
+                        DashboardNavEvent.ToMemberships -> navController.navigate(Screen.Memberships.route)
+                        DashboardNavEvent.ToNotifications -> navController.navigate(Screen.Notifications.route)
+                        DashboardNavEvent.ToGiftCards -> navController.navigate(Screen.GiftCards.route)
+                        DashboardNavEvent.ToLogin -> navController.navigate(Screen.Login.route) {
+                            popUpTo(Screen.Dashboard.route) { inclusive = true }
+                        }
+                    }
+                }
+            }
+            DashboardScreen(state = state, onEvent = vm::onEvent)
         }
 
         composable(

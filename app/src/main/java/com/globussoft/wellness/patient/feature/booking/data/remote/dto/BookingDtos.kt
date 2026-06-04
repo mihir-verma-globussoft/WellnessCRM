@@ -74,6 +74,7 @@ data class BookAppointmentDto(
     val doctorId: Int?,
     val serviceId: Int?,
     val membershipId: Int?,
+    val bookingType: String? = null,
 )
 
 @JsonClass(generateAdapter = true)
@@ -86,4 +87,52 @@ data class BookAppointmentResponseDto(
 data class CancelAppointmentResponseDto(
     val success: Boolean,
     val appointment: AppointmentDto,
+)
+
+@JsonClass(generateAdapter = true)
+data class AppointmentListResponseDto(
+    val bucket: String,
+    val count: Int,
+    val appointments: List<AppointmentDto>,
+)
+
+@JsonClass(generateAdapter = true)
+data class RescheduleAppointmentDto(
+    val appointmentDate: String,
+    val appointmentTime: String,
+)
+
+@JsonClass(generateAdapter = true)
+data class RescheduleAppointmentResponseDto(
+    val success: Boolean,
+    val appointment: AppointmentDto,
+)
+
+@JsonClass(generateAdapter = true)
+data class ProductCategoryRefDto(
+    val id: Int,
+    val name: String,
+)
+
+@JsonClass(generateAdapter = true)
+data class ProductDto(
+    val id: Int,
+    val name: String,
+    val description: String?,
+    val price: Double?,
+    val discountedPrice: Double?,
+    val imageUrl: String?,
+    val brandName: String?,
+    val volume: String?,
+    val unit: String?,
+    val category: ProductCategoryRefDto?,
+)
+
+@JsonClass(generateAdapter = true)
+data class ProductCategoryDto(
+    val id: Int,
+    val name: String,
+    val parentId: Int?,
+    val imageUrl: String?,
+    val color: String?,
 )

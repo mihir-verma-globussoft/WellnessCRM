@@ -20,3 +20,62 @@ data class DrugDto(
     val duration: String?,
     val instructions: String?,
 )
+
+// GET /api/wellness/patients/{patientId}/treatment-plans — CUSTOMER JWT (verifyToken).
+// Real shape confirmed against staging 2026-06-04.
+@JsonClass(generateAdapter = true)
+data class TreatmentPlanDto(
+    val id: Int,
+    val name: String,
+    val totalSessions: Int,
+    val completedSessions: Int,
+    val startedAt: String,
+    val nextDueAt: String?,
+    val status: String,
+    val totalPrice: Double,
+    val patientId: Int,
+    val serviceId: Int,
+    val tenantId: Int,
+    val patient: TreatmentPatientRefDto?,
+    val service: TreatmentServiceRefDto?,
+)
+
+@JsonClass(generateAdapter = true)
+data class TreatmentPatientRefDto(
+    val id: Int,
+    val name: String,
+    val phone: String?,
+)
+
+@JsonClass(generateAdapter = true)
+data class TreatmentServiceRefDto(
+    val id: Int,
+    val name: String,
+    val category: String?,
+)
+
+// GET /api/wellness/patients/{patientId}/consents — CUSTOMER JWT (verifyToken).
+// Real shape confirmed against staging 2026-06-04.
+@JsonClass(generateAdapter = true)
+data class ConsentFormDto(
+    val id: Int,
+    val templateName: String,
+    val signedAt: String,
+    val patientId: Int,
+    val serviceId: Int,
+    val hasPdfBlob: Boolean,
+    val patient: ConsentPatientRefDto?,
+    val service: ConsentServiceRefDto?,
+)
+
+@JsonClass(generateAdapter = true)
+data class ConsentPatientRefDto(
+    val id: Int,
+    val name: String,
+)
+
+@JsonClass(generateAdapter = true)
+data class ConsentServiceRefDto(
+    val id: Int,
+    val name: String,
+)

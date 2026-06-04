@@ -35,6 +35,7 @@ class AuthRepositoryImpl @Inject constructor(
         dataStore.saveToken(body.token)
         val patient = body.toPatient()
         encryptedPrefs.saveUserInfo(patient.userId, patient.name, patient.email)
+        fetchAndSavePatientId()
         return patient
     }
 
@@ -54,7 +55,19 @@ class AuthRepositoryImpl @Inject constructor(
         dataStore.saveToken(body.token)
         val patient = body.toPatient()
         encryptedPrefs.saveUserInfo(patient.userId, patient.name, patient.email)
+        fetchAndSavePatientId()
         return patient
+    }
+
+    // GET /portal/me after login to cache the patient-row ID.
+    // Required for loyalty/{patientId}, patients/{patientId}/wallet, etc.
+    // Non-fatal: if it fails the patientId will be fetched lazily when first needed.
+    private suspend fun fetchAndSavePatientId() {
+        runCatching { api.getProfile() }
+            .getOrNull()
+            ?.body()
+            ?.id
+            ?.let { encryptedPrefs.savePatientId(it) }
     }
 
     override suspend fun logout() {

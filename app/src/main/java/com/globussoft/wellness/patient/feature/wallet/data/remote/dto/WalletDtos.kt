@@ -71,3 +71,83 @@ data class FcmTokenDto(
     val token: String,
     val platform: String,
 )
+
+// GET /api/wellness/patients/{patientId}/wallet — CUSTOMER JWT (verifyToken).
+// Dedicated wallet view: balance + wallet-only transactions.
+// Real shape confirmed against staging 2026-06-04.
+@JsonClass(generateAdapter = true)
+data class PatientWalletResponseDto(
+    val patient: WalletPatientRefDto,
+    val wallet: WalletDetailDto,
+    val transactions: List<WalletTxnDto>,
+)
+
+@JsonClass(generateAdapter = true)
+data class WalletPatientRefDto(
+    val id: Int,
+    val name: String,
+)
+
+@JsonClass(generateAdapter = true)
+data class WalletDetailDto(
+    val id: Int,
+    val tenantId: Int,
+    val patientId: Int,
+    val balance: Double,
+    val currency: String,
+    val createdAt: String,
+    val updatedAt: String,
+)
+
+@JsonClass(generateAdapter = true)
+data class WalletTxnDto(
+    val id: Int,
+    val tenantId: Int,
+    val walletId: Int,
+    val type: String,
+    val amount: Double,
+    val reason: String?,
+    val visitId: Int?,
+    val invoiceId: Int?,
+    val giftCardId: Int?,
+    val couponId: Int?,
+    val balanceAfter: Double,
+    val performedBy: Int?,
+    val createdAt: String,
+)
+
+// GET /api/wellness/my-transactions — CUSTOMER JWT (verifyToken).
+// Returns wallet balance + unified transaction timeline across all types.
+@JsonClass(generateAdapter = true)
+data class MyTransactionsResponseDto(
+    val currency: String,
+    val summary: TransactionSummaryDto,
+    val transactions: List<TransactionDto>,
+)
+
+@JsonClass(generateAdapter = true)
+data class TransactionSummaryDto(
+    val totalPaid: Double,
+    val posTotal: Double,
+    val onlineTotal: Double,
+    val subscriptionsTotal: Double,
+    val walletBalance: Double,
+    val walletTopUps: Double,
+    val transactionCount: Int,
+)
+
+@JsonClass(generateAdapter = true)
+data class TransactionDto(
+    val id: String,
+    val type: String,
+    val category: String,
+    val title: String,
+    val description: String?,
+    val amount: Double,
+    val direction: String,
+    val status: String,
+    val reference: String?,
+    val date: String,
+    val paymentMethod: String?,
+    val balanceAfter: Double?,
+)

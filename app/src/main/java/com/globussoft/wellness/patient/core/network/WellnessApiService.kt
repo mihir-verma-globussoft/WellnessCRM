@@ -5,33 +5,39 @@ import com.globussoft.wellness.patient.feature.auth.data.remote.dto.LoginRespons
 import com.globussoft.wellness.patient.feature.auth.data.remote.dto.RegisterRequestDto
 import com.globussoft.wellness.patient.feature.auth.data.remote.dto.RegisterResponseDto
 import com.globussoft.wellness.patient.feature.auth.data.remote.dto.TenantBrandingResponseDto
-import com.globussoft.wellness.patient.feature.booking.data.remote.dto.AppointmentDto
+import com.globussoft.wellness.patient.feature.booking.data.remote.dto.AppointmentListResponseDto
 import com.globussoft.wellness.patient.feature.booking.data.remote.dto.BookAppointmentDto
 import com.globussoft.wellness.patient.feature.booking.data.remote.dto.BookAppointmentResponseDto
 import com.globussoft.wellness.patient.feature.booking.data.remote.dto.CancelAppointmentResponseDto
-import com.globussoft.wellness.patient.feature.booking.data.remote.dto.LocationDto
-import com.globussoft.wellness.patient.feature.booking.data.remote.dto.ServiceDto
-import com.globussoft.wellness.patient.feature.booking.data.remote.dto.SlotDto
+import com.globussoft.wellness.patient.feature.booking.data.remote.dto.ProductCategoryDto
+import com.globussoft.wellness.patient.feature.booking.data.remote.dto.ProductDto
+import com.globussoft.wellness.patient.feature.booking.data.remote.dto.RescheduleAppointmentDto
+import com.globussoft.wellness.patient.feature.booking.data.remote.dto.RescheduleAppointmentResponseDto
 import com.globussoft.wellness.patient.feature.booking.data.remote.dto.VisitDto
+import com.globussoft.wellness.patient.feature.health.data.remote.dto.ConsentFormDto
 import com.globussoft.wellness.patient.feature.health.data.remote.dto.PrescriptionDto
+import com.globussoft.wellness.patient.feature.health.data.remote.dto.TreatmentPlanDto
+import com.globussoft.wellness.patient.feature.loyalty.data.remote.dto.LoyaltyResponseDto
 import com.globussoft.wellness.patient.feature.membership.data.remote.dto.MembershipDto
 import com.globussoft.wellness.patient.feature.membership.data.remote.dto.MembershipPlanDto
-import com.globussoft.wellness.patient.feature.profile.data.remote.dto.ProfileDto
-import com.globussoft.wellness.patient.feature.profile.data.remote.dto.UpdateProfileDto
+import com.globussoft.wellness.patient.feature.profile.data.remote.dto.AuthProfileResponseDto
 import com.globussoft.wellness.patient.feature.profile.data.remote.dto.DsarExportResponseDto
+import com.globussoft.wellness.patient.feature.profile.data.remote.dto.ProfileDto
+import com.globussoft.wellness.patient.feature.profile.data.remote.dto.UpdateAuthProfileDto
 import com.globussoft.wellness.patient.feature.wallet.data.remote.dto.FcmTokenDto
-import com.globussoft.wellness.patient.feature.wallet.data.remote.dto.GiftCardDto
-import com.globussoft.wellness.patient.feature.wallet.data.remote.dto.GiftCardOrderDto
-import com.globussoft.wellness.patient.feature.wallet.data.remote.dto.GiftCardOrderResponseDto
 import com.globussoft.wellness.patient.feature.wallet.data.remote.dto.GiftCardConfirmDto
 import com.globussoft.wellness.patient.feature.wallet.data.remote.dto.GiftCardConfirmResponseDto
+import com.globussoft.wellness.patient.feature.wallet.data.remote.dto.GiftCardOrderDto
+import com.globussoft.wellness.patient.feature.wallet.data.remote.dto.GiftCardOrderResponseDto
 import com.globussoft.wellness.patient.feature.wallet.data.remote.dto.GiftCardStorefrontResponseDto
-import com.globussoft.wellness.patient.feature.wallet.data.remote.dto.WalletDto
+import com.globussoft.wellness.patient.feature.wallet.data.remote.dto.MyTransactionsResponseDto
+import com.globussoft.wellness.patient.feature.wallet.data.remote.dto.PatientWalletResponseDto
 import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
@@ -45,7 +51,7 @@ interface WellnessApiService {
         @Path("slug") slug: String,
     ): Response<TenantBrandingResponseDto>
 
-    // ── Auth — absolute paths hit /api/auth/* (not under /api/wellness/) ─────
+    // ── Auth — absolute paths (/api/auth/* not under /api/wellness/) ──────────
     @POST("/api/auth/login")
     suspend fun login(
         @Body body: LoginRequestDto,
@@ -57,18 +63,24 @@ interface WellnessApiService {
     ): Response<RegisterResponseDto>
 
     // ── Profile ───────────────────────────────────────────────────────────────
+    // GET /portal/me — patient-layer: name, phone, email, dob, gender, id (patientId)
     @GET("portal/me")
     suspend fun getProfile(): Response<ProfileDto>
 
-    @PUT("portal/me")
-    suspend fun updateProfile(
-        @Body body: UpdateProfileDto,
-    ): Response<ProfileDto>
+    // GET /api/auth/me — user-layer: name, email, role, profilePicture
+    @GET("/api/auth/me")
+    suspend fun getAuthProfile(): Response<AuthProfileResponseDto>
+
+    // PUT /api/auth/me — update name, email, or password (dob/gender/phone not supported)
+    @PUT("/api/auth/me")
+    suspend fun updateAuthProfile(
+        @Body body: UpdateAuthProfileDto,
+    ): Response<AuthProfileResponseDto>
 
     @POST("portal/export")
     suspend fun requestDsarExport(): Response<DsarExportResponseDto>
 
-    // ── FCM Token ─────────────────────────────────────────────────────────────
+    // ── FCM Token — BLOCKED: push.js is WebPush/VAPID only; no Android FCM endpoint. ──
     @POST("portal/me/fcm-token")
     suspend fun registerFcmToken(
         @Body body: FcmTokenDto,
@@ -77,37 +89,42 @@ interface WellnessApiService {
     @DELETE("portal/me/fcm-token")
     suspend fun deregisterFcmToken(): Response<Unit>
 
-    // ── Visits / Appointments ─────────────────────────────────────────────────
+    // ── Visits ────────────────────────────────────────────────────────────────
     @GET("portal/visits")
     suspend fun getVisits(
         @Query("upcoming") upcoming: Boolean? = null,
     ): Response<List<VisitDto>>
 
-    @GET("services")
-    suspend fun getServices(): Response<List<ServiceDto>>
+    // ── Appointments (portal-scoped, verifyPatientToken) ──────────────────────
+    // bucket = "upcoming" | "past" | "all" (default: "upcoming")
+    @GET("portal/appointments")
+    suspend fun getMyAppointments(
+        @Query("bucket") bucket: String? = null,
+    ): Response<AppointmentListResponseDto>
 
-    @GET("locations")
-    suspend fun getLocations(): Response<List<LocationDto>>
-
-    @GET("portal/slots")
-    suspend fun getAvailableSlots(
-        @Query("serviceId") serviceId: Int,
-        @Query("locationId") locationId: Int,
-        @Query("date") date: String,
-    ): Response<List<SlotDto>>
-
-    @POST("appointments/book")
+    @POST("portal/appointments/book")
     suspend fun bookAppointment(
         @Body body: BookAppointmentDto,
     ): Response<BookAppointmentResponseDto>
 
-    @GET("appointments/my")
-    suspend fun getMyAppointments(): Response<List<AppointmentDto>>
-
-    @POST("appointments/{id}/cancel")
+    @POST("portal/appointments/{id}/cancel")
     suspend fun cancelAppointment(
         @Path("id") appointmentId: Int,
     ): Response<CancelAppointmentResponseDto>
+
+    @PATCH("portal/appointments/{id}/reschedule")
+    suspend fun rescheduleAppointment(
+        @Path("id") appointmentId: Int,
+        @Body body: RescheduleAppointmentDto,
+    ): Response<RescheduleAppointmentResponseDto>
+
+    // ── Products / Services (patient-facing catalogue) ────────────────────────
+    // Requires portal permission "products.read". Excludes Consumption-type products.
+    @GET("portal/products")
+    suspend fun getPortalProducts(): Response<List<ProductDto>>
+
+    @GET("portal/product-categories")
+    suspend fun getPortalProductCategories(): Response<List<ProductCategoryDto>>
 
     // ── Prescriptions ─────────────────────────────────────────────────────────
     @GET("portal/prescriptions")
@@ -118,16 +135,55 @@ interface WellnessApiService {
         @Path("id") prescriptionId: Int,
     ): Response<ResponseBody>
 
+    // ── Treatment Plans (Phase 2 UI, data layer ready) ───────────────────────
+    // Uses patient-row ID from EncryptedPrefsManager.getPatientId().
+    @GET("patients/{patientId}/treatment-plans")
+    suspend fun getTreatmentPlans(
+        @Path("patientId") patientId: Int,
+    ): Response<List<TreatmentPlanDto>>
+
+    // ── Consent Forms (Phase 2 UI, data layer ready) ─────────────────────────
+    @GET("patients/{patientId}/consents")
+    suspend fun getConsents(
+        @Path("patientId") patientId: Int,
+    ): Response<List<ConsentFormDto>>
+
+    @GET("consents/{id}/pdf")
+    suspend fun getConsentPdf(
+        @Path("id") consentId: Int,
+    ): Response<ResponseBody>
+
     // ── Memberships ───────────────────────────────────────────────────────────
-    @GET("portal/me/memberships")
+    // GET /appointments/my-memberships — returns patient's active/past memberships.
+    @GET("appointments/my-memberships")
     suspend fun getMyMemberships(): Response<List<MembershipDto>>
 
+    // GET /membership-plans — full catalog for plan-browse screen.
     @GET("membership-plans")
     suspend fun getMembershipPlans(): Response<List<MembershipPlanDto>>
 
     // ── Wallet ────────────────────────────────────────────────────────────────
-    @GET("portal/me/wallet")
-    suspend fun getWallet(): Response<WalletDto>
+    // GET /patients/{patientId}/wallet — dedicated wallet view with balance + wallet-only txns.
+    @GET("patients/{patientId}/wallet")
+    suspend fun getPatientWallet(
+        @Path("patientId") patientId: Int,
+    ): Response<PatientWalletResponseDto>
+
+    // GET /my-transactions — unified timeline across all transaction types.
+    // Also used by DashboardRepositoryImpl for summary.walletBalance.
+    @GET("my-transactions")
+    suspend fun getMyTransactions(
+        @Query("from") from: String? = null,
+        @Query("to") to: String? = null,
+    ): Response<MyTransactionsResponseDto>
+
+    // ── Loyalty (Phase 2 UI, data layer ready) ────────────────────────────────
+    // ⚠️ SECURITY: backend does not verify caller owns this patientId. Use only
+    // with EncryptedPrefsManager.getPatientId() — never accept patientId from user input.
+    @GET("loyalty/{patientId}")
+    suspend fun getLoyalty(
+        @Path("patientId") patientId: Int,
+    ): Response<LoyaltyResponseDto>
 
     // ── Gift Cards ────────────────────────────────────────────────────────────
     @GET("giftcards/storefront")
@@ -144,8 +200,4 @@ interface WellnessApiService {
         @Path("id") giftCardId: Int,
         @Body body: GiftCardConfirmDto,
     ): Response<GiftCardConfirmResponseDto>
-
-    // ── Dashboard (backend gap — stub until endpoint is built) ────────────────
-    @GET("portal/me/dashboard")
-    suspend fun getDashboard(): Response<Map<String, Any>>
 }

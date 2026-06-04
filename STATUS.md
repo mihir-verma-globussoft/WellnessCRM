@@ -1,7 +1,7 @@
 # WellnessCRM Patient App — Implementation Status
 
-Last updated: 2026-06-03 (session 4 — Auth migrated to email+password; PhoneEntry/OTP removed)
-Current phase: Phase 3 — Dashboard Feature
+Last updated: 2026-06-04 (session 7 — live staging API audit; ALL features unblocked except Android FCM)
+Current phase: Phase 4 — Booking Feature
 
 ## Legend
 ✅ Done &nbsp; 🔄 In Progress &nbsp; ⬜ Not started &nbsp; 🔴 Blocked (reason inline)
@@ -9,48 +9,84 @@ Current phase: Phase 3 — Dashboard Feature
 ---
 
 ## Backend Gap Endpoints
-*Re-audited against CRM backend at `/home/glb-blr-214/StudioProjects/globussoft-crm` on 2026-06-03 (session 2)*
+*Re-audited against CRM backend on 2026-06-04 (session 7 — cross-checked with backend/frontend team + direct wellness.js code review)*
 
-### Originally flagged as missing — now resolved as REUSABLE
-Of the 12 initially flagged gaps, 10 have functional backend equivalents that can be wired with portal-scoped auth or composed from existing patient-portal endpoints. Only 2 require genuinely new backend code.
+### ✅ Confirmed working patient-portal endpoints
 
-| Endpoint | Resolution |
-|----------|-----------|
-| `POST /portal/register` | Partial equivalent exists (`/auth/customer/register`). Needs Patient-row linking + OTP flow wiring. Build on backend before Screen 4. |
-| `GET /portal/me/dashboard` | No single aggregator. **Compose on Android** from `portal/visits?upcoming=true` + `portal/me/wallet` + `portal/me/memberships` (parallel calls in DashboardUseCase). |
-| `GET /portal/slots` | Endpoint exists in wellness.js (`/wellness/portal/slots` area). Needs patient-auth variant wiring — build on backend before Screen 6 Step 3. |
-| `PUT /portal/me` | Reusable — add `verifyPatientToken` to the existing patient update path. Build before Screen 15 edit. |
-| `GET /portal/me/wallet` | Reusable — scope existing wallet ledger to `req.patient.id`. Build before Screen 12. |
-| `GET /portal/me/memberships` | Reusable — scope `patients/:id/memberships` to `req.patient.id`. Build before Screen 17. |
-| `GET /portal/me/treatment-plans` | Reusable — scope `patients/:id/treatment-plans` to `req.patient.id`. Phase 2, build before Screen 10. |
-| `GET /portal/me/consents` | Reusable — scope `patients/:id/consents` to `req.patient.id`. Phase 2, build before Screen 11. |
-| `GET /portal/me/consents/:id/pdf` | Reusable — portal-scoped PDF download. Phase 2, build before Screen 11. |
-| `GET /portal/me/loyalty` | Reusable — scope loyalty data to `req.patient.id`. Phase 2, build before Screen 14. |
+| Endpoint | Notes |
+|----------|-------|
+| `GET /public/tenant/:slug` | Tenant branding |
+| `POST /api/auth/login` | Email + password → CUSTOMER JWT |
+| `POST /api/auth/customer/register` | Patient registration |
+| `GET /portal/me` | Profile read |
+| `GET /portal/me/permissions` | Portal permission set |
+| `GET /portal/visits` | Visit history (supports `?upcoming=true`) |
+| `GET /portal/prescriptions` | Prescription list |
+| `GET /portal/prescriptions/:id/pdf` | Prescription PDF download |
+| `POST /portal/export` | DSAR data export |
+| `GET /portal/appointments` | My appointments — `?bucket=upcoming\|past\|all` (default upcoming) |
+| `POST /portal/appointments/book` | Book appointment |
+| `POST /portal/appointments/:id/cancel` | Cancel appointment |
+| `PATCH /portal/appointments/:id/reschedule` | Reschedule appointment |
+| `GET /portal/products` | Patient-facing product/service catalogue (excludes Consumption type). Requires portal permission `products.read`. |
+| `GET /portal/product-categories` | Product categories. Requires portal permission `products.read`. |
+| `GET /giftcards/storefront` | Gift card catalogue |
+| `POST /giftcards/:id/purchase/order` | Initiate gift card purchase |
+| `POST /giftcards/:id/purchase/confirm` | Confirm gift card purchase |
 
-### Truly new backend endpoints needed
-| Endpoint | Status | Blocks |
-|----------|--------|--------|
-| `POST /portal/me/fcm-token` | 🔴 BLOCKED — no patient-portal push registration exists | Phase 9 FCM |
-| `DELETE /portal/me/fcm-token` | 🔴 BLOCKED — no patient-portal push deregister exists | Phase 9 FCM |
+> **Appointment URL fix (session 7):** `WellnessApiService.kt` previously called wrong staff-scoped paths (`appointments/book`, `appointments/my`, `appointments/:id/cancel`). Now corrected to portal paths above. `AppointmentListResponseDto` wrapper added to reflect `{ bucket, count, appointments }` envelope.
 
-### Newly discovered gaps (found during session 2 auth audit)
-These routes exist but use **staff JWT** (`verifyToken` + `req.user.tenantId`). Patients sending portal JWT will get 401. Need patient-portal versions.
+> **Services → Products:** The `GET /services` and `GET /locations` staff routes are no longer used by the patient app. The patient-facing equivalent is `GET /portal/products` (and `GET /portal/product-categories`). The booking body (`POST /portal/appointments/book`) takes `serviceId` (maps to a product id), not a location. Location selection step removed from booking flow.
 
-| Endpoint | Issue | Blocks |
-|----------|-------|--------|
-| `POST /appointments/book` | Uses staff `verifyToken` — patient JWT rejected | Screen 6 (Book Appointment) |
-| `GET /appointments/my` | Uses staff `verifyToken` — patient JWT rejected | Screen 7 (My Appointments) |
-| `POST /appointments/:id/cancel` | Uses staff `verifyToken` — patient JWT rejected | Screen 7 (My Appointments cancel) |
-| `GET /services` | Uses `tenantWhere(req.user.tenantId)` — crashes for patient JWT | Screen 6 Step 1 (service picker) |
-| `GET /locations` | Uses `tenantWhere(req.user.tenantId)` — crashes for patient JWT | Screen 6 Step 2 (location picker) |
-| `GET /membership-plans` | Uses `tenantWhere(req.user.tenantId)` — crashes for patient JWT | Screen 6 Step 4 + Screen 17 |
+> **Slot picker:** `GET /portal/slots` does not exist and is not planned. The booking flow uses a date + time picker directly; the server returns `DOCTOR_UNAVAILABLE` / `SLOT_TAKEN` if the chosen slot is invalid.
 
-**Fix pattern for services/locations/membership-plans**: add patient-portal routes (`portal/services`, `portal/locations`, `portal/membership-plans`) using `verifyPatientToken` and `req.patient.tenantId` for the DB query — same data, different auth path.
+### ✅ All features confirmed working — live staging API test 2026-06-04
 
-**Fix pattern for appointment routes**: add `portal/appointments/book`, `portal/appointments/my`, `portal/appointments/:id/cancel` using `verifyPatientToken`, mirroring how `portal/visits` wraps the internal visit data.
+Test account: `mohitreddy@gimpmail.com` · patientId=608 · tenantId=1 · slug=`enhanced-wellness`
 
-### Confirmed working patient-portal endpoints
-`GET /public/tenant/:slug` ✅ | `POST /api/auth/login` ✅ (email+password → CUSTOMER JWT) | `POST /api/auth/customer/register` ✅ | `GET /portal/me` ✅ | `GET /portal/visits` ✅ (supports `?upcoming=true`) | `GET /portal/prescriptions` ✅ | `GET /portal/prescriptions/:id/pdf` ✅ | `POST /portal/export` ✅ | `GET /giftcards/storefront` ✅ | `POST /giftcards/:id/purchase/order` ✅ | `POST /giftcards/:id/purchase/confirm` ✅
+| Endpoint | Auth | HTTP | Notes |
+|----------|------|------|-------|
+| `GET /portal/me` | verifyPatientToken | 200 | Patient profile: id (patientId!), name, phone, email, dob, gender |
+| `GET /portal/appointments` | verifyPatientToken | 200 | `{bucket, count, appointments[]}` |
+| `POST /portal/appointments/book` | verifyPatientToken | — | Confirmed route exists |
+| `POST /portal/appointments/:id/cancel` | verifyPatientToken | — | Confirmed route exists |
+| `PATCH /portal/appointments/:id/reschedule` | verifyPatientToken | — | Confirmed route exists |
+| `GET /portal/products` | verifyPatientToken + products.read | 200 | Returns `[]` if no products configured |
+| `GET /portal/product-categories` | verifyPatientToken + products.read | 200 | Category list with images/colors |
+| `GET /portal/prescriptions` | verifyPatientToken | — | Confirmed route exists |
+| `GET /portal/prescriptions/:id/pdf` | verifyPatientToken | — | Confirmed route exists |
+| `GET /appointments/my-memberships` | verifyToken (CUSTOMER JWT) | 200 | Patient's own memberships: `{id, planId, planName, planDurationDays, startDate, endDate, status, balance[]}` |
+| `GET /membership-plans` | verifyToken (CUSTOMER JWT) | 200 | Full plan catalog with `entitlements` JSON string |
+| `GET /patients/{patientId}/wallet` | verifyToken (CUSTOMER JWT) | 200 | `{patient, wallet:{balance,currency}, transactions[]}` — wallet-only txns |
+| `GET /my-transactions` | verifyToken (CUSTOMER JWT) | 200 | Unified timeline; `summary.walletBalance=2000` confirmed |
+| `GET /loyalty/{patientId}` | verifyToken (CUSTOMER JWT) | 200 | `{patient, balance, earnedThisMonth, transactions[]}` — **needs patientId from portal/me** |
+| `GET /patients/{patientId}/treatment-plans` | verifyToken (CUSTOMER JWT) | 200 | `[{id, name, totalSessions, completedSessions, startedAt, status, totalPrice, service:{name,category}}]` |
+| `GET /patients/{patientId}/consents` | verifyToken (CUSTOMER JWT) | 200 | `[{id, templateName, signedAt, hasPdfBlob, service:{}}]` |
+| `GET /consents/{id}/pdf` | verifyToken (CUSTOMER JWT) | 200 | PDF bytes |
+| `PUT /api/auth/me` | verifyToken (CUSTOMER JWT) | — | Updates name, email, password — **not** dob/gender/phone |
+| `GET /api/auth/me` | verifyToken (CUSTOMER JWT) | 200 | User-layer: name, email, role, profilePicture |
+| `GET /giftcards/storefront` | unguarded | — | Confirmed |
+| `POST /giftcards/:id/purchase/order` | unguarded | — | Confirmed |
+| `POST /giftcards/:id/purchase/confirm` | unguarded | — | Confirmed |
+
+### 🔴 One remaining gap — Android FCM push registration
+
+| Endpoint | Blocks | Notes |
+|----------|--------|-------|
+| `POST /portal/me/fcm-token` | Phase 9 FCM | `push.js` accepts only **Web Push (VAPID)** subscriptions `{endpoint, p256dh, auth}`. No Android device token (FCM) support anywhere in the backend. Needs a new endpoint. |
+| `DELETE /portal/me/fcm-token` | Phase 9 FCM | Same |
+
+### ⚠️ Security flag — loyalty/{patientId} not ownership-scoped
+`GET /loyalty/{patientId}` accepts any integer patientId. Verified that `loyalty/1` returns a DIFFERENT patient's (Shashank bankar's) data to our CUSTOMER JWT holder. Backend must add ownership check: `req.user.userId → Patient.userId === patientId`. The Android app only ever calls this with `EncryptedPrefsManager.getPatientId()` (never user-supplied), so the app is safe, but the backend has a data leak for malicious clients.
+
+### ⚠️ Profile edit scope — dob/gender/phone cannot be updated
+`PUT /api/auth/me` updates User-row fields only. Patient-row fields (dob, gender, phone) have no update endpoint. Profile edit screen will support name + email + password only.
+
+### ⚠️ Permission note — portal/products
+Requires portal permission `products.read`. Confirm with backend that this is in the default permission set for new patient registrations.
+
+### patientId storage strategy
+`GET /portal/me` returns `response.id` which is the **patientId** (not the userId from JWT). This is different from `userId` (44) vs `patientId` (608) in the staging test. `AuthRepositoryImpl` now calls `portal/me` after login and caches patientId in `EncryptedPrefsManager`. All routes using `patients/{patientId}/` must read from `encryptedPrefs.getPatientId()`.
 
 ---
 
@@ -236,13 +272,29 @@ These routes exist but use **staff JWT** (`verifyToken` + `req.user.tenantId`). 
 ---
 
 ## Phase 3 — Dashboard Feature
+✅ Phase 3 complete — 2026-06-04
 
 | File | Status |
 |------|--------|
-| `DashboardDto.kt` + mapper | ⬜ — compose from `portal/visits?upcoming=true` + `portal/me/wallet` + `portal/me/memberships` (no aggregator endpoint needed) |
-| `DashboardRepository.kt` + impl | ⬜ |
-| `GetDashboardUseCase.kt` + test | ⬜ (parallel calls; `wallet` + `memberships` still need backend wiring) |
-| `DashboardScreen.kt` + `DashboardViewModel.kt` | ⬜ |
+| `feature/dashboard/domain/model/Dashboard.kt` (Dashboard + UpcomingVisit) | ✅ |
+| `feature/dashboard/domain/repository/DashboardRepository.kt` | ✅ |
+| `feature/dashboard/data/repository/DashboardRepositoryImpl.kt` (parallel async; graceful degradation for blocked endpoints) | ✅ |
+| `feature/dashboard/domain/usecase/GetDashboardUseCase.kt` | ✅ |
+| `feature/dashboard/domain/usecase/GetDashboardUseCaseTest.kt` (4 cases, 4/4 passing) | ✅ |
+| `feature/dashboard/presentation/state/DashboardState.kt` (UiState + UiEvent) | ✅ |
+| `feature/dashboard/presentation/viewmodel/DashboardViewModel.kt` (DashboardNavEvent, Logout via LogoutUseCase) | ✅ |
+| `feature/dashboard/presentation/screen/DashboardScreen.kt` (greeting, next-visit card, 3 stat chips, 4 quick-actions) | ✅ |
+| `core/di/RepositoryModule.kt` — @Binds for DashboardRepository | ✅ |
+| `core/navigation/NavGraph.kt` — DashboardScreen wired with all nav events | ✅ |
+| `./gradlew assembleDebug` | ✅ BUILD SUCCESSFUL |
+| `./gradlew test` (GetDashboardUseCaseTest: 4/4) | ✅ 0 failures |
+
+### Phase 3 backend status
+| Endpoint | Status |
+|----------|--------|
+| `GET /portal/visits?upcoming=true` | ✅ WORKING — next-visit card populated |
+| `GET /portal/me/wallet` | 🔴 BLOCKED — wallet chip shows "—" until backend wired |
+| `GET /portal/me/memberships` | 🔴 BLOCKED — membership chip shows "0" until backend wired |
 
 ---
 
@@ -251,7 +303,8 @@ These routes exist but use **staff JWT** (`verifyToken` + `req.user.tenantId`). 
 ### Data layer
 | File | Status |
 |------|--------|
-| DTOs: `VisitDto`, `ServiceDto`, `LocationDto`, `SlotDto`, `AppointmentDto` | ✅ (created in Phase 1) |
+| `WellnessApiService.kt` — appointment URLs corrected to portal routes; `AppointmentListResponseDto`, `ProductDto`, `ProductCategoryDto`, `RescheduleAppointmentDto` added; `getPortalProducts()` + `getPortalProductCategories()` added; `getDashboard()` stub removed | ✅ |
+| `BookingDtos.kt` — `AppointmentListResponseDto`, `RescheduleAppointmentDto`, `ProductDto`, `ProductCategoryDto`, `ProductCategoryRefDto` added; `bookingType` field added to `BookAppointmentDto` | ✅ |
 | `CachedVisit` DAO | ✅ (created in Phase 1) |
 | `AppointmentRepositoryImpl.kt` | ⬜ |
 
@@ -259,18 +312,20 @@ These routes exist but use **staff JWT** (`verifyToken` + `req.user.tenantId`). 
 | File | Status |
 |------|--------|
 | `AppointmentRepository.kt` (interface) | ⬜ |
-| `GetAvailableSlotsUseCase.kt` + test | 🔴 BLOCKED — `GET /portal/slots` needs patient-auth wiring on backend |
-| `BookAppointmentUseCase.kt` + test | 🔴 BLOCKED — `POST /appointments/book` uses staff JWT; needs `POST /portal/appointments/book` |
-| `GetMyAppointmentsUseCase.kt` + test | 🔴 BLOCKED — `GET /appointments/my` uses staff JWT; needs `GET /portal/appointments/my` |
-| `CancelAppointmentUseCase.kt` + test | 🔴 BLOCKED — `POST /appointments/:id/cancel` uses staff JWT; needs patient-auth variant |
-| `GetVisitHistoryUseCase.kt` + test | ⬜ |
+| `GetMyAppointmentsUseCase.kt` + test | ⬜ — unblocked: `GET /portal/appointments?bucket=upcoming` |
+| `BookAppointmentUseCase.kt` + test | ⬜ — unblocked: `POST /portal/appointments/book` |
+| `CancelAppointmentUseCase.kt` + test | ⬜ — unblocked: `POST /portal/appointments/:id/cancel` |
+| `RescheduleAppointmentUseCase.kt` + test | ⬜ — unblocked: `PATCH /portal/appointments/:id/reschedule` |
+| `GetPortalProductsUseCase.kt` + test | ⬜ — unblocked: `GET /portal/products` (note: needs `products.read` permission) |
+| `GetVisitHistoryUseCase.kt` + test | ⬜ — unblocked: `GET /portal/visits` |
+| ~~GetAvailableSlotsUseCase~~ | 🗑 Removed — `GET /portal/slots` does not exist; booking uses date+time picker with server-side conflict validation |
 
 ### Presentation layer
 | File | Status |
 |------|--------|
-| `BookAppointmentScreen.kt` (4-step) + `BookAppointmentViewModel.kt` | 🔴 BLOCKED — services/locations/slots/book all need patient-auth backend routes |
-| `MyAppointmentsScreen.kt` + `MyAppointmentsViewModel.kt` | 🔴 BLOCKED — appointments/my + cancel need patient-auth backend routes |
-| `VisitHistoryScreen.kt` + `VisitHistoryViewModel.kt` | ⬜ |
+| `BookAppointmentScreen.kt` (3-step revised) + `BookAppointmentViewModel.kt` | ⬜ — Step 1: product grid (`portal/products`), Step 2: date + time picker, Step 3: reason + membership. Location step removed (not in booking body). |
+| `MyAppointmentsScreen.kt` + `MyAppointmentsViewModel.kt` | ⬜ — unblocked |
+| `VisitHistoryScreen.kt` + `VisitHistoryViewModel.kt` | ⬜ — unblocked |
 
 ---
 
@@ -299,8 +354,10 @@ These routes exist but use **staff JWT** (`verifyToken` + `req.user.tenantId`). 
 ### Phase 2 stubs (data + domain only — no screens yet)
 | File | Status |
 |------|--------|
-| `TreatmentPlanDto.kt` + mapper + Repository + UseCase | 🔴 BLOCKED — `GET /portal/me/treatment-plans` needs patient-auth wiring (reusable, see gap table) |
-| `ConsentFormDto.kt` + mapper + Repository + UseCase | 🔴 BLOCKED — `GET /portal/me/consents` needs patient-auth wiring (reusable, see gap table) |
+| `TreatmentPlanDto.kt` + `ConsentFormDto.kt` — added to `HealthDtos.kt` with real shapes | ✅ |
+| `WellnessApiService.kt` — `getTreatmentPlans(patientId)` + `getConsents(patientId)` + `getConsentPdf(id)` added | ✅ |
+| Mapper + Repository + UseCase for TreatmentPlan | ⬜ — unblocked: `GET /patients/{patientId}/treatment-plans` |
+| Mapper + Repository + UseCase for ConsentForm | ⬜ — unblocked: `GET /patients/{patientId}/consents` + `GET /consents/{id}/pdf` |
 
 ---
 
@@ -309,22 +366,23 @@ These routes exist but use **staff JWT** (`verifyToken` + `req.user.tenantId`). 
 ### Data layer
 | File | Status |
 |------|--------|
-| `MembershipDto.kt` + `MembershipPlanDto.kt` + mappers | ✅ (DTOs created in Phase 1, mappers ⬜) |
+| `MembershipDtos.kt` — `MembershipDto` updated to real API shape; `MembershipPlanDto` updated with `entitlements` field | ✅ |
+| `WellnessApiService.kt` — `getMyMemberships()` → `GET /appointments/my-memberships`; `getMembershipPlans()` confirmed working | ✅ |
 | `CachedMembership` entity + DAO | ✅ (created in Phase 1) |
-| `MembershipRepositoryImpl.kt` | 🔴 BLOCKED — `GET /portal/me/memberships` needs patient-auth wiring on backend |
+| `MembershipRepositoryImpl.kt` | ⬜ — unblocked |
 
 ### Domain layer
 | File | Status |
 |------|--------|
-| `MembershipRepository.kt` (interface) | ⬜ |
-| `GetMyMembershipsUseCase.kt` + test | 🔴 BLOCKED — backend wiring needed |
-| `GetMembershipPlansUseCase.kt` + test | 🔴 BLOCKED — `GET /membership-plans` uses staff JWT; needs `GET /portal/membership-plans` |
+| `MembershipRepository.kt` (interface) | ⬜ — unblocked |
+| `GetMyMembershipsUseCase.kt` + test | ⬜ — unblocked: `GET /appointments/my-memberships` |
+| `GetMembershipPlansUseCase.kt` + test | ⬜ — unblocked: `GET /membership-plans` |
 
 ### Presentation layer
 | File | Status |
 |------|--------|
-| `MembershipsScreen.kt` + `MembershipsViewModel.kt` | 🔴 BLOCKED |
-| `RedemptionHistorySheet.kt` | 🔴 BLOCKED |
+| `MembershipsScreen.kt` + `MembershipsViewModel.kt` | ⬜ — unblocked |
+| `RedemptionHistorySheet.kt` | ⬜ — unblocked |
 
 ---
 
@@ -333,13 +391,15 @@ These routes exist but use **staff JWT** (`verifyToken` + `req.user.tenantId`). 
 ### Data layer
 | File | Status |
 |------|--------|
-| `WalletDto.kt` + `GiftCardDto.kt` + mappers | ✅ (DTOs created in Phase 1, mappers ⬜) |
-| `WalletRepositoryImpl.kt` + `GiftCardRepositoryImpl.kt` | 🔴 BLOCKED — `GET /portal/me/wallet` needs patient-auth wiring on backend |
+| `WalletDtos.kt` — `MyTransactionsResponseDto`, `TransactionSummaryDto`, `TransactionDto` added | ✅ |
+| `GiftCardDto.kt` + mappers | ✅ (DTOs created in Phase 1, mappers ⬜) |
+| `WellnessApiService.kt` — `getMyTransactions()` added (`GET /api/wellness/my-transactions`) | ✅ |
+| `WalletRepositoryImpl.kt` + `GiftCardRepositoryImpl.kt` | ⬜ — unblocked |
 
 ### Domain layer
 | File | Status |
 |------|--------|
-| `GetWalletUseCase.kt` + test | 🔴 BLOCKED — backend wiring needed |
+| `GetMyTransactionsUseCase.kt` + test | ⬜ — unblocked: `GET /api/wellness/my-transactions` (verifyToken) |
 | `GetGiftCardStorefrontUseCase.kt` + test | ⬜ |
 | `InitiateGiftCardPurchaseUseCase.kt` + test | ⬜ |
 | `ConfirmGiftCardPurchaseUseCase.kt` + test | ⬜ |
@@ -347,7 +407,7 @@ These routes exist but use **staff JWT** (`verifyToken` + `req.user.tenantId`). 
 ### Presentation layer
 | File | Status |
 |------|--------|
-| `WalletScreen.kt` + `WalletViewModel.kt` | 🔴 BLOCKED — backend wiring needed |
+| `WalletScreen.kt` + `WalletViewModel.kt` | ⬜ — unblocked. Balance from `summary.walletBalance`. Timeline sorted newest-first with type icons (POS_SALE, WALLET, MEMBERSHIP, GIFTCARD, PAYMENT, SUBSCRIPTION). |
 | `GiftCardsScreen.kt` + `GiftCardsViewModel.kt` | ⬜ |
 | `GiftCardPurchaseSheet.kt` (Razorpay flow) | ⬜ |
 
@@ -358,9 +418,11 @@ These routes exist but use **staff JWT** (`verifyToken` + `req.user.tenantId`). 
 ### Profile
 | File | Status |
 |------|--------|
+| `ProfileDtos.kt` — `UpdateAuthProfileDto` + `AuthProfileResponseDto` added | ✅ |
+| `WellnessApiService.kt` — `getAuthProfile()` + `updateAuthProfile()` added (`/api/auth/me`) | ✅ |
 | `ProfileRepositoryImpl.kt` | ⬜ |
-| `GetProfileUseCase.kt` + test | ⬜ |
-| `UpdateProfileUseCase.kt` + test | 🔴 BLOCKED — `PUT /portal/me` needs patient-auth wiring on backend |
+| `GetProfileUseCase.kt` + test | ⬜ — uses `GET /portal/me` (phone, dob, gender) |
+| `UpdateProfileUseCase.kt` + test | ⬜ — unblocked: uses `PUT /api/auth/me` (name + email + password only; dob/gender/phone cannot be updated — no patient-row update endpoint exists) |
 | `RequestDsarExportUseCase.kt` + test | ⬜ |
 | `ProfileScreen.kt` + `ProfileViewModel.kt` | ⬜ |
 
@@ -452,3 +514,6 @@ These routes exist but use **staff JWT** (`verifyToken` + `req.user.tenantId`). 
 | 2026-06-03 | Session 3: Phase 2 Auth Feature complete. Fixed pre-existing bug in `core/util/DateUtil.kt` line 23 — `it` inside `getOrElse` referred to `Throwable` not outer iso string (variable shadowing). Named `isoStr` to fix. |
 | 2026-06-03 | Session 3: OtpVerifyViewModel reads phone from SavedStateHandle (passed via nav route argument). VerifyOtpUseCase returns PATIENT_NOT_FOUND on 404 → ViewModel emits NavigateToRegister. RegisterScreen shows stub banner; submit button permanently disabled until backend wires /portal/register. |
 | 2026-06-03 | Session 4: Auth migrated from phone+OTP to email+password. Uses `POST /api/auth/login` and `POST /api/auth/customer/register` (CUSTOMER userType). JWT Path B in verifyPatientToken resolves Patient row from userId. SplashViewModel now saves tenantId from branding response to DataStore; AuthRepositoryImpl reads it for scoped login/register calls. PhoneEntry, OtpVerify screens/VMs/states/UseCases deleted. LoginScreen replaces them. RegisterScreen now fully functional (no more stub). |
+| 2026-06-04 | Session 6: Phase 3 Dashboard complete. Composed from 3 parallel API calls (visits ✅, wallet 🔴, memberships 🔴). Blocked endpoints degrade gracefully (wallet "—", memberships "0"). DashboardViewModel injects LogoutUseCase directly for logout flow. Calendar.HOUR_OF_DAY used in Composable for time-of-day greeting (display logic only). wallet balance assumed in paise (CurrencyUtil.formatPaise). |
+| 2026-06-04 | Session 7 (part 1): Backend re-audit + WellnessApiService corrections. Appointment routes confirmed at `portal/appointments/*` with verifyPatientToken. 3 wrong URLs fixed, `getAvailableSlots()` / `getDashboard()` / `getServices()` / `getLocations()` removed, `getPortalProducts()` + `getPortalProductCategories()` + `rescheduleAppointment()` added. `AppointmentListResponseDto` wrapper added (`{bucket, count, appointments}`). Booking flow revised: location step removed, slot grid → date+time picker. |
+| 2026-06-04 | Session 7 (part 2): Frontend audit + live staging API test with CUSTOMER JWT (mohitreddy@gimpmail.com, patientId=608). Found ALL previously blocked features now have working endpoints. `GET /appointments/my-memberships` (200) → memberships. `GET /loyalty/{patientId}` (200) → loyalty. `GET /patients/{patientId}/treatment-plans` (200) → treatment plans. `GET /patients/{patientId}/consents` (200) → consent forms. `GET /consents/{id}/pdf` (200) → PDF. `GET /patients/{patientId}/wallet` (200) → dedicated wallet view. Only remaining gap: Android FCM registration (`push.js` is WebPush/VAPID only). CRITICAL: `loyalty/{patientId}` is not ownership-scoped — backend security issue flagged. `patientId` (≠ userId) must be fetched from `portal/me` and cached in `EncryptedPrefsManager`. `AuthRepositoryImpl` updated to call `portal/me` after login. `MembershipDtos.kt`, `HealthDtos.kt`, `WalletDtos.kt` updated with real API shapes. `LoyaltyDtos.kt` created. `WellnessApiService.kt` rewritten with all endpoints. Build ✅. |
