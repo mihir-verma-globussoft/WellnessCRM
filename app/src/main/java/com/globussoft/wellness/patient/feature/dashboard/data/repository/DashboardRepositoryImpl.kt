@@ -26,10 +26,15 @@ class DashboardRepositoryImpl @Inject constructor(
         val membershipsDeferred = async {
             runCatching { api.getMyMemberships().body() }.getOrNull()
         }
+        val loyaltyDeferred = async {
+            val patientId = encryptedPrefs.getPatientId() ?: return@async null
+            runCatching { api.getLoyalty(patientId).body() }.getOrNull()
+        }
 
         val visits = visitsDeferred.await()
         val txSummary = transactionsDeferred.await()
         val memberships = membershipsDeferred.await()
+        val loyalty = loyaltyDeferred.await()
 
         val nextVisit = visits?.firstOrNull()?.let { v ->
             UpcomingVisit(
@@ -47,7 +52,7 @@ class DashboardRepositoryImpl @Inject constructor(
             walletBalance = txSummary?.summary?.walletBalance?.toLong(),
             walletCurrency = txSummary?.currency,
             activeMembershipCount = memberships?.count { it.status == "active" } ?: 0,
-            loyaltyPoints = null,
+            loyaltyPoints = loyalty?.balance,
         )
     }
 }

@@ -150,8 +150,10 @@ private fun DashboardContent(
             walletBalance = state.dashboard?.walletBalance,
             walletCurrency = state.dashboard?.walletCurrency,
             membershipCount = state.dashboard?.activeMembershipCount ?: 0,
+            loyaltyPoints = state.dashboard?.loyaltyPoints,
             onWalletClick = { onEvent(DashboardUiEvent.NavigateToWallet) },
             onMembershipsClick = { onEvent(DashboardUiEvent.NavigateToMemberships) },
+            onLoyaltyClick = { onEvent(DashboardUiEvent.NavigateToLoyalty) },
         )
 
         Text(
@@ -276,8 +278,10 @@ private fun StatRow(
     walletBalance: Long?,
     walletCurrency: String?,
     membershipCount: Int,
+    loyaltyPoints: Int?,
     onWalletClick: () -> Unit,
     onMembershipsClick: () -> Unit,
+    onLoyaltyClick: () -> Unit,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -302,9 +306,9 @@ private fun StatRow(
         StatChip(
             modifier = Modifier.weight(1f),
             label = "Loyalty",
-            value = "—",
+            value = if (loyaltyPoints != null) "$loyaltyPoints pts" else "—",
             icon = Icons.Default.Star,
-            onClick = {},
+            onClick = onLoyaltyClick,
         )
     }
 }

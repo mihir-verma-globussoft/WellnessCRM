@@ -7,6 +7,8 @@ object CurrencyUtil {
 
     private val indianLocale = Locale("en", "IN")
 
+    fun formatPaise(paise: Double, currency: String = "INR"): String = formatPaise(paise.toLong(), currency)
+
     fun formatPaise(paise: Long, currency: String = "INR"): String {
         val amount = paise / 100.0
         return if (currency == "INR") {

@@ -1,7 +1,64 @@
 # WellnessCRM Patient App — Implementation Status
 
-Last updated: 2026-06-04 (session 13 — Phase 11 Release Prep: ProGuard rules, cert pins, Room migration, TENANT_SLUG, signing config)
-Current phase: Phase 11 — Release Prep ✅ COMPLETE (Play Store upload pending manual keystore)
+Last updated: 2026-06-04 (session 16 — display bug fixes, RBAC re-test)
+Current phase: All 17 screens implemented and live-tested ✅
+
+## Session 15 — Live Device Test Results (2026-06-04)
+
+Device: Redmi 2406ERN9CI, Android 16 | Build: debug APK (crm-staging.globusdemos.com, tenant=testing)
+Test account: qatest@robot-mail.com | patientId=609 | tenantId=2
+
+### Bugs found and fixed during session 15 live test
+
+| # | Bug | Fix |
+|---|-----|-----|
+| 1 | **PrescriptionDto.drugs crash** — `drugs: List<DrugDto>` crashed at runtime because backend returns drugs as JSON-encoded string `"[{...}]"`, not an array | Changed `drugs: String` in DTO, added nested `PrescriptionVisitDto`/`PrescriptionDoctorDto`, parse drugs via `org.json.JSONArray` in mapper |
+| 2 | **Loyalty chip dead tap** — `DashboardNavEvent.ToLoyalty` and `DashboardUiEvent.NavigateToLoyalty` missing; chip had hardcoded `onClick = {}` | Added missing event + nav event, wired `onLoyaltyClick` in ViewModel, DashboardScreen, and NavGraph |
+| 3 | **Treatment Plans / Consent Forms unreachable** — `composable()` entries had no `deepLinks` so couldn't be tested | Added `wellnesspatient://screen/treatment_plans` and `wellnesspatient://screen/consent_forms` deep links |
+
+### Session 16 — Display bug fixes (2026-06-04)
+
+All 4 cosmetic issues fixed and verified on device:
+
+| # | Fix | Files changed | Verified |
+|---|-----|---------------|---------|
+| 1 | Profile DOB: `1991-02-02T00:00:00.000Z` → `2 Feb 1991` | `ProfileScreen.kt` — added `DateUtil.toDisplayDate()` | ✅ |
+| 2 | Profile Gender: `F` → `Female` | `ProfileScreen.kt` — `when(gender.uppercase())` expansion | ✅ |
+| 3 | Wallet balance/txn: `₹500.00` → `5.00 USD` | `CurrencyUtil.kt` — new `formatPaise(Double)` overload; `WalletScreen.kt` — pass `currency` to row | ✅ |
+| 4 | Dashboard Loyalty chip: `—` → `3196 pts` | `DashboardRepositoryImpl.kt` — parallel `getLoyalty()` call; `DashboardScreen.kt` — `loyaltyPoints` wired to StatRow | ✅ |
+
+**RBAC status (re-tested 2026-06-04):** `GET /portal/products` still returns **403** for patientId=609. The `products.read` permission is not assigned to this test patient on the staging backend. Book Appointment step 1 (services grid) will show an error screen for this account until the backend grants the permission.
+
+### Display issues (non-crash, cosmetic)
+
+| # | Issue | Status |
+|---|-------|--------|
+| All 4 session-15 cosmetic issues | Fixed in session 16 | ✅ |
+
+### Screen test results (session 15)
+
+| Screen | Result | Notes |
+|--------|--------|-------|
+| Splash + notification permission | ✅ Pass | Teal logo, "Wellness", spinner, permission dialog |
+| Login screen | ✅ Pass | Email/password fields, Sign In button |
+| Login → Dashboard | ✅ Pass | JWT stored, dashboard loads with Maria's data |
+| Dashboard | ✅ Pass | Greeting, next appointment (5 Jun), wallet/members chips, quick actions |
+| Notifications | ✅ Pass | "No notifications yet" empty state |
+| Prescriptions | ✅ Pass (after fix) | 4 prescriptions, service+doctor+date+drug count displayed |
+| Prescription PDF | ✅ Pass | PdfRenderer renders prescription #100 correctly |
+| Wallet | ✅ Pass | ₹500.00 balance, 1 gift card transaction |
+| Memberships | ✅ Pass | Diamond Package, Active, valid until 3 Jun 2027 |
+| Loyalty | ✅ Pass (after fix) | 3196 pts, earned-this-month chip, 4 transaction rows |
+| Gift Cards | ✅ Pass | Fever Care Gift Card, ₹900.00 / worth ₹1000.00 |
+| Profile | ✅ Pass | Name, phone, email, dob (raw), gender (raw), DSAR, logout |
+| My Appointments — Upcoming | ✅ Pass | "No upcoming appointments" (expected; 0 from /portal/appointments) |
+| My Appointments — Past | ✅ Pass | "No past appointments" |
+| Visit History | ✅ Pass | 6 visits grouped by June 2026 with service, doctor, amount |
+| Book Appointment | ⚠️ Backend | 403 PORTAL_RBAC_DENIED on /portal/products (products.read not assigned) |
+| Treatment Plans | ✅ Pass | 2 plans, progress bars, Active badges (via deep link) |
+| Consent Forms | ✅ Pass | 3 forms with PDF icons (via deep link) |
+| Consent Form PDF | ✅ Pass | PdfRenderer renders consent form with patient signature |
+| Token persistence (relaunch) | ✅ Pass | Stored JWT → skip login on relaunch |
 
 ## Session 9 — Live Device Test Results (2026-06-04)
 
@@ -399,7 +456,29 @@ Requires portal permission `products.read`. Confirm with backend that this is in
 |------|--------|
 | `TreatmentPlanDto.kt` + `ConsentFormDto.kt` — real shapes confirmed | ✅ |
 | API endpoints added to WellnessApiService | ✅ |
-| Mapper + Repository + UseCase for TreatmentPlan + ConsentForm | ⬜ Phase 2 |
+| `TreatmentPlan.kt` domain model | ✅ |
+| `TreatmentPlanRepository.kt` interface | ✅ |
+| `TreatmentPlanRepositoryImpl.kt` | ✅ |
+| `HealthMappers.kt` — `TreatmentPlanDto.toDomain()` + `ConsentFormDto.toDomain()` added | ✅ |
+| `GetTreatmentPlansUseCase.kt` + test (4 cases) | ✅ |
+| `TreatmentPlansViewModel.kt` | ✅ |
+| `TreatmentPlansScreen.kt` | ✅ |
+| `ConsentForm.kt` domain model | ✅ |
+| `ConsentFormRepository.kt` interface | ✅ |
+| `ConsentFormRepositoryImpl.kt` | ✅ |
+| `GetConsentFormsUseCase.kt` + test (4 cases) | ✅ |
+| `GetConsentFormPdfUseCase.kt` | ✅ |
+| `ConsentFormsViewModel.kt` + `ConsentFormPdfViewModel.kt` | ✅ |
+| `ConsentFormsScreen.kt` + `ConsentFormPdfScreen.kt` | ✅ |
+| `Screen.ConsentFormPdf` route added | ✅ |
+| `Loyalty.kt` domain model + `LoyaltyRepository.kt` interface | ✅ |
+| `LoyaltyMappers.kt` + `LoyaltyRepositoryImpl.kt` | ✅ |
+| `GetLoyaltyUseCase.kt` + test (4 cases) | ✅ |
+| `LoyaltyViewModel.kt` + `LoyaltyScreen.kt` | ✅ |
+| `RepositoryModule.kt` — @Binds for TreatmentPlan, ConsentForm, Loyalty | ✅ |
+| `NavGraph.kt` — TreatmentPlans, ConsentForms, ConsentFormPdf, Loyalty composables wired | ✅ |
+| `./gradlew assembleDebug` | ✅ BUILD SUCCESSFUL |
+| `./gradlew test` | ✅ 150 tests, 0 failures |
 
 ---
 
@@ -550,9 +629,9 @@ Requires portal permission `products.read`. Confirm with backend that this is in
 
 | Feature | Status | Dependency |
 |---------|--------|-----------|
-| Screen 10 — Treatment Plans (UI) | ⬜ | `GET /portal/me/treatment-plans` backend endpoint |
-| Screen 11 — Consent Forms (UI) | ⬜ | `GET /portal/me/consents` backend endpoint |
-| Screen 14 — Loyalty & Referrals (UI) | ⬜ | `GET /portal/me/loyalty` backend endpoint |
+| Screen 10 — Treatment Plans (UI) | ✅ | `GET /patients/{patientId}/treatment-plans` ✅ confirmed working |
+| Screen 11 — Consent Forms (UI) | ✅ | `GET /patients/{patientId}/consents` + `GET /consents/{id}/pdf` ✅ confirmed working |
+| Screen 14 — Loyalty & Referrals (UI) | ✅ | `GET /loyalty/{patientId}` ✅ confirmed working (⚠️ backend ownership-scope fix still pending) |
 | Gift card gifting to another patient | ⬜ | Patient phone search API |
 | Biometric login | ⬜ | Android BiometricPrompt |
 | Hindi localization | ⬜ | `strings.xml` translations |

@@ -2,6 +2,12 @@ package com.globussoft.wellness.patient.core.di
 
 import com.globussoft.wellness.patient.feature.auth.data.repository.AuthRepositoryImpl
 import com.globussoft.wellness.patient.feature.auth.domain.repository.AuthRepository
+import com.globussoft.wellness.patient.feature.health.data.repository.ConsentFormRepositoryImpl
+import com.globussoft.wellness.patient.feature.health.data.repository.TreatmentPlanRepositoryImpl
+import com.globussoft.wellness.patient.feature.health.domain.repository.ConsentFormRepository
+import com.globussoft.wellness.patient.feature.health.domain.repository.TreatmentPlanRepository
+import com.globussoft.wellness.patient.feature.loyalty.data.repository.LoyaltyRepositoryImpl
+import com.globussoft.wellness.patient.feature.loyalty.domain.repository.LoyaltyRepository
 import com.globussoft.wellness.patient.feature.booking.data.repository.AppointmentRepositoryImpl
 import com.globussoft.wellness.patient.feature.booking.domain.repository.AppointmentRepository
 import com.globussoft.wellness.patient.feature.dashboard.data.repository.DashboardRepositoryImpl
@@ -54,4 +60,13 @@ abstract class RepositoryModule {
 
     @Binds @Singleton
     abstract fun bindNotificationRepository(impl: NotificationRepositoryImpl): NotificationRepository
+
+    @Binds @Singleton
+    abstract fun bindTreatmentPlanRepository(impl: TreatmentPlanRepositoryImpl): TreatmentPlanRepository
+
+    @Binds @Singleton
+    abstract fun bindConsentFormRepository(impl: ConsentFormRepositoryImpl): ConsentFormRepository
+
+    @Binds @Singleton
+    abstract fun bindLoyaltyRepository(impl: LoyaltyRepositoryImpl): LoyaltyRepository
 }

@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import com.globussoft.wellness.patient.core.util.DateUtil
 import com.globussoft.wellness.patient.feature.profile.presentation.state.ProfileUiEvent
 import com.globussoft.wellness.patient.feature.profile.presentation.state.ProfileUiState
 
@@ -76,8 +77,12 @@ private fun ViewProfileContent(state: ProfileUiState, onEvent: (ProfileUiEvent) 
                 ProfileField("Name", profile.name)
                 if (!profile.phone.isNullOrBlank()) ProfileField("Phone", profile.phone)
                 if (!profile.email.isNullOrBlank()) ProfileField("Email", profile.email)
-                if (!profile.dob.isNullOrBlank()) ProfileField("Date of birth", profile.dob)
-                if (!profile.gender.isNullOrBlank()) ProfileField("Gender", profile.gender)
+                if (!profile.dob.isNullOrBlank()) ProfileField("Date of birth", DateUtil.toDisplayDate(profile.dob))
+                if (!profile.gender.isNullOrBlank()) ProfileField("Gender", when (profile.gender.uppercase()) {
+                    "F" -> "Female"
+                    "M" -> "Male"
+                    else -> profile.gender
+                })
             }
         }
 

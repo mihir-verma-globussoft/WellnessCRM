@@ -52,6 +52,18 @@ import com.globussoft.wellness.patient.feature.wallet.presentation.screen.GiftCa
 import com.globussoft.wellness.patient.feature.wallet.presentation.screen.WalletScreen
 import com.globussoft.wellness.patient.feature.wallet.presentation.viewmodel.GiftCardsNavEvent
 import com.globussoft.wellness.patient.feature.wallet.presentation.viewmodel.GiftCardsViewModel
+import com.globussoft.wellness.patient.feature.health.presentation.screen.ConsentFormPdfScreen
+import com.globussoft.wellness.patient.feature.health.presentation.screen.ConsentFormsScreen
+import com.globussoft.wellness.patient.feature.health.presentation.screen.TreatmentPlansScreen
+import com.globussoft.wellness.patient.feature.health.presentation.viewmodel.ConsentFormPdfNavEvent
+import com.globussoft.wellness.patient.feature.health.presentation.viewmodel.ConsentFormPdfViewModel
+import com.globussoft.wellness.patient.feature.health.presentation.viewmodel.ConsentFormsNavEvent
+import com.globussoft.wellness.patient.feature.health.presentation.viewmodel.ConsentFormsViewModel
+import com.globussoft.wellness.patient.feature.health.presentation.viewmodel.TreatmentPlansNavEvent
+import com.globussoft.wellness.patient.feature.health.presentation.viewmodel.TreatmentPlansViewModel
+import com.globussoft.wellness.patient.feature.loyalty.presentation.screen.LoyaltyScreen
+import com.globussoft.wellness.patient.feature.loyalty.presentation.viewmodel.LoyaltyNavEvent
+import com.globussoft.wellness.patient.feature.loyalty.presentation.viewmodel.LoyaltyViewModel
 import com.globussoft.wellness.patient.feature.wallet.presentation.viewmodel.WalletNavEvent
 import com.globussoft.wellness.patient.feature.wallet.presentation.viewmodel.WalletViewModel
 
@@ -140,6 +152,7 @@ fun WellnessNavGraph(
                         DashboardNavEvent.ToProfile -> navController.navigate(Screen.Profile.route)
                         DashboardNavEvent.ToWallet -> navController.navigate(Screen.Wallet.route)
                         DashboardNavEvent.ToMemberships -> navController.navigate(Screen.Memberships.route)
+                        DashboardNavEvent.ToLoyalty -> navController.navigate(Screen.Loyalty.route)
                         DashboardNavEvent.ToNotifications -> navController.navigate(Screen.Notifications.route)
                         DashboardNavEvent.ToGiftCards -> navController.navigate(Screen.GiftCards.route)
                         DashboardNavEvent.ToLogin -> navController.navigate(Screen.Login.route) {
@@ -330,9 +343,71 @@ fun WellnessNavGraph(
             NotificationInboxScreen(state = state, onEvent = vm::onEvent)
         }
 
-        // ── Phase 2 placeholders ──────────────────────────────────────────────
-        composable(Screen.TreatmentPlans.route) { /* Phase 2 */ }
-        composable(Screen.ConsentForms.route) { /* Phase 2 */ }
-        composable(Screen.Loyalty.route) { /* Phase 2 */ }
+        // ── Treatment Plans ───────────────────────────────────────────────────
+        composable(
+            route = Screen.TreatmentPlans.route,
+            deepLinks = listOf(navDeepLink { uriPattern = "wellnesspatient://screen/treatment_plans" }),
+        ) {
+            val vm: TreatmentPlansViewModel = hiltViewModel()
+            val state by vm.uiState.collectAsStateWithLifecycle()
+            LaunchedEffect(Unit) {
+                vm.navEvent.collect { event ->
+                    when (event) {
+                        TreatmentPlansNavEvent.Back -> navController.popBackStack()
+                    }
+                }
+            }
+            TreatmentPlansScreen(state = state, onEvent = vm::onEvent)
+        }
+
+        // ── Consent Forms ─────────────────────────────────────────────────────
+        composable(
+            route = Screen.ConsentForms.route,
+            deepLinks = listOf(navDeepLink { uriPattern = "wellnesspatient://screen/consent_forms" }),
+        ) {
+            val vm: ConsentFormsViewModel = hiltViewModel()
+            val state by vm.uiState.collectAsStateWithLifecycle()
+            LaunchedEffect(Unit) {
+                vm.navEvent.collect { event ->
+                    when (event) {
+                        is ConsentFormsNavEvent.ToPdf -> navController.navigate(
+                            Screen.ConsentFormPdf.createRoute(event.consentId)
+                        )
+                        ConsentFormsNavEvent.Back -> navController.popBackStack()
+                    }
+                }
+            }
+            ConsentFormsScreen(state = state, onEvent = vm::onEvent)
+        }
+
+        composable(Screen.ConsentFormPdf.route) {
+            val vm: ConsentFormPdfViewModel = hiltViewModel()
+            val state by vm.uiState.collectAsStateWithLifecycle()
+            LaunchedEffect(Unit) {
+                vm.navEvent.collect { event ->
+                    when (event) {
+                        ConsentFormPdfNavEvent.Back -> navController.popBackStack()
+                    }
+                }
+            }
+            ConsentFormPdfScreen(state = state, onEvent = vm::onEvent)
+        }
+
+        // ── Loyalty & Referrals ───────────────────────────────────────────────
+        composable(
+            route = Screen.Loyalty.route,
+            deepLinks = listOf(navDeepLink { uriPattern = "wellnesspatient://screen/loyalty" }),
+        ) {
+            val vm: LoyaltyViewModel = hiltViewModel()
+            val state by vm.uiState.collectAsStateWithLifecycle()
+            LaunchedEffect(Unit) {
+                vm.navEvent.collect { event ->
+                    when (event) {
+                        LoyaltyNavEvent.Back -> navController.popBackStack()
+                    }
+                }
+            }
+            LoyaltyScreen(state = state, onEvent = vm::onEvent)
+        }
     }
 }

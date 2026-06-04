@@ -2,17 +2,38 @@ package com.globussoft.wellness.patient.feature.health.data.remote.dto
 
 import com.squareup.moshi.JsonClass
 
+// GET /portal/prescriptions — backend stores drugs as a JSON-encoded string, not an array.
+// visit/doctor are nested objects returned by the API.
 @JsonClass(generateAdapter = true)
 data class PrescriptionDto(
     val id: Int,
     val visitId: Int?,
-    val visitDate: String?,
-    val doctorName: String?,
-    val serviceName: String?,
-    val drugs: List<DrugDto>,
+    val drugs: String,
+    val instructions: String?,
+    val pdfUrl: String?,
+    val visit: PrescriptionVisitDto?,
+    val doctor: PrescriptionDoctorDto?,
+    val createdAt: String?,
 )
 
 @JsonClass(generateAdapter = true)
+data class PrescriptionVisitDto(
+    val id: Int,
+    val visitDate: String?,
+    val service: PrescriptionServiceDto?,
+)
+
+@JsonClass(generateAdapter = true)
+data class PrescriptionServiceDto(
+    val name: String,
+)
+
+@JsonClass(generateAdapter = true)
+data class PrescriptionDoctorDto(
+    val id: Int,
+    val name: String?,
+)
+
 data class DrugDto(
     val name: String,
     val dosage: String?,

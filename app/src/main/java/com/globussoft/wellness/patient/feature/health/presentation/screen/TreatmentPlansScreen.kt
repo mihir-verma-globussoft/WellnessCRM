@@ -1,0 +1,188 @@
+package com.globussoft.wellness.patient.feature.health.presentation.screen
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SuggestionChip
+import androidx.compose.material3.SuggestionChipDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import com.globussoft.wellness.patient.core.util.DateUtil
+import com.globussoft.wellness.patient.feature.health.domain.model.TreatmentPlan
+import com.globussoft.wellness.patient.feature.health.presentation.state.TreatmentPlansUiEvent
+import com.globussoft.wellness.patient.feature.health.presentation.state.TreatmentPlansUiState
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TreatmentPlansScreen(
+    state: TreatmentPlansUiState,
+    onEvent: (TreatmentPlansUiEvent) -> Unit,
+) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("My Treatment Plans") },
+                navigationIcon = {
+                    IconButton(onClick = { onEvent(TreatmentPlansUiEvent.NavigateBack) }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+            )
+        },
+    ) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
+        ) {
+            when {
+                state.isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                state.error != null -> Column(
+                    modifier = Modifier.align(Alignment.Center),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(state.error, color = MaterialTheme.colorScheme.error)
+                    Spacer(Modifier.height(12.dp))
+                    Button(onClick = { onEvent(TreatmentPlansUiEvent.Refresh) }) { Text("Retry") }
+                }
+                state.plans.isEmpty() -> Text(
+                    text = "No treatment plans found",
+                    modifier = Modifier.align(Alignment.Center),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                else -> LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    items(state.plans, key = { it.id }) { plan ->
+                        TreatmentPlanCard(plan)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TreatmentPlanCard(plan: TreatmentPlan) {
+    val progress = if (plan.totalSessions > 0) {
+        plan.completedSessions.toFloat() / plan.totalSessions.toFloat()
+    } else 0f
+
+    val statusColor = when (plan.status.lowercase()) {
+        "active" -> Color(0xFF265855)
+        "completed" -> Color(0xFF2E7D32)
+        "paused" -> Color(0xFFE65100)
+        else -> MaterialTheme.colorScheme.outline
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = plan.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.weight(1f),
+                )
+                SuggestionChip(
+                    onClick = {},
+                    label = {
+                        Text(
+                            plan.status.replaceFirstChar { it.uppercase() },
+                            style = MaterialTheme.typography.labelSmall,
+                        )
+                    },
+                    colors = SuggestionChipDefaults.suggestionChipColors(
+                        containerColor = statusColor.copy(alpha = 0.12f),
+                        labelColor = statusColor,
+                    ),
+                )
+            }
+
+            if (plan.serviceName != null) {
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = plan.serviceName + if (plan.serviceCategory != null) " · ${plan.serviceCategory}" else "",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    text = "Sessions",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = "${plan.completedSessions} / ${plan.totalSessions}",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Medium,
+                )
+            }
+            Spacer(Modifier.height(4.dp))
+            LinearProgressIndicator(
+                progress = { progress },
+                modifier = Modifier.fillMaxWidth(),
+                color = Color(0xFF265855),
+            )
+
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = "Started: ${DateUtil.toDisplayDate(plan.startedAt)}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (plan.nextDueAt != null) {
+                Text(
+                    text = "Next due: ${DateUtil.toDisplayDate(plan.nextDueAt)}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}

@@ -58,14 +58,14 @@ fun WalletScreen(
                     Text(state.error, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Button(onClick = { onEvent(WalletUiEvent.Refresh) }) { Text("Retry") }
                 }
-                state.wallet != null -> WalletContent(wallet = state.wallet)
+                state.wallet != null -> WalletContent(wallet = state.wallet, currency = state.wallet.currency)
             }
         }
     }
 }
 
 @Composable
-private fun WalletContent(wallet: WalletSummary) {
+private fun WalletContent(wallet: WalletSummary, currency: String) {
     LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
             Card(
@@ -77,7 +77,7 @@ private fun WalletContent(wallet: WalletSummary) {
                     Text("Balance", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = CurrencyUtil.formatRupees(wallet.balance),
+                        text = CurrencyUtil.formatPaise(wallet.balance, currency),
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -96,14 +96,14 @@ private fun WalletContent(wallet: WalletSummary) {
             }
         } else {
             items(wallet.transactions.sortedByDescending { it.date }) { txn ->
-                TransactionRow(transaction = txn)
+                TransactionRow(transaction = txn, currency = currency)
             }
         }
     }
 }
 
 @Composable
-private fun TransactionRow(transaction: Transaction) {
+private fun TransactionRow(transaction: Transaction, currency: String) {
     Card(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -125,7 +125,7 @@ private fun TransactionRow(transaction: Transaction) {
                 Text(DateUtil.toDisplayDate(transaction.date), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Text(
-                text = "${if (isCredit) "+" else "-"}${CurrencyUtil.formatRupees(transaction.amount)}",
+                text = "${if (isCredit) "+" else "-"}${CurrencyUtil.formatPaise(transaction.amount, currency)}",
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = if (isCredit) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,

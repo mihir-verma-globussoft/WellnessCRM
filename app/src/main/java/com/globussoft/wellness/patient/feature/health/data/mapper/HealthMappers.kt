@@ -2,27 +2,39 @@ package com.globussoft.wellness.patient.feature.health.data.mapper
 
 import com.globussoft.wellness.patient.core.util.DateUtil
 import com.globussoft.wellness.patient.feature.health.data.local.entity.CachedPrescription
+import com.globussoft.wellness.patient.feature.health.data.remote.dto.ConsentFormDto
 import com.globussoft.wellness.patient.feature.health.data.remote.dto.DrugDto
 import com.globussoft.wellness.patient.feature.health.data.remote.dto.PrescriptionDto
+import com.globussoft.wellness.patient.feature.health.data.remote.dto.TreatmentPlanDto
+import com.globussoft.wellness.patient.feature.health.domain.model.ConsentForm
 import com.globussoft.wellness.patient.feature.health.domain.model.Drug
 import com.globussoft.wellness.patient.feature.health.domain.model.Prescription
+import com.globussoft.wellness.patient.feature.health.domain.model.TreatmentPlan
 
 fun PrescriptionDto.toDomain() = Prescription(
     id = id,
     visitId = visitId,
-    visitDate = visitDate,
-    doctorName = doctorName,
-    serviceName = serviceName,
-    drugs = drugs.map { it.toDomain() },
+    visitDate = visit?.visitDate,
+    doctorName = doctor?.name,
+    serviceName = visit?.service?.name,
+    drugs = parseDrugsJson(drugs),
 )
 
-fun DrugDto.toDomain() = Drug(
-    name = name,
-    dosage = dosage,
-    frequency = frequency,
-    duration = duration,
-    instructions = instructions,
-)
+private fun parseDrugsJson(json: String): List<Drug> = try {
+    val arr = org.json.JSONArray(json)
+    (0 until arr.length()).map { i ->
+        val obj = arr.getJSONObject(i)
+        Drug(
+            name = obj.optString("name"),
+            dosage = obj.optString("dosage").ifEmpty { null },
+            frequency = obj.optString("frequency").ifEmpty { null },
+            duration = obj.optString("duration").ifEmpty { null },
+            instructions = obj.optString("instructions").ifEmpty { null },
+        )
+    }
+} catch (_: Exception) {
+    emptyList()
+}
 
 fun CachedPrescription.toDomain() = Prescription(
     id = id,
@@ -45,4 +57,25 @@ fun Prescription.toEntity() = CachedPrescription(
     pdfBytes = pdfBytes,
     pdfCachedAt = pdfCachedAt,
     cachedAt = System.currentTimeMillis(),
+)
+
+fun TreatmentPlanDto.toDomain() = TreatmentPlan(
+    id = id,
+    name = name,
+    totalSessions = totalSessions,
+    completedSessions = completedSessions,
+    startedAt = startedAt,
+    nextDueAt = nextDueAt,
+    status = status,
+    totalPrice = totalPrice,
+    serviceName = service?.name,
+    serviceCategory = service?.category,
+)
+
+fun ConsentFormDto.toDomain() = ConsentForm(
+    id = id,
+    templateName = templateName,
+    signedAt = signedAt,
+    hasPdfBlob = hasPdfBlob,
+    serviceName = service?.name,
 )
