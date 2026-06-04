@@ -1,19 +1,46 @@
 package com.globussoft.wellness.patient.feature.booking.presentation.screen
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.globussoft.wellness.patient.core.ui.ErrorState
+import com.globussoft.wellness.patient.core.ui.StatusChip
+import com.globussoft.wellness.patient.core.ui.WellnessCard
 import com.globussoft.wellness.patient.core.util.DateUtil
 import com.globussoft.wellness.patient.feature.booking.domain.model.Appointment
 import com.globussoft.wellness.patient.feature.booking.presentation.state.MyAppointmentsUiEvent
@@ -60,7 +87,12 @@ fun MyAppointmentsScreen(
                 state.isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
                 }
-                state.error != null -> ErrorRetry(message = state.error, onRetry = { onEvent(MyAppointmentsUiEvent.Refresh) })
+                state.error != null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    ErrorState(
+                        message = state.error,
+                        onRetry = { onEvent(MyAppointmentsUiEvent.Refresh) },
+                    )
+                }
                 else -> {
                     val list = if (selectedTab == 0) state.upcoming else state.past
                     if (list.isEmpty()) {
@@ -99,10 +131,7 @@ private fun AppointmentCard(
     showCancel: Boolean,
     onCancel: () -> Unit,
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.medium,
-    ) {
+    WellnessCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -123,7 +152,7 @@ private fun AppointmentCard(
                         )
                     }
                 }
-                StatusBadge(status = appointment.status)
+                StatusChip(status = appointment.status)
             }
             Spacer(modifier = Modifier.height(8.dp))
             Text(
@@ -144,6 +173,7 @@ private fun AppointmentCard(
                     onClick = onCancel,
                     enabled = !isCancelling,
                     modifier = Modifier.align(Alignment.End),
+                    shape = MaterialTheme.shapes.extraLarge,
                 ) {
                     if (isCancelling) {
                         CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
@@ -152,36 +182,6 @@ private fun AppointmentCard(
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun StatusBadge(status: String) {
-    val color = when (status.lowercase()) {
-        "booked" -> MaterialTheme.colorScheme.primary
-        "arrived", "checked-in" -> MaterialTheme.colorScheme.tertiary
-        "in-treatment" -> MaterialTheme.colorScheme.secondary
-        "cancelled" -> MaterialTheme.colorScheme.error
-        else -> MaterialTheme.colorScheme.outline
-    }
-    Surface(shape = MaterialTheme.shapes.extraSmall, color = color.copy(alpha = 0.15f)) {
-        Text(
-            text = status.replaceFirstChar { it.uppercase() },
-            style = MaterialTheme.typography.labelSmall,
-            color = color,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-        )
-    }
-}
-
-@Composable
-private fun ErrorRetry(message: String, onRetry: () -> Unit) {
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Icon(Icons.Default.CloudOff, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(48.dp))
-            Text(text = message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Button(onClick = onRetry) { Text("Try again") }
         }
     }
 }

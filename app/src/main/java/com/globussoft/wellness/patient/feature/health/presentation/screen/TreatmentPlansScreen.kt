@@ -14,8 +14,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -23,16 +21,15 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SuggestionChip
-import androidx.compose.material3.SuggestionChipDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.globussoft.wellness.patient.core.ui.StatusChip
+import com.globussoft.wellness.patient.core.ui.WellnessCard
 import com.globussoft.wellness.patient.core.util.DateUtil
 import com.globussoft.wellness.patient.feature.health.domain.model.TreatmentPlan
 import com.globussoft.wellness.patient.feature.health.presentation.state.TreatmentPlansUiEvent
@@ -55,6 +52,7 @@ fun TreatmentPlansScreen(
                 },
             )
         },
+        containerColor = MaterialTheme.colorScheme.background,
     ) { innerPadding ->
         Box(
             modifier = Modifier
@@ -69,7 +67,7 @@ fun TreatmentPlansScreen(
                 ) {
                     Text(state.error, color = MaterialTheme.colorScheme.error)
                     Spacer(Modifier.height(12.dp))
-                    Button(onClick = { onEvent(TreatmentPlansUiEvent.Refresh) }) { Text("Retry") }
+                    Button(onClick = { onEvent(TreatmentPlansUiEvent.Refresh) }, shape = MaterialTheme.shapes.extraLarge) { Text("Retry") }
                 }
                 state.plans.isEmpty() -> Text(
                     text = "No treatment plans found",
@@ -98,18 +96,7 @@ private fun TreatmentPlanCard(plan: TreatmentPlan) {
         plan.completedSessions.toFloat() / plan.totalSessions.toFloat()
     } else 0f
 
-    val statusColor = when (plan.status.lowercase()) {
-        "active" -> Color(0xFF265855)
-        "completed" -> Color(0xFF2E7D32)
-        "paused" -> Color(0xFFE65100)
-        else -> MaterialTheme.colorScheme.outline
-    }
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.medium,
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-    ) {
+    WellnessCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -122,19 +109,7 @@ private fun TreatmentPlanCard(plan: TreatmentPlan) {
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f),
                 )
-                SuggestionChip(
-                    onClick = {},
-                    label = {
-                        Text(
-                            plan.status.replaceFirstChar { it.uppercase() },
-                            style = MaterialTheme.typography.labelSmall,
-                        )
-                    },
-                    colors = SuggestionChipDefaults.suggestionChipColors(
-                        containerColor = statusColor.copy(alpha = 0.12f),
-                        labelColor = statusColor,
-                    ),
-                )
+                StatusChip(status = plan.status)
             }
 
             if (plan.serviceName != null) {
@@ -167,7 +142,7 @@ private fun TreatmentPlanCard(plan: TreatmentPlan) {
             LinearProgressIndicator(
                 progress = { progress },
                 modifier = Modifier.fillMaxWidth(),
-                color = Color(0xFF265855),
+                color = MaterialTheme.colorScheme.primary,
             )
 
             Spacer(Modifier.height(8.dp))

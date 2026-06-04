@@ -26,6 +26,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -40,9 +41,6 @@ import com.globussoft.wellness.patient.feature.loyalty.domain.model.LoyaltyData
 import com.globussoft.wellness.patient.feature.loyalty.domain.model.LoyaltyTransaction
 import com.globussoft.wellness.patient.feature.loyalty.presentation.state.LoyaltyUiEvent
 import com.globussoft.wellness.patient.feature.loyalty.presentation.state.LoyaltyUiState
-
-private val TealColor = Color(0xFF265855)
-private val BlushColor = Color(0xFFCD9481)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -61,6 +59,7 @@ fun LoyaltyScreen(
                 },
             )
         },
+        containerColor = MaterialTheme.colorScheme.background,
     ) { innerPadding ->
         Box(
             modifier = Modifier
@@ -75,7 +74,7 @@ fun LoyaltyScreen(
                 ) {
                     Text(state.error, color = MaterialTheme.colorScheme.error)
                     Spacer(Modifier.height(12.dp))
-                    Button(onClick = { onEvent(LoyaltyUiEvent.Refresh) }) { Text("Retry") }
+                    Button(onClick = { onEvent(LoyaltyUiEvent.Refresh) }, shape = MaterialTheme.shapes.extraLarge) { Text("Retry") }
                 }
                 state.loyaltyData != null -> LoyaltyContent(state.loyaltyData)
             }
@@ -128,7 +127,10 @@ private fun LoyaltyBalanceCard(balance: Int, earnedThisMonth: Int) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(containerColor = TealColor),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Column(
             modifier = Modifier
@@ -140,25 +142,23 @@ private fun LoyaltyBalanceCard(balance: Int, earnedThisMonth: Int) {
                 text = "$balance",
                 fontSize = 56.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
             )
             Text(
                 text = "points",
                 style = MaterialTheme.typography.bodyLarge,
-                color = Color.White.copy(alpha = 0.8f),
+                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
             )
             Spacer(Modifier.height(12.dp))
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = Color.White.copy(alpha = 0.15f),
-                ),
+            Surface(
+                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.15f),
                 shape = MaterialTheme.shapes.small,
             ) {
                 Text(
                     text = "Earned this month: $earnedThisMonth pts",
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                     style = MaterialTheme.typography.labelMedium,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
             }
         }
@@ -168,7 +168,8 @@ private fun LoyaltyBalanceCard(balance: Int, earnedThisMonth: Int) {
 @Composable
 private fun LoyaltyTransactionRow(txn: LoyaltyTransaction) {
     val isEarned = txn.type.lowercase() != "redeemed"
-    val pointsColor = if (isEarned) TealColor else BlushColor
+    val pointsColor = if (isEarned) MaterialTheme.colorScheme.secondary
+                      else MaterialTheme.colorScheme.error
     val pointsText = if (isEarned) "+${txn.points} pts" else "-${txn.points} pts"
 
     Row(

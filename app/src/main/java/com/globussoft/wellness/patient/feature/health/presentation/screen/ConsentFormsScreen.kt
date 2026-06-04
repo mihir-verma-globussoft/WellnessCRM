@@ -15,8 +15,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -29,6 +27,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.globussoft.wellness.patient.core.ui.WellnessCard
 import com.globussoft.wellness.patient.core.util.DateUtil
 import com.globussoft.wellness.patient.feature.health.domain.model.ConsentForm
 import com.globussoft.wellness.patient.feature.health.presentation.state.ConsentFormsUiEvent
@@ -51,6 +50,7 @@ fun ConsentFormsScreen(
                 },
             )
         },
+        containerColor = MaterialTheme.colorScheme.background,
     ) { innerPadding ->
         Box(
             modifier = Modifier
@@ -65,7 +65,7 @@ fun ConsentFormsScreen(
                 ) {
                     Text(state.error, color = MaterialTheme.colorScheme.error)
                     Spacer(Modifier.height(12.dp))
-                    Button(onClick = { onEvent(ConsentFormsUiEvent.Refresh) }) { Text("Retry") }
+                    Button(onClick = { onEvent(ConsentFormsUiEvent.Refresh) }, shape = MaterialTheme.shapes.extraLarge) { Text("Retry") }
                 }
                 state.forms.isEmpty() -> Text(
                     text = "No consent forms found",
@@ -92,15 +92,8 @@ fun ConsentFormsScreen(
 }
 
 @Composable
-private fun ConsentFormCard(
-    form: ConsentForm,
-    onViewPdf: () -> Unit,
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.medium,
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-    ) {
+private fun ConsentFormCard(form: ConsentForm, onViewPdf: () -> Unit) {
+    WellnessCard(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()

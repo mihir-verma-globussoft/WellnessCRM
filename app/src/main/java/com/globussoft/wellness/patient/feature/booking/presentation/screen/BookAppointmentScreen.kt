@@ -1,19 +1,42 @@
 package com.globussoft.wellness.patient.feature.booking.presentation.screen
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.CloudOff
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.globussoft.wellness.patient.core.ui.ErrorState
+import com.globussoft.wellness.patient.core.ui.WellnessCard
 import com.globussoft.wellness.patient.core.util.CurrencyUtil
 import com.globussoft.wellness.patient.core.util.DateUtil
 import com.globussoft.wellness.patient.feature.booking.domain.model.Product
@@ -58,12 +81,14 @@ fun BookAppointmentScreen(
                 state.isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
                 }
-                state.error != null && state.products.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        Icon(Icons.Default.CloudOff, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(48.dp))
-                        Text(text = state.error, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Button(onClick = { onEvent(BookAppointmentUiEvent.LoadProducts) }) { Text("Retry") }
-                    }
+                state.error != null && state.products.isEmpty() -> Box(
+                    Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    ErrorState(
+                        message = state.error,
+                        onRetry = { onEvent(BookAppointmentUiEvent.LoadProducts) },
+                    )
                 }
                 else -> when (state.step) {
                     1 -> Step1Products(state = state, onEvent = onEvent)
@@ -104,9 +129,14 @@ private fun Step1Products(state: BookAppointmentUiState, onEvent: (BookAppointme
                 onClick = { onEvent(BookAppointmentUiEvent.NextStep) },
                 enabled = state.selectedProduct != null,
                 modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.extraLarge,
             ) { Text("Continue") }
             if (state.error != null) {
-                Text(text = state.error, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                Text(
+                    text = state.error,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                )
             }
         }
     }
@@ -114,50 +144,77 @@ private fun Step1Products(state: BookAppointmentUiState, onEvent: (BookAppointme
 
 @Composable
 private fun ProductCard(product: Product, isSelected: Boolean, onClick: () -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-        shape = MaterialTheme.shapes.medium,
-        colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer
-                            else MaterialTheme.colorScheme.surface,
-        ),
-        border = if (isSelected) CardDefaults.outlinedCardBorder() else null,
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Text(text = product.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
-            if (!product.categoryName.isNullOrBlank()) {
-                Text(text = product.categoryName, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            if (product.price != null) {
-                Text(text = CurrencyUtil.formatRupees(product.price), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
-            }
+    if (isSelected) {
+        androidx.compose.material3.Card(
+            onClick = onClick,
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.medium,
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+            border = CardDefaults.outlinedCardBorder(),
+        ) {
+            ProductCardContent(product = product, isSelected = true)
+        }
+    } else {
+        WellnessCard(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
+            ProductCardContent(product = product, isSelected = false)
         }
     }
 }
 
 @Composable
+private fun ProductCardContent(product: Product, isSelected: Boolean) {
+    Column(modifier = Modifier.padding(12.dp)) {
+        Text(
+            text = product.name,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+            color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
+                    else MaterialTheme.colorScheme.onSurface,
+        )
+        if (!product.categoryName.isNullOrBlank()) {
+            Text(
+                text = product.categoryName,
+                style = MaterialTheme.typography.labelSmall,
+                color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        if (product.price != null) {
+            Text(
+                text = CurrencyUtil.formatRupees(product.price),
+                style = MaterialTheme.typography.bodySmall,
+                color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
+                        else MaterialTheme.colorScheme.primary,
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
 private fun Step2DateTime(state: BookAppointmentUiState, onEvent: (BookAppointmentUiEvent) -> Unit) {
     val timeSlots = remember {
-        listOf("09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
-               "12:00", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00")
+        listOf(
+            "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
+            "12:00", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00",
+        )
+    }
+    val dateOptions = remember {
+        (0..29).map { offset ->
+            val cal = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, offset) }
+            Pair(cal.timeInMillis, DateUtil.toDisplayDate(cal.timeInMillis))
+        }
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Text("Select date", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Simple date offset picker (today + 30 days)
-        val today = remember { Calendar.getInstance() }
-        val dateOptions = remember {
-            (0..29).map { offset ->
-                val cal = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, offset) }
-                Pair(cal.timeInMillis, DateUtil.toDisplayDate(cal.timeInMillis))
-            }
-        }
-        var dateScrollPos by remember { mutableIntStateOf(0) }
-
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            dateOptions.take(7).forEachIndexed { i, (ms, label) ->
+            dateOptions.take(7).forEach { (ms, label) ->
                 FilterChip(
                     selected = state.selectedDate == ms,
                     onClick = { onEvent(BookAppointmentUiEvent.SelectDate(ms)) },
@@ -193,6 +250,7 @@ private fun Step2DateTime(state: BookAppointmentUiState, onEvent: (BookAppointme
             onClick = { onEvent(BookAppointmentUiEvent.NextStep) },
             enabled = state.selectedDate != null && state.selectedTime != null,
             modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.extraLarge,
         ) { Text("Continue") }
     }
 }
@@ -203,7 +261,7 @@ private fun Step3Confirm(state: BookAppointmentUiState, onEvent: (BookAppointmen
         Text("Confirm booking", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
         Spacer(modifier = Modifier.height(16.dp))
 
-        Card(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium) {
+        WellnessCard(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 InfoRow("Service", state.selectedProduct?.name ?: "—")
                 InfoRow("Date", DateUtil.toDisplayDate(state.selectedDate ?: 0L))
@@ -233,6 +291,7 @@ private fun Step3Confirm(state: BookAppointmentUiState, onEvent: (BookAppointmen
             onClick = { onEvent(BookAppointmentUiEvent.ConfirmBooking) },
             enabled = !state.isBooking,
             modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.extraLarge,
         ) {
             if (state.isBooking) CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
             else Text("Book Appointment")
@@ -243,7 +302,15 @@ private fun Step3Confirm(state: BookAppointmentUiState, onEvent: (BookAppointmen
 @Composable
 private fun InfoRow(label: String, value: String) {
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(text = label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(text = value, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium)
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.Medium,
+        )
     }
 }

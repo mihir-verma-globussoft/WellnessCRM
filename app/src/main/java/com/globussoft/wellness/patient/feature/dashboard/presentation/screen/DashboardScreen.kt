@@ -18,12 +18,10 @@ import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.CardGiftcard
 import androidx.compose.material.icons.filled.CardMembership
-import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.MedicalServices
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -32,7 +30,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -44,6 +41,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.globussoft.wellness.patient.core.ui.ErrorState
+import com.globussoft.wellness.patient.core.ui.SectionLabel
+import com.globussoft.wellness.patient.core.ui.StatusChip
+import com.globussoft.wellness.patient.core.ui.WellnessCard
 import com.globussoft.wellness.patient.core.util.CurrencyUtil
 import com.globussoft.wellness.patient.core.util.DateUtil
 import com.globussoft.wellness.patient.feature.dashboard.domain.model.UpcomingVisit
@@ -107,7 +108,7 @@ fun DashboardScreen(
                 state.isLoading -> CircularProgressIndicator(
                     modifier = Modifier.align(Alignment.Center),
                 )
-                state.error != null -> ErrorContent(
+                state.error != null -> ErrorState(
                     message = state.error,
                     onRetry = { onEvent(DashboardUiEvent.Refresh) },
                     modifier = Modifier.align(Alignment.Center),
@@ -141,11 +142,7 @@ private fun DashboardContent(
             )
         }
 
-        Text(
-            text = "Overview",
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        SectionLabel(text = "Overview")
         StatRow(
             walletBalance = state.dashboard?.walletBalance,
             walletCurrency = state.dashboard?.walletCurrency,
@@ -156,11 +153,7 @@ private fun DashboardContent(
             onLoyaltyClick = { onEvent(DashboardUiEvent.NavigateToLoyalty) },
         )
 
-        Text(
-            text = "Quick actions",
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        SectionLabel(text = "Quick actions")
         QuickActionsRow(onEvent = onEvent)
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -177,6 +170,7 @@ private fun NextVisitCard(visit: UpcomingVisit, onClick: () -> Unit) {
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer,
         ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -218,13 +212,7 @@ private fun NextVisitCard(visit: UpcomingVisit, onClick: () -> Unit) {
 
 @Composable
 private fun NoUpcomingVisitCard(onBookClick: () -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.medium,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-        ),
-    ) {
+    WellnessCard(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -248,28 +236,6 @@ private fun NoUpcomingVisitCard(onBookClick: () -> Unit) {
                 Text("Book now")
             }
         }
-    }
-}
-
-@Composable
-private fun StatusChip(status: String) {
-    val color = when (status.lowercase()) {
-        "booked" -> MaterialTheme.colorScheme.primary
-        "arrived", "checked-in" -> MaterialTheme.colorScheme.tertiary
-        "in-treatment" -> MaterialTheme.colorScheme.secondary
-        "cancelled" -> MaterialTheme.colorScheme.error
-        else -> MaterialTheme.colorScheme.outline
-    }
-    Surface(
-        shape = MaterialTheme.shapes.extraSmall,
-        color = color.copy(alpha = 0.15f),
-    ) {
-        Text(
-            text = status.replaceFirstChar { it.uppercase() },
-            style = MaterialTheme.typography.labelSmall,
-            color = color,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-        )
     }
 }
 
@@ -321,13 +287,9 @@ private fun StatChip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Card(
-        modifier = modifier.clickable(onClick = onClick),
-        shape = MaterialTheme.shapes.medium,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+    WellnessCard(
+        modifier = modifier,
+        onClick = onClick,
     ) {
         Column(
             modifier = Modifier
@@ -396,13 +358,9 @@ private fun QuickActionCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Card(
-        modifier = modifier.clickable(onClick = onClick),
-        shape = MaterialTheme.shapes.medium,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+    WellnessCard(
+        modifier = modifier,
+        onClick = onClick,
     ) {
         Column(
             modifier = Modifier
@@ -413,7 +371,7 @@ private fun QuickActionCard(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.secondary,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(24.dp),
             )
             Spacer(modifier = Modifier.height(4.dp))
@@ -422,36 +380,6 @@ private fun QuickActionCard(
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurface,
             )
-        }
-    }
-}
-
-@Composable
-private fun ErrorContent(
-    message: String,
-    onRetry: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier.padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Icon(
-            imageVector = Icons.Default.CloudOff,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.error,
-            modifier = Modifier.size(48.dp),
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = message,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Button(onClick = onRetry) {
-            Text("Try again")
         }
     }
 }

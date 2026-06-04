@@ -1,14 +1,14 @@
 package com.globussoft.wellness.patient.core.theme
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
-import androidx.core.graphics.ColorUtils
 
-private fun buildColorScheme(primaryColor: Color) = lightColorScheme(
+private fun buildLightColorScheme(primaryColor: Color) = lightColorScheme(
     primary = primaryColor,
     onPrimary = WellnessOnPrimary,
     primaryContainer = WellnessPrimaryContainer,
@@ -17,13 +17,52 @@ private fun buildColorScheme(primaryColor: Color) = lightColorScheme(
     onSecondary = WellnessOnSecondary,
     secondaryContainer = WellnessSecondaryContainer,
     onSecondaryContainer = WellnessOnSecondaryContainer,
+    tertiary = WellnessTertiary,
+    onTertiary = WellnessOnTertiary,
+    tertiaryContainer = WellnessTertiaryContainer,
+    onTertiaryContainer = WellnessOnTertiaryContainer,
     background = WellnessBackground,
     onBackground = WellnessOnSurface,
     surface = WellnessSurface,
     onSurface = WellnessOnSurface,
     surfaceVariant = WellnessSurfaceVariant,
     onSurfaceVariant = WellnessOnSurfaceVariant,
+    surfaceTint = WellnessSurfaceTint,
     outline = WellnessOutline,
+    outlineVariant = WellnessOutlineVariant,
+    inverseSurface = WellnessInverseSurface,
+    inverseOnSurface = WellnessInverseOnSurface,
+    inversePrimary = WellnessInversePrimary,
+    error = WellnessError,
+    onError = WellnessOnError,
+    errorContainer = WellnessErrorContainer,
+    onErrorContainer = WellnessOnErrorContainer,
+)
+
+private val DarkColorScheme = darkColorScheme(
+    primary = WellnessDarkPrimary,
+    onPrimary = WellnessDarkOnPrimary,
+    primaryContainer = WellnessDarkPrimaryContainer,
+    onPrimaryContainer = WellnessDarkOnPrimaryContainer,
+    secondary = WellnessDarkSecondary,
+    onSecondary = WellnessDarkOnSecondary,
+    secondaryContainer = WellnessDarkSecondaryContainer,
+    onSecondaryContainer = WellnessDarkOnSecondaryContainer,
+    tertiary = WellnessDarkTertiary,
+    onTertiary = WellnessDarkOnTertiary,
+    tertiaryContainer = WellnessDarkTertiaryContainer,
+    onTertiaryContainer = WellnessDarkOnTertiaryContainer,
+    background = WellnessDarkBackground,
+    onBackground = WellnessDarkOnSurface,
+    surface = WellnessDarkSurface,
+    onSurface = WellnessDarkOnSurface,
+    surfaceVariant = WellnessDarkSurfaceVariant,
+    onSurfaceVariant = WellnessDarkOnSurfaceVariant,
+    outline = WellnessDarkOutline,
+    outlineVariant = WellnessDarkOutlineVariant,
+    inverseSurface = WellnessDarkInverseSurface,
+    inverseOnSurface = WellnessDarkInverseOnSurface,
+    inversePrimary = WellnessDarkInversePrimary,
     error = WellnessError,
     onError = WellnessOnError,
     errorContainer = WellnessErrorContainer,
@@ -40,9 +79,14 @@ fun parseBrandColor(hex: String?): Color {
 @Composable
 fun WellnessTheme(
     brandColor: Color = WellnessPrimary,
+    darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
-    val colorScheme = remember(brandColor) { buildColorScheme(brandColor) }
+    val colorScheme = if (darkTheme) {
+        DarkColorScheme
+    } else {
+        remember(brandColor) { buildLightColorScheme(brandColor) }
+    }
     MaterialTheme(
         colorScheme = colorScheme,
         typography = WellnessTypography,

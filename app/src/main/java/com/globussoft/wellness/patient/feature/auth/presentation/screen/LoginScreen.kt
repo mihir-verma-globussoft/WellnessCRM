@@ -33,7 +33,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
-import com.globussoft.wellness.patient.core.theme.WellnessBackground
 import com.globussoft.wellness.patient.feature.auth.presentation.state.LoginUiEvent
 import com.globussoft.wellness.patient.feature.auth.presentation.state.LoginUiState
 
@@ -45,7 +44,7 @@ fun LoginScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(WellnessBackground)
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 48.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),

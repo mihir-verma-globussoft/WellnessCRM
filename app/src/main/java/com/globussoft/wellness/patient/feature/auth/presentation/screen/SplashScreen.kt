@@ -17,8 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.globussoft.wellness.patient.core.theme.WellnessBackground
-import com.globussoft.wellness.patient.core.theme.WellnessPrimary
+import com.globussoft.wellness.patient.core.theme.parseBrandColor
 import com.globussoft.wellness.patient.feature.auth.presentation.state.SplashUiState
 
 @Composable
@@ -26,16 +25,13 @@ fun SplashScreen(
     state: SplashUiState,
 ) {
     val brandColor = state.tenantBranding?.brandColor
-        ?.let { hex ->
-            runCatching {
-                Color(android.graphics.Color.parseColor(if (hex.startsWith("#")) hex else "#$hex"))
-            }.getOrDefault(WellnessPrimary)
-        } ?: WellnessPrimary
+        ?.let { parseBrandColor(it) }
+        ?: MaterialTheme.colorScheme.primary
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(WellnessBackground),
+            .background(MaterialTheme.colorScheme.background),
         contentAlignment = Alignment.Center,
     ) {
         Column(

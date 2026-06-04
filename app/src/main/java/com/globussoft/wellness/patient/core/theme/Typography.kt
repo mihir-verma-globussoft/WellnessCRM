@@ -10,8 +10,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.globussoft.wellness.patient.R
 
-// OptionalLocal: falls back to system font if the downloadable font is not yet cached on device.
-// After the first successful download via Google Fonts provider, the font is used on all subsequent launches.
+val ManropeFamily = FontFamily(
+    Font(R.font.manrope_regular, FontWeight.Normal, loadingStrategy = FontLoadingStrategy.OptionalLocal),
+    Font(R.font.manrope_semi_bold, FontWeight.SemiBold, loadingStrategy = FontLoadingStrategy.OptionalLocal),
+    Font(R.font.manrope_bold, FontWeight.Bold, loadingStrategy = FontLoadingStrategy.OptionalLocal),
+)
+
+val InterFamily = FontFamily(
+    Font(R.font.inter_regular, FontWeight.Normal, loadingStrategy = FontLoadingStrategy.OptionalLocal),
+    Font(R.font.inter_medium, FontWeight.Medium, loadingStrategy = FontLoadingStrategy.OptionalLocal),
+    Font(R.font.inter_semi_bold, FontWeight.SemiBold, loadingStrategy = FontLoadingStrategy.OptionalLocal),
+)
+
+// Kept for any future brand accent usage; not used in WellnessTypography.
 val PlayfairDisplay = FontFamily(
     Font(R.font.playfair_display_regular, FontWeight.Normal, loadingStrategy = FontLoadingStrategy.OptionalLocal),
     Font(R.font.playfair_display_medium, FontWeight.Medium, loadingStrategy = FontLoadingStrategy.OptionalLocal),
@@ -21,92 +32,103 @@ val PlayfairDisplay = FontFamily(
 )
 
 val WellnessTypography = Typography(
+    // ── Display (Manrope) ───────────────────────────────────────────────────
     displayLarge = TextStyle(
-        fontFamily = PlayfairDisplay,
+        fontFamily = ManropeFamily,
         fontWeight = FontWeight.Bold,
-        fontSize = 57.sp,
-        lineHeight = 64.sp,
+        fontSize = 40.sp,
+        lineHeight = 48.sp,
+        letterSpacing = (-0.8).sp,
     ),
     displayMedium = TextStyle(
-        fontFamily = PlayfairDisplay,
+        fontFamily = ManropeFamily,
         fontWeight = FontWeight.SemiBold,
-        fontSize = 45.sp,
-        lineHeight = 52.sp,
+        fontSize = 32.sp,
+        lineHeight = 40.sp,
     ),
     displaySmall = TextStyle(
-        fontFamily = PlayfairDisplay,
-        fontWeight = FontWeight.Normal,
-        fontSize = 36.sp,
-        lineHeight = 44.sp,
+        fontFamily = ManropeFamily,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 24.sp,
+        lineHeight = 32.sp,
     ),
+    // ── Headline (Manrope) ──────────────────────────────────────────────────
     headlineLarge = TextStyle(
-        fontFamily = PlayfairDisplay,
+        fontFamily = ManropeFamily,
         fontWeight = FontWeight.Bold,
         fontSize = 32.sp,
         lineHeight = 40.sp,
     ),
     headlineMedium = TextStyle(
-        fontFamily = PlayfairDisplay,
+        fontFamily = ManropeFamily,
         fontWeight = FontWeight.SemiBold,
-        fontSize = 28.sp,
-        lineHeight = 36.sp,
-    ),
-    headlineSmall = TextStyle(
-        fontFamily = PlayfairDisplay,
-        fontWeight = FontWeight.Normal,
         fontSize = 24.sp,
         lineHeight = 32.sp,
     ),
+    headlineSmall = TextStyle(
+        fontFamily = ManropeFamily,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 20.sp,
+        lineHeight = 28.sp,
+    ),
+    // ── Title: Large = Manrope, Medium/Small = Inter ────────────────────────
     titleLarge = TextStyle(
-        fontFamily = PlayfairDisplay,
+        fontFamily = ManropeFamily,
         fontWeight = FontWeight.SemiBold,
         fontSize = 22.sp,
         lineHeight = 28.sp,
     ),
     titleMedium = TextStyle(
-        fontWeight = FontWeight.SemiBold,
+        fontFamily = InterFamily,
+        fontWeight = FontWeight.Medium,
         fontSize = 16.sp,
         lineHeight = 24.sp,
         letterSpacing = 0.15.sp,
     ),
     titleSmall = TextStyle(
+        fontFamily = InterFamily,
         fontWeight = FontWeight.Medium,
         fontSize = 14.sp,
         lineHeight = 20.sp,
         letterSpacing = 0.1.sp,
     ),
+    // ── Body (Inter) ────────────────────────────────────────────────────────
     bodyLarge = TextStyle(
+        fontFamily = InterFamily,
+        fontWeight = FontWeight.Normal,
+        fontSize = 18.sp,
+        lineHeight = 28.sp,
+    ),
+    bodyMedium = TextStyle(
+        fontFamily = InterFamily,
         fontWeight = FontWeight.Normal,
         fontSize = 16.sp,
         lineHeight = 24.sp,
-        letterSpacing = 0.5.sp,
     ),
-    bodyMedium = TextStyle(
+    bodySmall = TextStyle(
+        fontFamily = InterFamily,
         fontWeight = FontWeight.Normal,
         fontSize = 14.sp,
         lineHeight = 20.sp,
-        letterSpacing = 0.25.sp,
     ),
-    bodySmall = TextStyle(
-        fontWeight = FontWeight.Normal,
-        fontSize = 12.sp,
-        lineHeight = 16.sp,
-        letterSpacing = 0.4.sp,
-    ),
+    // ── Label (Inter) ───────────────────────────────────────────────────────
     labelLarge = TextStyle(
+        fontFamily = InterFamily,
         fontWeight = FontWeight.Medium,
         fontSize = 14.sp,
         lineHeight = 20.sp,
         letterSpacing = 0.1.sp,
     ),
     labelMedium = TextStyle(
-        fontWeight = FontWeight.Medium,
+        fontFamily = InterFamily,
+        fontWeight = FontWeight.SemiBold,
         fontSize = 12.sp,
         lineHeight = 16.sp,
         letterSpacing = 0.5.sp,
     ),
     labelSmall = TextStyle(
-        fontWeight = FontWeight.Medium,
+        fontFamily = InterFamily,
+        fontWeight = FontWeight.SemiBold,
         fontSize = 11.sp,
         lineHeight = 16.sp,
         letterSpacing = 0.5.sp,

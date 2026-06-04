@@ -9,5 +9,5 @@ val WellnessShapes = Shapes(
     small = RoundedCornerShape(8.dp),
     medium = RoundedCornerShape(12.dp),   // card radius
     large = RoundedCornerShape(16.dp),
-    extraLarge = RoundedCornerShape(24.dp), // button radius
+    extraLarge = RoundedCornerShape(8.dp),  // button radius — "Soft Professional" per design system
 )

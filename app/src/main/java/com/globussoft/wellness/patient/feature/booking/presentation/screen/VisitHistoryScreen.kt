@@ -1,18 +1,35 @@
 package com.globussoft.wellness.patient.feature.booking.presentation.screen
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.CloudOff
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.globussoft.wellness.patient.core.ui.ErrorState
+import com.globussoft.wellness.patient.core.ui.SectionLabel
+import com.globussoft.wellness.patient.core.ui.WellnessCard
 import com.globussoft.wellness.patient.core.util.CurrencyUtil
 import com.globussoft.wellness.patient.core.util.DateUtil
 import com.globussoft.wellness.patient.feature.booking.domain.model.Visit
@@ -40,16 +57,14 @@ fun VisitHistoryScreen(
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             when {
-                state.isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                state.error != null -> Column(
-                    modifier = Modifier.align(Alignment.Center).padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    Icon(Icons.Default.CloudOff, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(48.dp))
-                    Text(text = state.error, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Button(onClick = { onEvent(VisitHistoryUiEvent.Refresh) }) { Text("Retry") }
-                }
+                state.isLoading -> CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.Center),
+                )
+                state.error != null -> ErrorState(
+                    message = state.error,
+                    onRetry = { onEvent(VisitHistoryUiEvent.Refresh) },
+                    modifier = Modifier.align(Alignment.Center),
+                )
                 state.visits.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text("No visits yet", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
@@ -57,19 +72,19 @@ fun VisitHistoryScreen(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    // Group by month
                     val grouped = state.visits.groupBy { DateUtil.toDisplayMonthYear(it.visitDate) }
                     grouped.forEach { (monthLabel, visits) ->
                         item {
-                            Text(
+                            SectionLabel(
                                 text = monthLabel,
-                                style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(vertical = 4.dp),
                             )
                         }
                         items(visits) { visit ->
-                            VisitCard(visit = visit, onClick = { onEvent(VisitHistoryUiEvent.SelectVisit(visit)) })
+                            VisitCard(
+                                visit = visit,
+                                onClick = { onEvent(VisitHistoryUiEvent.SelectVisit(visit)) },
+                            )
                         }
                     }
                 }
@@ -84,10 +99,7 @@ fun VisitHistoryScreen(
 
 @Composable
 private fun VisitCard(visit: Visit, onClick: () -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-        shape = MaterialTheme.shapes.medium,
-    ) {
+    WellnessCard(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
         Row(
             modifier = Modifier.padding(16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,

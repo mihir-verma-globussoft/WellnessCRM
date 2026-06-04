@@ -1,19 +1,39 @@
 package com.globussoft.wellness.patient.feature.profile.presentation.screen
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import com.globussoft.wellness.patient.core.ui.ErrorState
+import com.globussoft.wellness.patient.core.ui.SectionLabel
+import com.globussoft.wellness.patient.core.ui.WellnessCard
 import com.globussoft.wellness.patient.core.util.DateUtil
 import com.globussoft.wellness.patient.feature.profile.presentation.state.ProfileUiEvent
 import com.globussoft.wellness.patient.feature.profile.presentation.state.ProfileUiState
@@ -47,15 +67,11 @@ fun ProfileScreen(
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             when {
                 state.isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                state.error != null -> Column(
-                    modifier = Modifier.align(Alignment.Center).padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    Icon(Icons.Default.CloudOff, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(48.dp))
-                    Text(state.error, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Button(onClick = { onEvent(ProfileUiEvent.Refresh) }) { Text("Retry") }
-                }
+                state.error != null -> ErrorState(
+                    message = state.error,
+                    onRetry = { onEvent(ProfileUiEvent.Refresh) },
+                    modifier = Modifier.align(Alignment.Center),
+                )
                 state.isEditing -> EditProfileContent(state = state, onEvent = onEvent)
                 else -> ViewProfileContent(state = state, onEvent = onEvent)
             }
@@ -67,33 +83,47 @@ fun ProfileScreen(
 private fun ViewProfileContent(state: ProfileUiState, onEvent: (ProfileUiEvent) -> Unit) {
     val profile = state.profile ?: return
     Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Card(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium) {
+        WellnessCard(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("Personal Information", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                SectionLabel("Personal Information")
                 HorizontalDivider()
                 ProfileField("Name", profile.name)
                 if (!profile.phone.isNullOrBlank()) ProfileField("Phone", profile.phone)
                 if (!profile.email.isNullOrBlank()) ProfileField("Email", profile.email)
                 if (!profile.dob.isNullOrBlank()) ProfileField("Date of birth", DateUtil.toDisplayDate(profile.dob))
-                if (!profile.gender.isNullOrBlank()) ProfileField("Gender", when (profile.gender.uppercase()) {
-                    "F" -> "Female"
-                    "M" -> "Male"
-                    else -> profile.gender
-                })
+                if (!profile.gender.isNullOrBlank()) ProfileField(
+                    "Gender",
+                    when (profile.gender.uppercase()) {
+                        "F" -> "Female"
+                        "M" -> "Male"
+                        else -> profile.gender
+                    },
+                )
             }
         }
 
-        Card(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium) {
+        WellnessCard(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("Data & Privacy", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                SectionLabel("Data & Privacy")
                 HorizontalDivider()
                 if (state.exportRequested) {
-                    Text("Export request submitted. You will receive your data by email.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                    Text(
+                        "Export request submitted. You will receive your data by email.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
                 } else {
-                    OutlinedButton(onClick = { onEvent(ProfileUiEvent.RequestDsarExport) }, modifier = Modifier.fillMaxWidth()) {
+                    OutlinedButton(
+                        onClick = { onEvent(ProfileUiEvent.RequestDsarExport) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.extraLarge,
+                    ) {
                         Text("Request data export")
                     }
                 }
@@ -103,7 +133,10 @@ private fun ViewProfileContent(state: ProfileUiState, onEvent: (ProfileUiEvent) 
         Button(
             onClick = { onEvent(ProfileUiEvent.Logout) },
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+            shape = MaterialTheme.shapes.extraLarge,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.error,
+            ),
         ) {
             Text("Log out")
         }
@@ -121,11 +154,18 @@ private fun ProfileField(label: String, value: String) {
 @Composable
 private fun EditProfileContent(state: ProfileUiState, onEvent: (ProfileUiEvent) -> Unit) {
     Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text("Edit Profile", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-        Text("Note: Phone, date of birth, and gender can only be updated at the clinic.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            "Note: Phone, date of birth, and gender can only be updated at the clinic.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
 
         OutlinedTextField(
             value = state.editName,
@@ -142,7 +182,7 @@ private fun EditProfileContent(state: ProfileUiState, onEvent: (ProfileUiEvent) 
             singleLine = true,
         )
         HorizontalDivider()
-        Text("Change password (optional)", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        SectionLabel("Change password (optional)")
         OutlinedTextField(
             value = state.currentPassword,
             onValueChange = { onEvent(ProfileUiEvent.EditCurrentPassword(it)) },
@@ -160,16 +200,28 @@ private fun EditProfileContent(state: ProfileUiState, onEvent: (ProfileUiEvent) 
             visualTransformation = PasswordVisualTransformation(),
         )
         if (state.saveError != null) {
-            Text(state.saveError, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+            Text(
+                state.saveError,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+            )
         }
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            OutlinedButton(onClick = { onEvent(ProfileUiEvent.CancelEdit) }, modifier = Modifier.weight(1f)) {
+        androidx.compose.foundation.layout.Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            OutlinedButton(
+                onClick = { onEvent(ProfileUiEvent.CancelEdit) },
+                modifier = Modifier.weight(1f),
+                shape = MaterialTheme.shapes.extraLarge,
+            ) {
                 Text("Cancel")
             }
             Button(
                 onClick = { onEvent(ProfileUiEvent.SaveChanges) },
                 enabled = !state.isSaving,
                 modifier = Modifier.weight(1f),
+                shape = MaterialTheme.shapes.extraLarge,
             ) {
                 if (state.isSaving) CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
                 else Text("Save")
