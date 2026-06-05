@@ -18,7 +18,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -30,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.globussoft.wellness.patient.core.ui.StatusChip
 import com.globussoft.wellness.patient.core.ui.WellnessCard
+import com.globussoft.wellness.patient.core.ui.WellnessProgressBar
 import com.globussoft.wellness.patient.core.util.DateUtil
 import com.globussoft.wellness.patient.feature.health.domain.model.TreatmentPlan
 import com.globussoft.wellness.patient.feature.health.presentation.state.TreatmentPlansUiEvent
@@ -139,10 +139,9 @@ private fun TreatmentPlanCard(plan: TreatmentPlan) {
                 )
             }
             Spacer(Modifier.height(4.dp))
-            LinearProgressIndicator(
-                progress = { progress },
+            WellnessProgressBar(
+                progress = progress,
                 modifier = Modifier.fillMaxWidth(),
-                color = MaterialTheme.colorScheme.primary,
             )
 
             Spacer(Modifier.height(8.dp))

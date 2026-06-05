@@ -19,5 +19,8 @@ sealed class DashboardUiEvent {
     object NavigateToNotifications : DashboardUiEvent()
     object NavigateToGiftCards : DashboardUiEvent()
     object NavigateToLoyalty : DashboardUiEvent()
+    object NavigateToVisitHistory : DashboardUiEvent()
+    object NavigateToTreatmentPlans : DashboardUiEvent()
+    object NavigateToConsentForms : DashboardUiEvent()
     object Logout : DashboardUiEvent()
 }

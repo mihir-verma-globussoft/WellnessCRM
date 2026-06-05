@@ -33,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.globussoft.wellness.patient.core.ui.EmptyState
 import com.globussoft.wellness.patient.core.util.DateUtil
 import com.globussoft.wellness.patient.feature.notifications.domain.model.Notification
 import com.globussoft.wellness.patient.feature.notifications.presentation.state.NotificationsUiEvent
@@ -67,19 +68,11 @@ fun NotificationInboxScreen(
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             when {
                 state.isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                state.notifications.isEmpty() -> Column(
+                state.notifications.isEmpty() -> EmptyState(
+                    message = "No notifications yet",
+                    icon = Icons.Default.Notifications,
                     modifier = Modifier.align(Alignment.Center),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    Icon(
-                        Icons.Default.Notifications,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(48.dp),
-                    )
-                    Text("No notifications yet", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
+                )
                 else -> LazyColumn(contentPadding = PaddingValues(vertical = 8.dp)) {
                     items(state.notifications, key = { it.id }) { notification ->
                         NotificationRow(

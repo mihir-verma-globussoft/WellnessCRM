@@ -17,9 +17,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.Assignment
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.CardGiftcard
 import androidx.compose.material.icons.filled.CardMembership
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.automirrored.filled.EventNote
+import androidx.compose.material.icons.filled.Healing
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.MedicalServices
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
@@ -39,9 +44,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.globussoft.wellness.patient.core.theme.WellnessGold
+import com.globussoft.wellness.patient.core.theme.WellnessGoldContainer
 import com.globussoft.wellness.patient.core.ui.ErrorState
 import com.globussoft.wellness.patient.core.ui.GradientHeroCard
 import com.globussoft.wellness.patient.core.ui.SectionLabel
@@ -53,6 +62,13 @@ import com.globussoft.wellness.patient.feature.dashboard.domain.model.UpcomingVi
 import com.globussoft.wellness.patient.feature.dashboard.presentation.state.DashboardUiEvent
 import com.globussoft.wellness.patient.feature.dashboard.presentation.state.DashboardUiState
 import java.util.Calendar
+
+private data class PortalTile(
+    val label: String,
+    val subtitle: String,
+    val icon: ImageVector,
+    val event: DashboardUiEvent,
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -107,9 +123,7 @@ fun DashboardScreen(
                 .padding(paddingValues),
         ) {
             when {
-                state.isLoading -> CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center),
-                )
+                state.isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 state.error != null -> ErrorState(
                     message = state.error,
                     onRetry = { onEvent(DashboardUiEvent.Refresh) },
@@ -155,8 +169,7 @@ private fun DashboardContent(
             onLoyaltyClick = { onEvent(DashboardUiEvent.NavigateToLoyalty) },
         )
 
-        SectionLabel(text = "Quick actions")
-        QuickActionsRow(onEvent = onEvent)
+        PortalMenu(onEvent = onEvent)
 
         Spacer(modifier = Modifier.height(8.dp))
     }
@@ -284,10 +297,7 @@ private fun StatChip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    WellnessCard(
-        modifier = modifier,
-        onClick = onClick,
-    ) {
+    WellnessCard(modifier = modifier, onClick = onClick) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -324,74 +334,136 @@ private fun StatChip(
 }
 
 @Composable
-private fun QuickActionsRow(onEvent: (DashboardUiEvent) -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        QuickActionCard(
-            modifier = Modifier.weight(1f),
-            label = "Book",
-            icon = Icons.Default.CalendarToday,
-            onClick = { onEvent(DashboardUiEvent.NavigateToBooking) },
+private fun PortalMenu(onEvent: (DashboardUiEvent) -> Unit) {
+    val cs = MaterialTheme.colorScheme
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        PortalSection(
+            title = "Appointments",
+            containerColor = cs.primaryContainer.copy(alpha = 0.5f),
+            iconTint = cs.primary,
+            tiles = listOf(
+                PortalTile("Book Appointment", "Schedule a visit", Icons.Default.CalendarToday, DashboardUiEvent.NavigateToBooking),
+                PortalTile("My Appointments", "Upcoming & past", Icons.AutoMirrored.Filled.EventNote, DashboardUiEvent.NavigateToAppointments),
+                PortalTile("Visit History", "All visits", Icons.Default.History, DashboardUiEvent.NavigateToVisitHistory),
+            ),
+            onEvent = onEvent,
         )
-        QuickActionCard(
-            modifier = Modifier.weight(1f),
-            label = "Rx",
-            icon = Icons.Default.MedicalServices,
-            onClick = { onEvent(DashboardUiEvent.NavigateToPrescriptions) },
+        PortalSection(
+            title = "Health Records",
+            containerColor = cs.secondaryContainer.copy(alpha = 0.5f),
+            iconTint = cs.secondary,
+            tiles = listOf(
+                PortalTile("Prescriptions", "Your medicines", Icons.Default.MedicalServices, DashboardUiEvent.NavigateToPrescriptions),
+                PortalTile("Treatment Plans", "Active plans", Icons.Default.Healing, DashboardUiEvent.NavigateToTreatmentPlans),
+                PortalTile("Consent Forms", "Signed documents", Icons.Default.Description, DashboardUiEvent.NavigateToConsentForms),
+            ),
+            onEvent = onEvent,
         )
-        QuickActionCard(
-            modifier = Modifier.weight(1f),
-            label = "Gift Cards",
-            icon = Icons.Default.CardGiftcard,
-            onClick = { onEvent(DashboardUiEvent.NavigateToGiftCards) },
+        PortalSection(
+            title = "Finance",
+            containerColor = cs.tertiaryContainer.copy(alpha = 0.6f),
+            iconTint = cs.tertiary,
+            tiles = listOf(
+                PortalTile("Wallet", "Balance & history", Icons.Default.AccountBalanceWallet, DashboardUiEvent.NavigateToWallet),
+                PortalTile("Gift Cards", "Buy & redeem", Icons.Default.CardGiftcard, DashboardUiEvent.NavigateToGiftCards),
+            ),
+            onEvent = onEvent,
         )
-        QuickActionCard(
-            modifier = Modifier.weight(1f),
-            label = "Profile",
-            icon = Icons.Default.Person,
-            onClick = { onEvent(DashboardUiEvent.NavigateToProfile) },
+        PortalSection(
+            title = "Programs",
+            containerColor = WellnessGoldContainer,
+            iconTint = WellnessGold,
+            tiles = listOf(
+                PortalTile("Memberships", "Active plans", Icons.Default.CardMembership, DashboardUiEvent.NavigateToMemberships),
+                PortalTile("Loyalty & Referrals", "Points & rewards", Icons.Default.Star, DashboardUiEvent.NavigateToLoyalty),
+            ),
+            onEvent = onEvent,
+        )
+        PortalSection(
+            title = "Account",
+            containerColor = cs.surfaceContainerHigh,
+            iconTint = cs.onSurfaceVariant,
+            tiles = listOf(
+                PortalTile("Profile", "Your details", Icons.Default.Person, DashboardUiEvent.NavigateToProfile),
+                PortalTile("Notifications", "Inbox", Icons.Default.Notifications, DashboardUiEvent.NavigateToNotifications),
+            ),
+            onEvent = onEvent,
         )
     }
 }
 
 @Composable
-private fun QuickActionCard(
-    label: String,
-    icon: ImageVector,
+private fun PortalSection(
+    title: String,
+    containerColor: Color,
+    iconTint: Color,
+    tiles: List<PortalTile>,
+    onEvent: (DashboardUiEvent) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        SectionLabel(text = title)
+        tiles.chunked(2).forEach { row ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                row.forEach { tile ->
+                    MenuTile(
+                        tile = tile,
+                        containerColor = containerColor,
+                        iconTint = iconTint,
+                        onClick = { onEvent(tile.event) },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                if (row.size == 1) Spacer(modifier = Modifier.weight(1f))
+            }
+        }
+    }
+}
+
+@Composable
+private fun MenuTile(
+    tile: PortalTile,
+    containerColor: Color,
+    iconTint: Color,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    WellnessCard(
-        modifier = modifier,
-        onClick = onClick,
-    ) {
+    WellnessCard(modifier = modifier, onClick = onClick) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             Box(
                 modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(containerColor),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
-                    imageVector = icon,
+                    imageVector = tile.icon,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = iconTint,
                     modifier = Modifier.size(22.dp),
                 )
             }
-            Spacer(modifier = Modifier.height(6.dp))
             Text(
-                text = label,
+                text = tile.label,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = tile.subtitle,
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }

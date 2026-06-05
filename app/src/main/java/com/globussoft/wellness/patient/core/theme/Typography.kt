@@ -10,6 +10,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.globussoft.wellness.patient.R
 
+val PoppinsFamily = FontFamily(
+    Font(R.font.poppins_regular, FontWeight.Normal, loadingStrategy = FontLoadingStrategy.OptionalLocal),
+    Font(R.font.poppins_medium, FontWeight.Medium, loadingStrategy = FontLoadingStrategy.OptionalLocal),
+    Font(R.font.poppins_semi_bold, FontWeight.SemiBold, loadingStrategy = FontLoadingStrategy.OptionalLocal),
+    Font(R.font.poppins_bold, FontWeight.Bold, loadingStrategy = FontLoadingStrategy.OptionalLocal),
+)
+
+// Retained for reference; not used in WellnessTypography.
 val ManropeFamily = FontFamily(
     Font(R.font.manrope_regular, FontWeight.Normal, loadingStrategy = FontLoadingStrategy.OptionalLocal),
     Font(R.font.manrope_semi_bold, FontWeight.SemiBold, loadingStrategy = FontLoadingStrategy.OptionalLocal),
@@ -22,7 +30,6 @@ val InterFamily = FontFamily(
     Font(R.font.inter_semi_bold, FontWeight.SemiBold, loadingStrategy = FontLoadingStrategy.OptionalLocal),
 )
 
-// Kept for any future brand accent usage; not used in WellnessTypography.
 val PlayfairDisplay = FontFamily(
     Font(R.font.playfair_display_regular, FontWeight.Normal, loadingStrategy = FontLoadingStrategy.OptionalLocal),
     Font(R.font.playfair_display_medium, FontWeight.Medium, loadingStrategy = FontLoadingStrategy.OptionalLocal),
@@ -32,105 +39,106 @@ val PlayfairDisplay = FontFamily(
 )
 
 val WellnessTypography = Typography(
-    // ── Display (Manrope) ───────────────────────────────────────────────────
+    // ── Display ─────────────────────────────────────────────────────────────
     displayLarge = TextStyle(
-        fontFamily = ManropeFamily,
+        fontFamily = PoppinsFamily,
         fontWeight = FontWeight.Bold,
         fontSize = 40.sp,
         lineHeight = 48.sp,
-        letterSpacing = (-0.8).sp,
+        letterSpacing = (-0.5).sp,
     ),
     displayMedium = TextStyle(
-        fontFamily = ManropeFamily,
+        fontFamily = PoppinsFamily,
         fontWeight = FontWeight.SemiBold,
         fontSize = 32.sp,
         lineHeight = 40.sp,
+        letterSpacing = (-0.25).sp,
     ),
     displaySmall = TextStyle(
-        fontFamily = ManropeFamily,
+        fontFamily = PoppinsFamily,
         fontWeight = FontWeight.SemiBold,
         fontSize = 24.sp,
         lineHeight = 32.sp,
     ),
-    // ── Headline (Manrope) ──────────────────────────────────────────────────
+    // ── Headline ────────────────────────────────────────────────────────────
     headlineLarge = TextStyle(
-        fontFamily = ManropeFamily,
+        fontFamily = PoppinsFamily,
         fontWeight = FontWeight.Bold,
         fontSize = 32.sp,
         lineHeight = 40.sp,
     ),
     headlineMedium = TextStyle(
-        fontFamily = ManropeFamily,
+        fontFamily = PoppinsFamily,
         fontWeight = FontWeight.SemiBold,
-        fontSize = 24.sp,
-        lineHeight = 32.sp,
+        fontSize = 26.sp,
+        lineHeight = 34.sp,
     ),
     headlineSmall = TextStyle(
-        fontFamily = ManropeFamily,
+        fontFamily = PoppinsFamily,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 22.sp,
+        lineHeight = 30.sp,
+    ),
+    // ── Title ───────────────────────────────────────────────────────────────
+    titleLarge = TextStyle(
+        fontFamily = PoppinsFamily,
         fontWeight = FontWeight.SemiBold,
         fontSize = 20.sp,
         lineHeight = 28.sp,
     ),
-    // ── Title: Large = Manrope, Medium/Small = Inter ────────────────────────
-    titleLarge = TextStyle(
-        fontFamily = ManropeFamily,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 22.sp,
-        lineHeight = 28.sp,
-    ),
     titleMedium = TextStyle(
-        fontFamily = InterFamily,
+        fontFamily = PoppinsFamily,
         fontWeight = FontWeight.Medium,
         fontSize = 16.sp,
         lineHeight = 24.sp,
-        letterSpacing = 0.15.sp,
+        letterSpacing = 0.1.sp,
     ),
     titleSmall = TextStyle(
-        fontFamily = InterFamily,
+        fontFamily = PoppinsFamily,
         fontWeight = FontWeight.Medium,
         fontSize = 14.sp,
         lineHeight = 20.sp,
         letterSpacing = 0.1.sp,
     ),
-    // ── Body (Inter) ────────────────────────────────────────────────────────
+    // ── Body ────────────────────────────────────────────────────────────────
     bodyLarge = TextStyle(
-        fontFamily = InterFamily,
-        fontWeight = FontWeight.Normal,
-        fontSize = 18.sp,
-        lineHeight = 28.sp,
-    ),
-    bodyMedium = TextStyle(
-        fontFamily = InterFamily,
+        fontFamily = PoppinsFamily,
         fontWeight = FontWeight.Normal,
         fontSize = 16.sp,
-        lineHeight = 24.sp,
+        lineHeight = 26.sp,
     ),
-    bodySmall = TextStyle(
-        fontFamily = InterFamily,
+    bodyMedium = TextStyle(
+        fontFamily = PoppinsFamily,
         fontWeight = FontWeight.Normal,
         fontSize = 14.sp,
-        lineHeight = 20.sp,
+        lineHeight = 22.sp,
     ),
-    // ── Label (Inter) ───────────────────────────────────────────────────────
+    bodySmall = TextStyle(
+        fontFamily = PoppinsFamily,
+        fontWeight = FontWeight.Normal,
+        fontSize = 12.sp,
+        lineHeight = 18.sp,
+    ),
+    // ── Label ───────────────────────────────────────────────────────────────
     labelLarge = TextStyle(
-        fontFamily = InterFamily,
+        fontFamily = PoppinsFamily,
         fontWeight = FontWeight.Medium,
         fontSize = 14.sp,
         lineHeight = 20.sp,
         letterSpacing = 0.1.sp,
     ),
     labelMedium = TextStyle(
-        fontFamily = InterFamily,
+        fontFamily = PoppinsFamily,
         fontWeight = FontWeight.SemiBold,
         fontSize = 12.sp,
         lineHeight = 16.sp,
-        letterSpacing = 0.5.sp,
+        letterSpacing = 0.4.sp,
     ),
     labelSmall = TextStyle(
-        fontFamily = InterFamily,
-        fontWeight = FontWeight.SemiBold,
+        fontFamily = PoppinsFamily,
+        fontWeight = FontWeight.Medium,
         fontSize = 11.sp,
         lineHeight = 16.sp,
-        letterSpacing = 0.5.sp,
+        letterSpacing = 0.4.sp,
     ),
 )

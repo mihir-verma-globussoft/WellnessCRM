@@ -155,6 +155,9 @@ fun WellnessNavGraph(
                         DashboardNavEvent.ToLoyalty -> navController.navigate(Screen.Loyalty.route)
                         DashboardNavEvent.ToNotifications -> navController.navigate(Screen.Notifications.route)
                         DashboardNavEvent.ToGiftCards -> navController.navigate(Screen.GiftCards.route)
+                        DashboardNavEvent.ToVisitHistory -> navController.navigate(Screen.VisitHistory.route)
+                        DashboardNavEvent.ToTreatmentPlans -> navController.navigate(Screen.TreatmentPlans.route)
+                        DashboardNavEvent.ToConsentForms -> navController.navigate(Screen.ConsentForms.route)
                         DashboardNavEvent.ToLogin -> navController.navigate(Screen.Login.route) {
                             popUpTo(Screen.Dashboard.route) { inclusive = true }
                         }
