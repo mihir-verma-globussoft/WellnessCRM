@@ -3,6 +3,8 @@ package com.globussoft.wellness.patient.feature.health.presentation.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.globussoft.wellness.patient.core.util.Result
+import com.globussoft.wellness.patient.feature.auth.domain.model.PatientPermissions
+import com.globussoft.wellness.patient.feature.auth.domain.usecase.GetPatientPermissionsUseCase
 import com.globussoft.wellness.patient.feature.health.domain.usecase.GetPrescriptionsUseCase
 import com.globussoft.wellness.patient.feature.health.presentation.state.PrescriptionsUiEvent
 import com.globussoft.wellness.patient.feature.health.presentation.state.PrescriptionsUiState
@@ -23,6 +25,7 @@ sealed class PrescriptionsNavEvent {
 @HiltViewModel
 class PrescriptionsViewModel @Inject constructor(
     private val getPrescriptions: GetPrescriptionsUseCase,
+    private val getPermissions: GetPatientPermissionsUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PrescriptionsUiState())
@@ -45,7 +48,12 @@ class PrescriptionsViewModel @Inject constructor(
 
     private fun load() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+            _uiState.value = _uiState.value.copy(isLoading = true, error = null, permissionBlocked = false)
+            val permResult = getPermissions()
+            if (permResult is Result.Success && !permResult.data.has(PatientPermissions.PRESCRIPTIONS_READ)) {
+                _uiState.value = PrescriptionsUiState(isLoading = false, permissionBlocked = true)
+                return@launch
+            }
             when (val result = getPrescriptions()) {
                 is Result.Success -> _uiState.value = PrescriptionsUiState(isLoading = false, prescriptions = result.data)
                 is Result.Error -> _uiState.value = PrescriptionsUiState(isLoading = false, error = result.message)

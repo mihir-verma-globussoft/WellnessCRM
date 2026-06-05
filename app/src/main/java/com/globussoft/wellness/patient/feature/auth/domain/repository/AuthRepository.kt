@@ -1,6 +1,7 @@
 package com.globussoft.wellness.patient.feature.auth.domain.repository
 
 import com.globussoft.wellness.patient.feature.auth.domain.model.Patient
+import com.globussoft.wellness.patient.feature.auth.domain.model.PatientPermissions
 import com.globussoft.wellness.patient.feature.auth.domain.model.TenantBranding
 
 interface AuthRepository {
@@ -9,4 +10,6 @@ interface AuthRepository {
     suspend fun register(email: String, password: String, name: String): Patient
     suspend fun logout()
     suspend fun hasValidToken(): Boolean
+    suspend fun getPatientPermissions(): PatientPermissions
+    suspend fun isSmsAvailable(): Boolean
 }

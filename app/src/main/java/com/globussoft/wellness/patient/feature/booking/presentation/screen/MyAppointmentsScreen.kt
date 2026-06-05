@@ -3,12 +3,15 @@ package com.globussoft.wellness.patient.feature.booking.presentation.screen
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -17,21 +20,26 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -45,14 +53,26 @@ import com.globussoft.wellness.patient.core.util.DateUtil
 import com.globussoft.wellness.patient.feature.booking.domain.model.Appointment
 import com.globussoft.wellness.patient.feature.booking.presentation.state.MyAppointmentsUiEvent
 import com.globussoft.wellness.patient.feature.booking.presentation.state.MyAppointmentsUiState
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class)
+private val TIME_SLOTS = listOf(
+    "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
+    "12:00", "12:30", "13:00", "13:30", "14:00", "14:30",
+    "15:00", "15:30", "16:00", "16:30", "17:00",
+)
+
+private val TAB_LABELS = listOf("Upcoming", "Pending", "Completed", "Cancelled")
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun MyAppointmentsScreen(
     state: MyAppointmentsUiState,
     onEvent: (MyAppointmentsUiEvent) -> Unit,
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     Scaffold(
         topBar = {
@@ -78,9 +98,14 @@ fun MyAppointmentsScreen(
         containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            TabRow(selectedTabIndex = selectedTab) {
-                Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("Upcoming") })
-                Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("Past") })
+            ScrollableTabRow(selectedTabIndex = selectedTab, edgePadding = 0.dp) {
+                TAB_LABELS.forEachIndexed { index, label ->
+                    Tab(
+                        selected = selectedTab == index,
+                        onClick = { selectedTab = index },
+                        text = { Text(label) },
+                    )
+                }
             }
 
             when {
@@ -94,11 +119,18 @@ fun MyAppointmentsScreen(
                     )
                 }
                 else -> {
-                    val list = if (selectedTab == 0) state.upcoming else state.past
+                    val list = when (selectedTab) {
+                        0 -> state.upcoming
+                        1 -> state.pending
+                        2 -> state.past
+                        else -> state.cancelled
+                    }
+                    val emptyLabel = TAB_LABELS[selectedTab].let { "No $it appointments" }.lowercase()
+                        .replaceFirstChar { it.uppercase() }
                     if (list.isEmpty()) {
                         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             Text(
-                                text = if (selectedTab == 0) "No upcoming appointments" else "No past appointments",
+                                text = emptyLabel,
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -112,13 +144,96 @@ fun MyAppointmentsScreen(
                                 AppointmentCard(
                                     appointment = appt,
                                     isCancelling = state.cancellingId == appt.id,
-                                    showCancel = selectedTab == 0 && appt.status != "cancelled",
+                                    showCancel = appt.canCancel,
+                                    showReschedule = appt.canReschedule,
                                     onCancel = { onEvent(MyAppointmentsUiEvent.Cancel(appt.id)) },
+                                    onReschedule = { onEvent(MyAppointmentsUiEvent.ShowRescheduleSheet(appt.id)) },
                                 )
                             }
                         }
                     }
                 }
+            }
+        }
+    }
+
+    if (state.rescheduleSheetAppointmentId != null) {
+        var selectedDate by remember { mutableStateOf<String?>(null) }
+        var selectedTime by remember { mutableStateOf<String?>(null) }
+
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val displayFormat = SimpleDateFormat("EEE, MMM d", Locale.getDefault())
+        val dateOptions = remember {
+            (0..13).map { offset ->
+                val cal = Calendar.getInstance()
+                cal.add(Calendar.DAY_OF_YEAR, offset)
+                Pair(dateFormat.format(cal.time), displayFormat.format(cal.time))
+            }
+        }
+
+        ModalBottomSheet(
+            onDismissRequest = { onEvent(MyAppointmentsUiEvent.DismissRescheduleSheet) },
+            sheetState = sheetState,
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 20.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Text("Reschedule Appointment", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+
+                Text("Select date", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    dateOptions.forEach { (apiDate, displayDate) ->
+                        FilterChip(
+                            selected = selectedDate == apiDate,
+                            onClick = { selectedDate = apiDate; selectedTime = null },
+                            label = { Text(displayDate, style = MaterialTheme.typography.bodySmall) },
+                        )
+                    }
+                }
+
+                if (selectedDate != null) {
+                    Text("Select time", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        TIME_SLOTS.forEach { time ->
+                            FilterChip(
+                                selected = selectedTime == time,
+                                onClick = { selectedTime = time },
+                                label = { Text(time, style = MaterialTheme.typography.bodySmall) },
+                            )
+                        }
+                    }
+                }
+
+                if (state.rescheduleError != null) {
+                    Text(
+                        text = state.rescheduleError,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+
+                Button(
+                    onClick = {
+                        val d = selectedDate ?: return@Button
+                        val t = selectedTime ?: return@Button
+                        onEvent(MyAppointmentsUiEvent.ConfirmReschedule(d, t))
+                    },
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    enabled = selectedDate != null && selectedTime != null && !state.isRescheduling,
+                    shape = MaterialTheme.shapes.extraLarge,
+                ) {
+                    if (state.isRescheduling) {
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                    } else {
+                        Text("Confirm Reschedule")
+                    }
+                }
+
+                Spacer(Modifier.height(8.dp))
             }
         }
     }
@@ -129,7 +244,9 @@ private fun AppointmentCard(
     appointment: Appointment,
     isCancelling: Boolean,
     showCancel: Boolean,
+    showReschedule: Boolean,
     onCancel: () -> Unit,
+    onReschedule: () -> Unit,
 ) {
     WellnessCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -167,18 +284,32 @@ private fun AppointmentCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            if (showCancel) {
+            if (showCancel || showReschedule) {
                 Spacer(modifier = Modifier.height(8.dp))
-                OutlinedButton(
-                    onClick = onCancel,
-                    enabled = !isCancelling,
+                Row(
                     modifier = Modifier.align(Alignment.End),
-                    shape = MaterialTheme.shapes.extraLarge,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    if (isCancelling) {
-                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                    } else {
-                        Text("Cancel")
+                    if (showReschedule) {
+                        OutlinedButton(
+                            onClick = onReschedule,
+                            shape = MaterialTheme.shapes.extraLarge,
+                        ) {
+                            Text("Reschedule")
+                        }
+                    }
+                    if (showCancel) {
+                        OutlinedButton(
+                            onClick = onCancel,
+                            enabled = !isCancelling,
+                            shape = MaterialTheme.shapes.extraLarge,
+                        ) {
+                            if (isCancelling) {
+                                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                            } else {
+                                Text("Cancel")
+                            }
+                        }
                     }
                 }
             }

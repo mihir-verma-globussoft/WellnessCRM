@@ -49,7 +49,7 @@ This app is a **separate Android repo** consuming the WellnessCRM backend (`/api
 
 The CRM backend needs these in its `.env` to enable OTP bypass for testing:
 ```
-WELLNESS_DEMO_OTP=123456
+WELLNESS_DEMO_OTP=1234
 WELLNESS_DEMO_OTP_PHONES=9876500001
 NODE_ENV=development
 ```
@@ -57,8 +57,11 @@ NODE_ENV=development
 Test flow:
 ```
 POST /portal/login/request-otp  { "phone": "9876500001" }  →  { "ok": true }
-POST /portal/login/verify-otp   { "phone": "9876500001", "otp": "123456" }  →  { "token": "...", "patient": { "id": 1, "name": "..." } }
+POST /portal/login/verify-otp   { "phone": "9876500001", "otp": "1234" }  →  { "token": "...", "patient": { "id": 1, "name": "..." } }
 ```
+
+> **OTP is 4 digits.** Backend returns `{"error":"OTP must be 4 digits"}` for any other length.
+> OTP resend cooldown is **30 seconds** (web portal source-verified).
 
 ---
 

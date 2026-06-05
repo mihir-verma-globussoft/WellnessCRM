@@ -1,7 +1,7 @@
 # WellnessCRM Patient App — Implementation Status
 
 Last updated: 2026-06-05
-Current phase: Post-Phase-11 — UI Polish / Design System
+Current phase: Post-Phase-11 — Web Portal Gap Fixes ✅ complete
 
 ---
 
@@ -14,25 +14,49 @@ Current phase: Post-Phase-11 — UI Polish / Design System
 > Read this section first — it tells you exactly where the codebase is and what was last touched.
 
 **Last worked on:** 2026-06-05
-**Last git commit:** `3d6a804` — `feat: Wellness Lumina UI — warm palette, gradient heroes, fluid components`
-**Uncommitted work in progress:** Dashboard portal menu redesign (see below)
+**Last git commit:** `70027fc` — `feat: portal dashboard menu, Poppins font, section header upgrade + bug fixes`
+**Uncommitted work in progress:** Web portal gap fixes G1–G5 + BuildConfig.TENANT_ID=1 (see below)
 
-**What changed in the last session (not yet committed):**
-- `feature/dashboard/presentation/state/DashboardState.kt` — added 3 new UiEvent entries (NavigateToVisitHistory, NavigateToTreatmentPlans, NavigateToConsentForms)
-- `feature/dashboard/presentation/viewmodel/DashboardViewModel.kt` — added 3 new NavEvent entries + 3 onEvent branches
-- `core/navigation/NavGraph.kt` — wired 3 new dashboard nav events to routes
-- `feature/dashboard/presentation/screen/DashboardScreen.kt` — full portal menu redesign: removed 4-tile QuickActionsRow; replaced with 5 sectioned 2-column grid (Appointments, Health Records, Finance, Programs, Account) covering all 11 patient-facing screens
+**What changed in the last session (uncommitted):**
+- `CLAUDE.md` — fixed OTP demo credential from 6-digit to 4-digit, noted 30s resend cooldown
+- `app/build.gradle.kts` — added `buildConfigField("int", "TENANT_ID", "1")` to all 3 build variants
+- `core/network/WellnessApiService.kt` — added `getPortalHealth()` and `getPatientPermissions()`
+- `feature/auth/data/remote/dto/AuthDtos.kt` — added `PatientPermissionsDto` and `PortalHealthDto`
+- `feature/auth/domain/model/PatientPermissions.kt` — new domain model with `has()` helper + constants
+- `feature/auth/domain/repository/AuthRepository.kt` — added `getPatientPermissions()` and `isSmsAvailable()`
+- `feature/auth/data/repository/AuthRepositoryImpl.kt` — implemented both + login/register now use `BuildConfig.TENANT_ID`
+- `feature/auth/domain/usecase/GetPatientPermissionsUseCase.kt` — new UseCase
+- `feature/auth/domain/usecase/CheckSmsAvailabilityUseCase.kt` — new UseCase
+- `feature/auth/presentation/state/LoginState.kt` — added `smsUnavailable` + `smsBannerDismissed` flags
+- `feature/auth/presentation/viewmodel/LoginViewModel.kt` — SMS health check on init
+- `feature/auth/presentation/screen/LoginScreen.kt` — dismissible amber SMS unavailable banner
+- `feature/health/presentation/state/HealthState.kt` — added `permissionBlocked` to `PrescriptionsUiState`
+- `feature/health/presentation/viewmodel/PrescriptionsViewModel.kt` — permission gate via `GetPatientPermissionsUseCase`
+- `feature/health/presentation/screen/PrescriptionsScreen.kt` — blocked state UI
+- `feature/booking/data/remote/dto/BookingDtos.kt` — added `canCancel` and `canReschedule` to `AppointmentDto`
+- `feature/booking/domain/model/Appointment.kt` — added `canCancel` and `canReschedule` to domain model
+- `feature/booking/data/mapper/BookingMappers.kt` — mapped `canCancel`/`canReschedule` through to domain
+- `feature/booking/presentation/state/BookingState.kt` — added `pending`/`cancelled` lists, reschedule sheet state, 3 new events
+- `feature/booking/presentation/viewmodel/MyAppointmentsViewModel.kt` — 4-bucket parallel load + reschedule handler
+- `feature/booking/presentation/screen/MyAppointmentsScreen.kt` — `ScrollableTabRow` 4 tabs + `ModalBottomSheet` reschedule picker
+- `feature/auth/domain/usecase/GetPatientPermissionsUseCaseTest.kt` — 5 new tests
+- `feature/health/presentation/viewmodel/PrescriptionsViewModelTest.kt` — updated mock signatures + permission test
 
-**Device verified (2026-06-05):** All 5 sections render with correct icon tints. All 11 tiles navigate to the correct screen. ✅
+**Device verified (2026-06-05):**
+- Login fixed for Mohit Gupta (`mohitgupta@fivermail.com`) — `loginTenantId: 1` confirmed HTTP 200 in logcat ✅
+- 4-tab appointment screen renders (Upcoming/Pending/Completed/Cancelled) ✅
+- Empty state labels per tab work correctly ✅
+- Book Appointment screen navigates (Step 1 shows "No services available" — tenant 1 has no services configured on staging) ⚠️
+
+**Tests:** 162/162 passing (150 prior + 12 new: 5 GetPatientPermissionsUseCase + 1 PrescriptionsViewModel permission test + 6 updates) ✅
 
 **What changed in the previous committed sessions:**
 
 | Commit | Date | What |
 |--------|------|------|
-| `3d6a804` | 2026-06-05 | Wellness Lumina Phase 2 — warm linen palette, GradientHeroCard, WellnessProgressBar, pill chips, gold loyalty, device-verified on all screens |
-| `6433348` | 2026-06-04 | Enhanced Wellness Edition — Manrope+Inter fonts, dark mode, WellnessComponents.kt shared library, all 17 screens migrated |
-
-**Test status at last commit:** 75/75 tests passing ✅
+| `70027fc` | 2026-06-05 | feat: portal dashboard menu, Poppins font, section header upgrade + bug fixes |
+| `3d6a804` | 2026-06-05 | feat: Wellness Lumina UI — warm palette, gradient heroes, fluid components |
+| `6433348` | 2026-06-04 | feat: Enhanced Wellness Edition UI migration — design system overhaul |
 
 ---
 
@@ -197,7 +221,7 @@ These are presentation-layer-only improvements. No business logic, ViewModel (ex
 ✅ LoyaltyScreen: GradientHeroCard, gold points number, circle transaction icons
 ✅ MembershipsScreen: WellnessProgressBar replaces LinearProgressIndicator
 
-### Dashboard Portal Menu (not yet committed — 2026-06-05)
+### Dashboard Portal Menu (commit `70027fc` — 2026-06-05)
 ✅ DashboardState.kt: 3 new UiEvent entries (VisitHistory, TreatmentPlans, ConsentForms)
 ✅ DashboardViewModel.kt: 3 new NavEvent entries + onEvent branches
 ✅ NavGraph.kt: 3 new route wires for dashboard
@@ -208,6 +232,8 @@ These are presentation-layer-only improvements. No business logic, ViewModel (ex
    - Programs: Memberships | Loyalty & Referrals
    - Account: Profile | Notifications
 ✅ Device verified on ADB device — all 5 sections, all 11 tiles, correct section colours
+✅ Typography switched to Poppins (poppins_regular/medium/semi_bold/bold.xml font resources)
+✅ SectionLabel upgraded to titleSmall SemiBold (14sp, high-contrast)
 
 ---
 
@@ -222,11 +248,29 @@ These are presentation-layer-only improvements. No business logic, ViewModel (ex
 
 ---
 
+## Web Portal Gap Fixes (Post-Phase-11 — 2026-06-05)
+
+Gaps discovered by analyzing the live web patient portal source (PatientPortal.jsx).
+All endpoints listed here are ✅ live on the backend.
+
+✅ G1 — CLAUDE.md OTP demo credential: `123456` → `1234` (4-digit enforcement confirmed)
+✅ G2 — GET /portal/me/permissions: PatientPermissions domain model + GetPatientPermissionsUseCase + GetPatientPermissionsUseCaseTest (5 tests) + PrescriptionsViewModel permission gate + PrescriptionsScreen blocked state
+✅ G3 — PATCH /portal/appointments/:id/reschedule: ShowRescheduleSheet/DismissRescheduleSheet/ConfirmReschedule events + ViewModel reschedule() coroutine + ModalBottomSheet with 14-day date chips + time grid. Device test found button gate was `selectedTab==0`; fixed by mapping `canReschedule`/`canCancel` from AppointmentDto → Appointment domain model → AppointmentCard (now uses API flags, not tab index)
+✅ G4 — GET /portal/appointments?bucket=: MyAppointmentsUiState adds pending/cancelled lists + ViewModel loads 4 buckets in parallel (coroutineScope + async) + ScrollableTabRow with 4 tabs (Upcoming/Pending/Completed/Cancelled)
+✅ G5 — GET /portal/health: CheckSmsAvailabilityUseCase + isSmsAvailable() in AuthRepository + LoginViewModel checks on init + dismissible amber banner on LoginScreen
+✅ BuildConfig fix — `loginTenantId` now reads from `BuildConfig.TENANT_ID` (int=1) instead of DataStore slug resolution; fixes 401 for accounts on tenant 1 (e.g. mohitgupta@fivermail.com)
+
+---
+
 ## Backend Gap Endpoints
 
 | Endpoint | Status | Blocks |
 |----------|--------|--------|
 | POST /portal/register | ✅ Built + tested | Screen 4 |
+| GET /portal/me/permissions | ✅ Live on backend | G2 — android calls it ✅ |
+| GET /portal/health | ✅ Live on backend | G5 — android calls it ✅ |
+| PATCH /portal/appointments/:id/reschedule | ✅ Live on backend | G3 — android UI + domain ✅ |
+| GET /portal/appointments?bucket= | ✅ Live on backend | G4 — android 4-tab UI ✅ |
 | GET /portal/me/dashboard | 🔴 Not yet on CRM backend | Screen 5 (mocked) |
 | GET /portal/slots | 🔴 Not yet on CRM backend | Screen 6 Step 3 (mocked) |
 | GET /portal/me/wallet | 🔴 Not yet on CRM backend | Screen 12 (mocked) |
@@ -245,6 +289,7 @@ These are presentation-layer-only improvements. No business logic, ViewModel (ex
 
 | Hash | Date | Commit message |
 |------|------|----------------|
+| `70027fc` | 2026-06-05 | feat: portal dashboard menu, Poppins font, section header upgrade + bug fixes |
 | `3d6a804` | 2026-06-05 | feat: Wellness Lumina UI — warm palette, gradient heroes, fluid components |
 | `6433348` | 2026-06-04 | feat: Enhanced Wellness Edition UI migration — design system overhaul |
 | `fc30f19` | — | fix: display bugs + Phase 2 screens (Treatment Plans, Consent Forms, Loyalty) |

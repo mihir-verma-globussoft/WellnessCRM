@@ -21,6 +21,8 @@ fun AppointmentDto.toDomain() = Appointment(
     doctorAssigned = doctorAssigned,
     bookingType = bookingType,
     videoCallUrl = videoCallUrl,
+    canCancel = canCancel,
+    canReschedule = canReschedule,
 )
 
 fun VisitDto.toDomain() = Visit(

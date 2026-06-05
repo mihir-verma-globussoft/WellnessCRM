@@ -63,3 +63,15 @@ data class TenantBrandingDto(
 data class TenantBrandingResponseDto(
     val tenant: TenantBrandingDto,
 )
+
+// GET /portal/me/permissions — { "permissions": ["my_prescriptions.read", "products.read"] }
+@JsonClass(generateAdapter = true)
+data class PatientPermissionsDto(
+    val permissions: List<String>,
+)
+
+// GET /portal/health — { "smsConfigured": true }
+@JsonClass(generateAdapter = true)
+data class PortalHealthDto(
+    val smsConfigured: Boolean,
+)

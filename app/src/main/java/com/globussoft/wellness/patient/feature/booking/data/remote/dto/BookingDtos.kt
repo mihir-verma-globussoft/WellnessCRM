@@ -64,6 +64,8 @@ data class AppointmentDto(
     val doctorAssigned: Boolean,
     val bookingType: String?,
     val videoCallUrl: String?,
+    val canCancel: Boolean = true,
+    val canReschedule: Boolean = true,
 )
 
 @JsonClass(generateAdapter = true)

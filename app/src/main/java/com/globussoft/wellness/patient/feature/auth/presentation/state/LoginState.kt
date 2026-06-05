@@ -6,6 +6,8 @@ data class LoginUiState(
     val isPasswordVisible: Boolean = false,
     val isLoading: Boolean = false,
     val error: String? = null,
+    val smsUnavailable: Boolean = false,
+    val smsBannerDismissed: Boolean = false,
 )
 
 sealed class LoginUiEvent {
@@ -14,4 +16,5 @@ sealed class LoginUiEvent {
     object TogglePasswordVisibility : LoginUiEvent()
     object Submit : LoginUiEvent()
     object NavigateToRegister : LoginUiEvent()
+    object DismissSmsBanner : LoginUiEvent()
 }

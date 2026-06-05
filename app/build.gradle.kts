@@ -34,6 +34,7 @@ android {
 
         buildConfigField("String", "BASE_URL", "\"https://crm.globusdemos.com/api/wellness/\"")
         buildConfigField("String", "TENANT_SLUG", "\"default\"")
+        buildConfigField("int", "TENANT_ID", "1")
     }
 
     signingConfigs {
@@ -53,6 +54,7 @@ android {
         debug {
             buildConfigField("String", "BASE_URL", "\"https://crm-staging.globusdemos.com/api/wellness/\"")
             buildConfigField("String", "TENANT_SLUG", "\"testing\"")
+            buildConfigField("int", "TENANT_ID", "1")
         }
         release {
             isMinifyEnabled = true
@@ -64,6 +66,7 @@ android {
             signingConfig = signingConfigs.getByName("release")
             buildConfigField("String", "BASE_URL", "\"https://crm.globusdemos.com/api/wellness/\"")
             buildConfigField("String", "TENANT_SLUG", "\"enhanced-wellness\"")
+            buildConfigField("int", "TENANT_ID", "1")
         }
     }
 

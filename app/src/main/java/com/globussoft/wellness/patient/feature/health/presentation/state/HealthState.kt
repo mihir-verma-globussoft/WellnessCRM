@@ -8,6 +8,7 @@ data class PrescriptionsUiState(
     val isLoading: Boolean = true,
     val error: String? = null,
     val prescriptions: List<Prescription> = emptyList(),
+    val permissionBlocked: Boolean = false,
 )
 
 sealed class PrescriptionsUiEvent {

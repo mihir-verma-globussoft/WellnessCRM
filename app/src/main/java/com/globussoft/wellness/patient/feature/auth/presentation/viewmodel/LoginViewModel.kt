@@ -3,6 +3,7 @@ package com.globussoft.wellness.patient.feature.auth.presentation.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.globussoft.wellness.patient.core.util.Result
+import com.globussoft.wellness.patient.feature.auth.domain.usecase.CheckSmsAvailabilityUseCase
 import com.globussoft.wellness.patient.feature.auth.domain.usecase.LoginUseCase
 import com.globussoft.wellness.patient.feature.auth.presentation.state.LoginUiEvent
 import com.globussoft.wellness.patient.feature.auth.presentation.state.LoginUiState
@@ -24,6 +25,7 @@ sealed class LoginNavEvent {
 @HiltViewModel
 class LoginViewModel @Inject constructor(
     private val loginUseCase: LoginUseCase,
+    private val checkSmsAvailability: CheckSmsAvailabilityUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
@@ -32,6 +34,15 @@ class LoginViewModel @Inject constructor(
     private val _navEvent = Channel<LoginNavEvent>(Channel.BUFFERED)
     val navEvent = _navEvent.receiveAsFlow()
 
+    init {
+        viewModelScope.launch {
+            val result = checkSmsAvailability()
+            if (result is Result.Success && !result.data) {
+                _uiState.update { it.copy(smsUnavailable = true) }
+            }
+        }
+    }
+
     fun onEvent(event: LoginUiEvent) {
         when (event) {
             is LoginUiEvent.EmailChanged -> _uiState.update { it.copy(email = event.email, error = null) }
@@ -39,6 +50,7 @@ class LoginViewModel @Inject constructor(
             LoginUiEvent.TogglePasswordVisibility -> _uiState.update { it.copy(isPasswordVisible = !it.isPasswordVisible) }
             LoginUiEvent.Submit -> submitLogin()
             LoginUiEvent.NavigateToRegister -> viewModelScope.launch { _navEvent.send(LoginNavEvent.NavigateToRegister) }
+            LoginUiEvent.DismissSmsBanner -> _uiState.update { it.copy(smsBannerDismissed = true) }
         }
     }
 

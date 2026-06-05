@@ -11,12 +11,25 @@ data class MyAppointmentsUiState(
     val error: String? = null,
     val upcoming: List<Appointment> = emptyList(),
     val past: List<Appointment> = emptyList(),
+    val pending: List<Appointment> = emptyList(),
+    val cancelled: List<Appointment> = emptyList(),
     val cancellingId: Int? = null,
+    val rescheduleSheetAppointmentId: Int? = null,
+    val isRescheduling: Boolean = false,
+    val rescheduleError: String? = null,
 )
 
 sealed class MyAppointmentsUiEvent {
     object Refresh : MyAppointmentsUiEvent()
     data class Cancel(val appointmentId: Int) : MyAppointmentsUiEvent()
+    data class ShowRescheduleSheet(
+        val appointmentId: Int,
+    ) : MyAppointmentsUiEvent()
+    object DismissRescheduleSheet : MyAppointmentsUiEvent()
+    data class ConfirmReschedule(
+        val newDate: String,
+        val newTime: String,
+    ) : MyAppointmentsUiEvent()
     object NavigateToBook : MyAppointmentsUiEvent()
     object NavigateToHistory : MyAppointmentsUiEvent()
     object NavigateBack : MyAppointmentsUiEvent()

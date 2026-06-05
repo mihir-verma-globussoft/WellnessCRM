@@ -2,6 +2,8 @@ package com.globussoft.wellness.patient.core.network
 
 import com.globussoft.wellness.patient.feature.auth.data.remote.dto.LoginRequestDto
 import com.globussoft.wellness.patient.feature.auth.data.remote.dto.LoginResponseDto
+import com.globussoft.wellness.patient.feature.auth.data.remote.dto.PatientPermissionsDto
+import com.globussoft.wellness.patient.feature.auth.data.remote.dto.PortalHealthDto
 import com.globussoft.wellness.patient.feature.auth.data.remote.dto.RegisterRequestDto
 import com.globussoft.wellness.patient.feature.auth.data.remote.dto.RegisterResponseDto
 import com.globussoft.wellness.patient.feature.auth.data.remote.dto.TenantBrandingResponseDto
@@ -61,6 +63,14 @@ interface WellnessApiService {
     suspend fun registerCustomer(
         @Body body: RegisterRequestDto,
     ): Response<RegisterResponseDto>
+
+    // ── Portal Health (SMS availability check) ───────────────────────────────
+    @GET("portal/health")
+    suspend fun getPortalHealth(): Response<PortalHealthDto>
+
+    // ── Patient Permissions ───────────────────────────────────────────────────
+    @GET("portal/me/permissions")
+    suspend fun getPatientPermissions(): Response<PatientPermissionsDto>
 
     // ── Profile ───────────────────────────────────────────────────────────────
     // GET /portal/me — patient-layer: name, phone, email, dob, gender, id (patientId)

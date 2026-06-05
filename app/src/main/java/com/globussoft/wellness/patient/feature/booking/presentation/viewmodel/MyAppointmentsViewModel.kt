@@ -5,8 +5,11 @@ import androidx.lifecycle.viewModelScope
 import com.globussoft.wellness.patient.core.util.Result
 import com.globussoft.wellness.patient.feature.booking.domain.usecase.CancelAppointmentUseCase
 import com.globussoft.wellness.patient.feature.booking.domain.usecase.GetMyAppointmentsUseCase
+import com.globussoft.wellness.patient.feature.booking.domain.usecase.RescheduleAppointmentUseCase
 import com.globussoft.wellness.patient.feature.booking.presentation.state.MyAppointmentsUiEvent
 import com.globussoft.wellness.patient.feature.booking.presentation.state.MyAppointmentsUiState
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,6 +29,7 @@ sealed class MyAppointmentsNavEvent {
 class MyAppointmentsViewModel @Inject constructor(
     private val getMyAppointments: GetMyAppointmentsUseCase,
     private val cancelAppointment: CancelAppointmentUseCase,
+    private val rescheduleAppointment: RescheduleAppointmentUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MyAppointmentsUiState())
@@ -42,6 +46,11 @@ class MyAppointmentsViewModel @Inject constructor(
         when (event) {
             MyAppointmentsUiEvent.Refresh -> load()
             is MyAppointmentsUiEvent.Cancel -> cancel(event.appointmentId)
+            is MyAppointmentsUiEvent.ShowRescheduleSheet ->
+                _uiState.value = _uiState.value.copy(rescheduleSheetAppointmentId = event.appointmentId, rescheduleError = null)
+            MyAppointmentsUiEvent.DismissRescheduleSheet ->
+                _uiState.value = _uiState.value.copy(rescheduleSheetAppointmentId = null, rescheduleError = null)
+            is MyAppointmentsUiEvent.ConfirmReschedule -> reschedule(event.newDate, event.newTime)
             MyAppointmentsUiEvent.NavigateToBook -> emit(MyAppointmentsNavEvent.ToBook)
             MyAppointmentsUiEvent.NavigateToHistory -> emit(MyAppointmentsNavEvent.ToHistory)
             MyAppointmentsUiEvent.NavigateBack -> emit(MyAppointmentsNavEvent.Back)
@@ -51,14 +60,24 @@ class MyAppointmentsViewModel @Inject constructor(
     private fun load() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
-            val upcomingResult = getMyAppointments("upcoming")
-            val pastResult = getMyAppointments("past")
-            _uiState.value = MyAppointmentsUiState(
-                isLoading = false,
-                upcoming = if (upcomingResult is Result.Success) upcomingResult.data else emptyList(),
-                past = if (pastResult is Result.Success) pastResult.data else emptyList(),
-                error = if (upcomingResult is Result.Error) upcomingResult.message else null,
-            )
+            coroutineScope {
+                val upcomingDeferred = async { getMyAppointments("upcoming") }
+                val pastDeferred = async { getMyAppointments("completed") }
+                val pendingDeferred = async { getMyAppointments("pending") }
+                val cancelledDeferred = async { getMyAppointments("cancelled") }
+                val upcoming = upcomingDeferred.await()
+                val past = pastDeferred.await()
+                val pending = pendingDeferred.await()
+                val cancelled = cancelledDeferred.await()
+                _uiState.value = MyAppointmentsUiState(
+                    isLoading = false,
+                    upcoming = if (upcoming is Result.Success) upcoming.data else emptyList(),
+                    past = if (past is Result.Success) past.data else emptyList(),
+                    pending = if (pending is Result.Success) pending.data else emptyList(),
+                    cancelled = if (cancelled is Result.Success) cancelled.data else emptyList(),
+                    error = if (upcoming is Result.Error) upcoming.message else null,
+                )
+            }
         }
     }
 
@@ -70,6 +89,27 @@ class MyAppointmentsViewModel @Inject constructor(
                 is Result.Error -> _uiState.value = _uiState.value.copy(
                     cancellingId = null,
                     error = "Failed to cancel appointment",
+                )
+                Result.Loading -> Unit
+            }
+        }
+    }
+
+    private fun reschedule(newDate: String, newTime: String) {
+        val appointmentId = _uiState.value.rescheduleSheetAppointmentId ?: return
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isRescheduling = true, rescheduleError = null)
+            when (val result = rescheduleAppointment(appointmentId, newDate, newTime)) {
+                is Result.Success -> {
+                    _uiState.value = _uiState.value.copy(
+                        isRescheduling = false,
+                        rescheduleSheetAppointmentId = null,
+                    )
+                    load()
+                }
+                is Result.Error -> _uiState.value = _uiState.value.copy(
+                    isRescheduling = false,
+                    rescheduleError = result.message,
                 )
                 Result.Loading -> Unit
             }

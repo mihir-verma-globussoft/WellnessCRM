@@ -57,6 +57,11 @@ fun PrescriptionsScreen(
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             when {
                 state.isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                state.permissionBlocked -> ErrorState(
+                    message = "Prescription access is not enabled for your account. Contact your clinic.",
+                    onRetry = { onEvent(PrescriptionsUiEvent.Refresh) },
+                    modifier = Modifier.align(Alignment.Center),
+                )
                 state.error != null -> ErrorState(
                     message = state.error,
                     onRetry = { onEvent(PrescriptionsUiEvent.Refresh) },

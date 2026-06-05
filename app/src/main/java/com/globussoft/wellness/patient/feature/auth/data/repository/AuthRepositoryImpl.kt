@@ -1,5 +1,6 @@
 package com.globussoft.wellness.patient.feature.auth.data.repository
 
+import com.globussoft.wellness.patient.BuildConfig
 import com.globussoft.wellness.patient.core.network.WellnessApiService
 import com.globussoft.wellness.patient.core.storage.DataStoreManager
 import com.globussoft.wellness.patient.core.storage.EncryptedPrefsManager
@@ -8,6 +9,7 @@ import com.globussoft.wellness.patient.feature.auth.data.mapper.toPatient
 import com.globussoft.wellness.patient.feature.auth.data.remote.dto.LoginRequestDto
 import com.globussoft.wellness.patient.feature.auth.data.remote.dto.RegisterRequestDto
 import com.globussoft.wellness.patient.feature.auth.domain.model.Patient
+import com.globussoft.wellness.patient.feature.auth.domain.model.PatientPermissions
 import com.globussoft.wellness.patient.feature.auth.domain.model.TenantBranding
 import com.globussoft.wellness.patient.feature.auth.domain.repository.AuthRepository
 import retrofit2.HttpException
@@ -28,8 +30,7 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun login(email: String, password: String): Patient {
-        val tenantId = dataStore.getTenantId()
-        val response = api.login(LoginRequestDto(email = email, password = password, loginTenantId = tenantId))
+        val response = api.login(LoginRequestDto(email = email, password = password, loginTenantId = BuildConfig.TENANT_ID as Int?))
         if (!response.isSuccessful) throw HttpException(response)
         val body = response.body()!!
         dataStore.saveToken(body.token)
@@ -40,14 +41,12 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun register(email: String, password: String, name: String): Patient {
-        val tenantId = dataStore.getTenantId()
-            ?: throw IllegalStateException("Tenant ID not loaded — splash must run first")
         val response = api.registerCustomer(
             RegisterRequestDto(
                 email = email,
                 password = password,
                 name = name,
-                registrationTenantId = tenantId,
+                registrationTenantId = BuildConfig.TENANT_ID,
             )
         )
         if (!response.isSuccessful) throw HttpException(response)
@@ -76,4 +75,18 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun hasValidToken(): Boolean = dataStore.getToken() != null
+
+    override suspend fun getPatientPermissions(): PatientPermissions {
+        val response = api.getPatientPermissions()
+        if (!response.isSuccessful) throw HttpException(response)
+        return PatientPermissions(response.body()!!.permissions.toSet())
+    }
+
+    override suspend fun isSmsAvailable(): Boolean {
+        return runCatching { api.getPortalHealth() }
+            .getOrNull()
+            ?.body()
+            ?.smsConfigured
+            ?: true
+    }
 }
