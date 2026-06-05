@@ -1,5 +1,6 @@
 package com.globussoft.wellness.patient.feature.loyalty.presentation.screen
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,13 +13,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.RemoveCircle
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -32,10 +32,13 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.globussoft.wellness.patient.core.theme.WellnessGold
+import com.globussoft.wellness.patient.core.ui.GradientHeroCard
 import com.globussoft.wellness.patient.core.util.DateUtil
 import com.globussoft.wellness.patient.feature.loyalty.domain.model.LoyaltyData
 import com.globussoft.wellness.patient.feature.loyalty.domain.model.LoyaltyTransaction
@@ -124,25 +127,16 @@ private fun LoyaltyContent(data: LoyaltyData) {
 
 @Composable
 private fun LoyaltyBalanceCard(balance: Int, earnedThisMonth: Int) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-    ) {
+    GradientHeroCard(modifier = Modifier.fillMaxWidth()) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp),
+            modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
                 text = "$balance",
                 fontSize = 56.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                color = WellnessGold,
             )
             Text(
                 text = "points",
@@ -151,14 +145,14 @@ private fun LoyaltyBalanceCard(balance: Int, earnedThisMonth: Int) {
             )
             Spacer(Modifier.height(12.dp))
             Surface(
-                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.15f),
-                shape = MaterialTheme.shapes.small,
+                color = Color.White.copy(alpha = 0.15f),
+                shape = RoundedCornerShape(50.dp),
             ) {
                 Text(
                     text = "Earned this month: $earnedThisMonth pts",
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    color = Color.White,
                 )
             }
         }
@@ -178,12 +172,23 @@ private fun LoyaltyTransactionRow(txn: LoyaltyTransaction) {
             .padding(vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(
-            imageVector = if (isEarned) Icons.Default.Star else Icons.Default.RemoveCircle,
-            contentDescription = null,
-            tint = pointsColor,
-            modifier = Modifier.size(24.dp),
-        )
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(RoundedCornerShape(50.dp))
+                .background(
+                    if (isEarned) MaterialTheme.colorScheme.secondaryContainer
+                    else MaterialTheme.colorScheme.errorContainer
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = if (isEarned) Icons.Default.Star else Icons.Default.RemoveCircle,
+                contentDescription = null,
+                tint = pointsColor,
+                modifier = Modifier.size(20.dp),
+            )
+        }
         Spacer(Modifier.size(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(

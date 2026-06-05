@@ -1,13 +1,16 @@
 package com.globussoft.wellness.patient.core.ui
 
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Inbox
@@ -15,19 +18,23 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
 /**
- * Standard card: white fill + 1dp outlineVariant border + 0 elevation.
- * Matches the "flat-but-layered" design system elevation philosophy.
+ * Standard card: white fill + 2dp shadow elevation.
+ * Soft 16dp radius from the shape system gives a modern fluid look.
  */
 @Composable
 fun WellnessCard(
@@ -42,15 +49,38 @@ fun WellnessCard(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
         ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Column(content = content)
     }
 }
 
 /**
- * Status chip: maps appointment/membership status → semantic M3 color pair.
+ * Gradient hero card: vertical teal gradient + 24dp radius.
+ * Replaces flat solid-colour hero cards on Dashboard, Wallet, and Loyalty.
+ */
+@Composable
+fun GradientHeroCard(
+    modifier: Modifier = Modifier,
+    content: @Composable BoxScope.() -> Unit,
+) {
+    val gradient = Brush.verticalGradient(
+        colors = listOf(
+            MaterialTheme.colorScheme.primary,
+            MaterialTheme.colorScheme.primaryContainer,
+        ),
+    )
+    Box(
+        modifier = modifier
+            .clip(MaterialTheme.shapes.large)
+            .background(gradient)
+            .padding(24.dp),
+        content = content,
+    )
+}
+
+/**
+ * Status chip: always pill-shaped. Maps status → semantic M3 color pair.
  */
 @Composable
 fun StatusChip(
@@ -75,16 +105,35 @@ fun StatusChip(
     }
     Surface(
         modifier = modifier,
-        shape = MaterialTheme.shapes.extraSmall,
+        shape = RoundedCornerShape(50.dp),
         color = bg,
     ) {
         Text(
             text = status.replaceFirstChar { it.uppercase() },
-            style = MaterialTheme.typography.labelSmall,
+            style = MaterialTheme.typography.labelMedium,
             color = fg,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
         )
     }
+}
+
+/**
+ * Rounded progress bar: 8dp height + pill clip + rounded stroke caps.
+ */
+@Composable
+fun WellnessProgressBar(
+    progress: Float,
+    modifier: Modifier = Modifier,
+) {
+    LinearProgressIndicator(
+        progress = { progress.coerceIn(0f, 1f) },
+        modifier = modifier
+            .height(8.dp)
+            .clip(RoundedCornerShape(50.dp)),
+        strokeCap = StrokeCap.Round,
+        color = MaterialTheme.colorScheme.secondary,
+        trackColor = MaterialTheme.colorScheme.secondaryContainer,
+    )
 }
 
 /**
@@ -104,7 +153,7 @@ fun SectionLabel(
 }
 
 /**
- * Standard error state: CloudOff icon + message + retry button.
+ * Error state: icon in errorContainer box + message + retry button.
  */
 @Composable
 fun ErrorState(
@@ -113,16 +162,24 @@ fun ErrorState(
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier.padding(24.dp),
+        modifier = modifier.padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Icon(
-            imageVector = Icons.Default.CloudOff,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.error,
-            modifier = Modifier.size(48.dp),
-        )
+        Box(
+            modifier = Modifier
+                .size(72.dp)
+                .clip(RoundedCornerShape(20.dp))
+                .background(MaterialTheme.colorScheme.errorContainer),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Default.CloudOff,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onErrorContainer,
+                modifier = Modifier.size(36.dp),
+            )
+        }
         Text(
             text = message,
             style = MaterialTheme.typography.bodyMedium,
@@ -136,7 +193,7 @@ fun ErrorState(
 }
 
 /**
- * Standard empty state: icon + message.
+ * Empty state: icon in soft surfaceContainerHigh box + message.
  */
 @Composable
 fun EmptyState(
@@ -149,12 +206,20 @@ fun EmptyState(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(48.dp),
-        )
+        Box(
+            modifier = Modifier
+                .size(72.dp)
+                .clip(RoundedCornerShape(20.dp))
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(36.dp),
+            )
+        }
         Text(
             text = message,
             style = MaterialTheme.typography.bodyMedium,

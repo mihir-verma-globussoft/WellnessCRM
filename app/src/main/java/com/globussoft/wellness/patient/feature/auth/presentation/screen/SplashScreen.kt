@@ -14,6 +14,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -28,10 +29,12 @@ fun SplashScreen(
         ?.let { parseBrandColor(it) }
         ?: MaterialTheme.colorScheme.primary
 
+    val gradientEnd = MaterialTheme.colorScheme.primaryContainer
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
+            .background(Brush.verticalGradient(listOf(brandColor, gradientEnd))),
         contentAlignment = Alignment.Center,
     ) {
         Column(
@@ -40,8 +43,11 @@ fun SplashScreen(
         ) {
             Box(
                 modifier = Modifier
-                    .size(80.dp)
-                    .background(brandColor, shape = MaterialTheme.shapes.medium),
+                    .size(88.dp)
+                    .background(
+                        color = Color.White.copy(alpha = 0.18f),
+                        shape = MaterialTheme.shapes.large,
+                    ),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
@@ -56,7 +62,7 @@ fun SplashScreen(
             Text(
                 text = state.tenantBranding?.name ?: "Wellness",
                 style = MaterialTheme.typography.headlineMedium,
-                color = brandColor,
+                color = Color.White,
                 textAlign = TextAlign.Center,
             )
 
@@ -65,7 +71,7 @@ fun SplashScreen(
                 Text(
                     text = state.tenantBranding.tagline,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = Color.White.copy(alpha = 0.8f),
                     textAlign = TextAlign.Center,
                 )
             }
@@ -73,7 +79,7 @@ fun SplashScreen(
             Spacer(modifier = Modifier.height(48.dp))
 
             if (state.isLoading) {
-                CircularProgressIndicator(color = brandColor)
+                CircularProgressIndicator(color = Color.White)
             }
 
             if (state.error != null) {
@@ -81,7 +87,7 @@ fun SplashScreen(
                 Text(
                     text = state.error,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
+                    color = Color.White.copy(alpha = 0.85f),
                     textAlign = TextAlign.Center,
                 )
             }

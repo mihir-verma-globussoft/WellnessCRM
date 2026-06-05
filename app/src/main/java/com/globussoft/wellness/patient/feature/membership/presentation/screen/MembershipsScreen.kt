@@ -16,7 +16,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
+import com.globussoft.wellness.patient.core.ui.WellnessProgressBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
@@ -141,8 +141,8 @@ private fun MembershipCard(membership: Membership, onClick: () -> Unit) {
                                 )
                                 Text("${b.remaining}/${b.total}", style = MaterialTheme.typography.labelSmall)
                             }
-                            LinearProgressIndicator(
-                                progress = { if (b.total > 0) b.remaining.toFloat() / b.total else 0f },
+                            WellnessProgressBar(
+                                progress = if (b.total > 0) b.remaining.toFloat() / b.total else 0f,
                                 modifier = Modifier.fillMaxWidth(),
                             )
                         }
