@@ -103,6 +103,17 @@ private fun DashboardContent(
     ) {
         GreetingHeader(patientName = state.dashboard?.patientName.orEmpty())
 
+        SectionLabel(text = "Overview")
+        StatRow(
+            walletBalance = state.dashboard?.walletBalance,
+            walletCurrency = state.dashboard?.walletCurrency,
+            membershipCount = state.dashboard?.activeMembershipCount ?: 0,
+            loyaltyPoints = state.dashboard?.loyaltyPoints,
+            onWalletClick = { onEvent(DashboardUiEvent.NavigateToWallet) },
+            onMembershipsClick = { onEvent(DashboardUiEvent.NavigateToMemberships) },
+            onLoyaltyClick = { onEvent(DashboardUiEvent.NavigateToLoyalty) },
+        )
+
         if (state.dashboard?.nextVisit != null) {
             NextVisitCard(
                 visit = state.dashboard.nextVisit,
@@ -114,16 +125,7 @@ private fun DashboardContent(
             )
         }
 
-        SectionLabel(text = "Overview")
-        StatRow(
-            walletBalance = state.dashboard?.walletBalance,
-            walletCurrency = state.dashboard?.walletCurrency,
-            membershipCount = state.dashboard?.activeMembershipCount ?: 0,
-            loyaltyPoints = state.dashboard?.loyaltyPoints,
-            onWalletClick = { onEvent(DashboardUiEvent.NavigateToWallet) },
-            onMembershipsClick = { onEvent(DashboardUiEvent.NavigateToMemberships) },
-            onLoyaltyClick = { onEvent(DashboardUiEvent.NavigateToLoyalty) },
-        )
+        TodayAtAGlance()
 
         PortalMenu(onEvent = onEvent)
 
@@ -334,6 +336,29 @@ private fun StatChip(
 }
 
 @Composable
+private fun TodayAtAGlance() {
+    WellnessCard(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(
+                text = "Today at a glance",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = "Your personalised shortcuts will appear here",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
 private fun PortalMenu(onEvent: (DashboardUiEvent) -> Unit) {
     val cs = MaterialTheme.colorScheme
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -350,7 +375,7 @@ private fun PortalMenu(onEvent: (DashboardUiEvent) -> Unit) {
             onEvent = onEvent,
         )
         PortalSection(
-            title = "Health Records",
+            title = "Clinical",
             containerColor = cs.secondaryContainer.copy(alpha = 0.5f),
             iconTint = cs.secondary,
             tiles = listOf(
@@ -371,7 +396,7 @@ private fun PortalMenu(onEvent: (DashboardUiEvent) -> Unit) {
             onEvent = onEvent,
         )
         PortalSection(
-            title = "Programs",
+            title = "Catalog",
             containerColor = WellnessGoldContainer,
             iconTint = WellnessGold,
             tiles = listOf(

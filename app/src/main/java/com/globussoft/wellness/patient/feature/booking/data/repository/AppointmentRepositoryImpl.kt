@@ -36,6 +36,7 @@ class AppointmentRepositoryImpl @Inject constructor(
         serviceId: Int?,
         membershipId: Int?,
         bookingType: String?,
+        doctorId: Int?,
     ): Appointment {
         val response = api.bookAppointment(
             BookAppointmentDto(
@@ -45,7 +46,7 @@ class AppointmentRepositoryImpl @Inject constructor(
                 serviceId = serviceId,
                 membershipId = membershipId,
                 bookingType = bookingType,
-                doctorId = null,
+                doctorId = doctorId,
             )
         )
         if (!response.isSuccessful) throw HttpException(response)

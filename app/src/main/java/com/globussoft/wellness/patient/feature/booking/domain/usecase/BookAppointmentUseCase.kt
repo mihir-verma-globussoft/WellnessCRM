@@ -17,6 +17,7 @@ class BookAppointmentUseCase @Inject constructor(
         serviceId: Int? = null,
         membershipId: Int? = null,
         bookingType: String? = null,
+        doctorId: Int? = null,
     ): Result<Appointment> = try {
         Result.Success(
             repository.bookAppointment(
@@ -26,6 +27,7 @@ class BookAppointmentUseCase @Inject constructor(
                 serviceId = serviceId,
                 membershipId = membershipId,
                 bookingType = bookingType,
+                doctorId = doctorId,
             )
         )
     } catch (e: HttpException) {

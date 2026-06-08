@@ -9,12 +9,17 @@ data class WalletUiState(
     val isLoading: Boolean = true,
     val error: String? = null,
     val wallet: WalletSummary? = null,
+    val activeFilter: String = "All",
+    val selectedTransaction: Transaction? = null,
 )
 
 sealed class WalletUiEvent {
     object Refresh : WalletUiEvent()
     object NavigateToGiftCards : WalletUiEvent()
     object NavigateBack : WalletUiEvent()
+    data class FilterTransactions(val type: String) : WalletUiEvent()
+    data class SelectTransaction(val transaction: Transaction) : WalletUiEvent()
+    object DismissTransactionDetail : WalletUiEvent()
 }
 
 data class GiftCardsUiState(

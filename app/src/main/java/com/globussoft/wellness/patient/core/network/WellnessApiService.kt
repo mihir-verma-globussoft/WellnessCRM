@@ -231,10 +231,21 @@ interface WellnessApiService {
         @Body body: GiftCardConfirmDto,
     ): Response<GiftCardConfirmResponseDto>
 
+    // ── Doctors ───────────────────────────────────────────────────────────────
+    @GET("doctors/availability")
+    suspend fun getDoctorAvailability(
+        @Query("date") date: String,
+    ): Response<List<com.globussoft.wellness.patient.feature.booking.data.remote.dto.DoctorAvailabilityDto>>
+
     // ── Payments ─────────────────────────────────────────────────────────────
     @GET("/api/payments")
     suspend fun getPayments(): Response<List<PaymentDto>>
 
     @GET("/api/payments/config")
     suspend fun getPaymentConfig(): Response<PaymentConfigDto>
+
+    @POST("/api/payments/{id}/refund")
+    suspend fun refundPayment(
+        @Path("id") paymentId: String,
+    ): Response<PaymentDto>
 }

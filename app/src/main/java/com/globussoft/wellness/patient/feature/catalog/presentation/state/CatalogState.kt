@@ -19,6 +19,7 @@ sealed class CatalogUiEvent {
     object LoadCategories : CatalogUiEvent()
     data class UpdateSearch(val query: String) : CatalogUiEvent()
     data class SelectCategory(val categoryId: Int?) : CatalogUiEvent()
+    object ClearCategoryFilter : CatalogUiEvent()
     data class ShowServiceDetail(val service: Service) : CatalogUiEvent()
     object DismissServiceDetail : CatalogUiEvent()
     data class BookService(val serviceId: Int) : CatalogUiEvent()

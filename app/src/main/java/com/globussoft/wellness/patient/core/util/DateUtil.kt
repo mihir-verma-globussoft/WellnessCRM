@@ -41,5 +41,7 @@ object DateUtil {
 
     fun toApiDate(epochMs: Long): String = apiDate.format(Date(epochMs))
 
+    fun todayApiDate(): String = apiDate.format(Date())
+
     fun toApiTime(epochMs: Long): String = apiTime.format(Date(epochMs))
 }

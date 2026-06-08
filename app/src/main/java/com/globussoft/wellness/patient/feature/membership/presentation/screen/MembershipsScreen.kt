@@ -6,18 +6,24 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import com.globussoft.wellness.patient.core.ui.WellnessProgressBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -63,7 +69,10 @@ fun MembershipsScreen(
                 onRetry = { onEvent(MembershipsUiEvent.Refresh) },
                 modifier = Modifier.align(Alignment.Center),
             )
-            state.showPlans -> PlanCatalog(plans = state.plans)
+            state.showPlans -> PlanCatalog(
+                plans = state.plans,
+                onSelect = { onEvent(MembershipsUiEvent.SelectPlan(it)) },
+            )
             else -> MyMembershipsList(
                 memberships = state.memberships,
                 onSelect = { onEvent(MembershipsUiEvent.SelectMembership(it)) },
@@ -75,6 +84,31 @@ fun MembershipsScreen(
         MembershipDetailSheet(
             membership = membership,
             onDismiss = { onEvent(MembershipsUiEvent.DismissDetail) },
+        )
+    }
+
+    state.selectedPlan?.let { plan ->
+        PlanDetailSheet(
+            plan = plan,
+            onDismiss = { onEvent(MembershipsUiEvent.DismissPlanDetail) },
+            onJoin = { onEvent(MembershipsUiEvent.JoinPlan(plan.id)) },
+        )
+    }
+
+    if (state.showJoinConfirm) {
+        val plan = state.selectedPlan
+        AlertDialog(
+            onDismissRequest = { onEvent(MembershipsUiEvent.DismissJoinConfirm) },
+            title = { Text("Join membership?") },
+            text = {
+                Text("Contact the clinic to purchase ${plan?.name ?: "this membership plan"}.")
+            },
+            confirmButton = {
+                Button(onClick = { onEvent(MembershipsUiEvent.ConfirmJoin) }) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { onEvent(MembershipsUiEvent.DismissJoinConfirm) }) { Text("Cancel") }
+            },
         )
     }
 }
@@ -144,7 +178,7 @@ private fun MembershipCard(membership: Membership, onClick: () -> Unit) {
 }
 
 @Composable
-private fun PlanCatalog(plans: List<MembershipPlan>) {
+private fun PlanCatalog(plans: List<MembershipPlan>, onSelect: (MembershipPlan) -> Unit) {
     if (plans.isEmpty()) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text("No plans available", color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -153,7 +187,7 @@ private fun PlanCatalog(plans: List<MembershipPlan>) {
     }
     LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         items(plans) { plan ->
-            WellnessCard(modifier = Modifier.fillMaxWidth()) {
+            WellnessCard(modifier = Modifier.fillMaxWidth(), onClick = { onSelect(plan) }) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(plan.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                     if (!plan.description.isNullOrBlank()) {
@@ -177,6 +211,48 @@ private fun PlanCatalog(plans: List<MembershipPlan>) {
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PlanDetailSheet(
+    plan: MembershipPlan,
+    onDismiss: () -> Unit,
+    onJoin: () -> Unit,
+) {
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier.padding(horizontal = 24.dp).padding(bottom = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(plan.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            HorizontalDivider()
+            if (!plan.description.isNullOrBlank()) {
+                Text(
+                    plan.description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            DetailRow("Price", CurrencyUtil.formatRupees(plan.price))
+            DetailRow("Duration", "${plan.durationDays} days")
+            Spacer(modifier = Modifier.height(8.dp))
+            Button(
+                onClick = onJoin,
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.extraLarge,
+            ) {
+                Text("Join Now")
+            }
+            OutlinedButton(
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.extraLarge,
+            ) {
+                Text("Close")
             }
         }
     }

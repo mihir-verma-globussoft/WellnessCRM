@@ -156,3 +156,11 @@ data class AddWaitlistDto(
     val patientId: Int,
     val notes: String?,
 )
+
+@JsonClass(generateAdapter = true)
+data class DoctorAvailabilityDto(
+    val id: Int,
+    val name: String,
+    val specialization: String?,
+    val available: Boolean = true,
+)

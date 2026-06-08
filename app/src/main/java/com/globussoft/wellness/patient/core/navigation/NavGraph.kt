@@ -59,6 +59,7 @@ import com.globussoft.wellness.patient.feature.catalog.presentation.screen.Catal
 import com.globussoft.wellness.patient.feature.finance.presentation.screen.FinanceTabScreen
 import com.globussoft.wellness.patient.feature.finance.presentation.viewmodel.FinanceNavEvent
 import com.globussoft.wellness.patient.feature.finance.presentation.viewmodel.FinanceViewModel
+import com.globussoft.wellness.patient.feature.notifications.presentation.screen.NotificationSettingsScreen
 import com.globussoft.wellness.patient.feature.catalog.presentation.viewmodel.CatalogNavEvent
 import com.globussoft.wellness.patient.feature.catalog.presentation.viewmodel.CatalogViewModel
 import com.globussoft.wellness.patient.feature.loyalty.presentation.screen.LoyaltyScreen
@@ -82,6 +83,14 @@ import com.globussoft.wellness.patient.feature.wallet.presentation.viewmodel.Wal
 
 private val AUTH_ROUTES = setOf(Screen.Splash.route, Screen.Login.route, Screen.Register.route)
 
+private val TAB_ROOT_ROUTES = setOf(
+    Screen.Dashboard.route,
+    Screen.MyAppointments.route,
+    Screen.CatalogTab.route,
+    Screen.FinanceTab.route,
+    Screen.Profile.route,
+)
+
 @Composable
 fun WellnessNavGraph(
     modifier: Modifier = Modifier,
@@ -100,7 +109,7 @@ fun WellnessNavGraph(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val showChrome = currentRoute != null && currentRoute !in AUTH_ROUTES
-    val canNavigateBack = navController.previousBackStackEntry != null
+    val canNavigateBack = currentRoute !in TAB_ROOT_ROUTES && navController.previousBackStackEntry != null
 
     Scaffold(
         modifier = modifier,
@@ -211,7 +220,7 @@ fun WellnessNavGraph(
                             DashboardNavEvent.ToConsentForms -> navController.navigate(Screen.ConsentForms.route)
                             DashboardNavEvent.ToWaitlist -> navController.navigate(Screen.Waitlist.route)
                             DashboardNavEvent.ToLogin -> navController.navigate(Screen.Login.route) {
-                                popUpTo(Screen.Dashboard.route) { inclusive = true }
+                                popUpTo(0) { inclusive = true }
                             }
                         }
                     }
@@ -356,21 +365,28 @@ fun WellnessNavGraph(
 
             // ── Finance tab ───────────────────────────────────────────────────────
             composable(route = Screen.FinanceTab.route) {
-                val vm: FinanceViewModel = hiltViewModel()
-                val state by vm.uiState.collectAsStateWithLifecycle()
+                val financeVm: FinanceViewModel = hiltViewModel()
+                val giftVm: GiftCardsViewModel = hiltViewModel()
+                val walletVm: WalletViewModel = hiltViewModel()
+                val paymentsState by financeVm.uiState.collectAsStateWithLifecycle()
+                val giftState by giftVm.uiState.collectAsStateWithLifecycle()
+                val walletState by walletVm.uiState.collectAsStateWithLifecycle()
                 LaunchedEffect(Unit) {
-                    vm.navEvent.collect { event ->
+                    giftVm.navEvent.collect { event ->
                         when (event) {
-                            FinanceNavEvent.ToGiftCards -> navController.navigate(Screen.GiftCards.route)
-                            FinanceNavEvent.ToWallet -> navController.navigate(Screen.Wallet.route)
+                            is GiftCardsNavEvent.LaunchRazorpay -> { /* Razorpay SDK launched from Activity */ }
+                            GiftCardsNavEvent.Back -> { /* inline — no back nav needed */ }
+                            GiftCardsNavEvent.PurchaseComplete -> { /* purchase done inline */ }
                         }
                     }
                 }
                 FinanceTabScreen(
-                    state = state,
-                    onEvent = vm::onEvent,
-                    onNavigateToGiftCards = { navController.navigate(Screen.GiftCards.route) },
-                    onNavigateToWallet = { navController.navigate(Screen.Wallet.route) },
+                    paymentsState = paymentsState,
+                    giftState = giftState,
+                    walletState = walletState,
+                    onPaymentsEvent = financeVm::onEvent,
+                    onGiftEvent = giftVm::onEvent,
+                    onWalletEvent = walletVm::onEvent,
                 )
             }
 
@@ -417,8 +433,9 @@ fun WellnessNavGraph(
                         when (event) {
                             ProfileNavEvent.Back -> navController.popBackStack()
                             ProfileNavEvent.ToLogin -> navController.navigate(Screen.Login.route) {
-                                popUpTo(Screen.Dashboard.route) { inclusive = true }
+                                popUpTo(0) { inclusive = true }
                             }
+                            ProfileNavEvent.ToNotificationSettings -> navController.navigate(Screen.NotificationSettings.route)
                         }
                     }
                 }
@@ -450,6 +467,10 @@ fun WellnessNavGraph(
                     }
                 }
                 NotificationInboxScreen(state = state, onEvent = vm::onEvent)
+            }
+
+            composable(route = Screen.NotificationSettings.route) {
+                NotificationSettingsScreen(onBack = { navController.popBackStack() })
             }
 
             composable(

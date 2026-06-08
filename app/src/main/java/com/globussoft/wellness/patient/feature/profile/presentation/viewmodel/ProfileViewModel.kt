@@ -21,6 +21,7 @@ import javax.inject.Inject
 sealed class ProfileNavEvent {
     object Back : ProfileNavEvent()
     object ToLogin : ProfileNavEvent()
+    object ToNotificationSettings : ProfileNavEvent()
 }
 
 @HiltViewModel
@@ -64,6 +65,7 @@ class ProfileViewModel @Inject constructor(
             ProfileUiEvent.RequestDsarExport -> requestExport()
             ProfileUiEvent.Logout -> doLogout()
             ProfileUiEvent.NavigateBack -> viewModelScope.launch { _navEvent.send(ProfileNavEvent.Back) }
+            ProfileUiEvent.ToNotificationSettings -> viewModelScope.launch { _navEvent.send(ProfileNavEvent.ToNotificationSettings) }
         }
     }
 

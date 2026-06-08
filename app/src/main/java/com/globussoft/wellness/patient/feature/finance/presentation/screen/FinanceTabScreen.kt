@@ -14,15 +14,20 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -36,35 +41,30 @@ import com.globussoft.wellness.patient.core.ui.ErrorState
 import com.globussoft.wellness.patient.core.ui.StatusChip
 import com.globussoft.wellness.patient.core.ui.WellnessCard
 import com.globussoft.wellness.patient.core.util.CurrencyUtil
+import com.globussoft.wellness.patient.core.util.DateUtil
 import com.globussoft.wellness.patient.feature.finance.domain.model.Payment
 import com.globussoft.wellness.patient.feature.finance.presentation.state.FinanceUiEvent
 import com.globussoft.wellness.patient.feature.finance.presentation.state.FinanceUiState
+import com.globussoft.wellness.patient.feature.wallet.presentation.screen.GiftCardsScreen
+import com.globussoft.wellness.patient.feature.wallet.presentation.screen.WalletScreen
+import com.globussoft.wellness.patient.feature.wallet.presentation.state.GiftCardsUiEvent
+import com.globussoft.wellness.patient.feature.wallet.presentation.state.GiftCardsUiState
+import com.globussoft.wellness.patient.feature.wallet.presentation.state.WalletUiEvent
+import com.globussoft.wellness.patient.feature.wallet.presentation.state.WalletUiState
 
 private val TAB_LABELS = listOf("Payments", "Gift Cards", "Transactions")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FinanceTabScreen(
-    state: FinanceUiState,
-    onEvent: (FinanceUiEvent) -> Unit,
-    onNavigateToGiftCards: () -> Unit = {},
-    onNavigateToWallet: () -> Unit = {},
+    paymentsState: FinanceUiState,
+    giftState: GiftCardsUiState,
+    walletState: WalletUiState,
+    onPaymentsEvent: (FinanceUiEvent) -> Unit,
+    onGiftEvent: (GiftCardsUiEvent) -> Unit,
+    onWalletEvent: (WalletUiEvent) -> Unit,
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
-
-    // Navigate and reset when tabs 1 or 2 are tapped
-    LaunchedEffect(selectedTab) {
-        when (selectedTab) {
-            1 -> {
-                onNavigateToGiftCards()
-                selectedTab = 0
-            }
-            2 -> {
-                onNavigateToWallet()
-                selectedTab = 0
-            }
-        }
-    }
 
     Column(
         modifier = Modifier
@@ -85,10 +85,9 @@ fun FinanceTabScreen(
         }
 
         when (selectedTab) {
-            0 -> PaymentsContent(
-                state = state,
-                onEvent = onEvent,
-            )
+            0 -> PaymentsContent(state = paymentsState, onEvent = onPaymentsEvent)
+            1 -> GiftCardsScreen(state = giftState, onEvent = onGiftEvent)
+            2 -> WalletScreen(state = walletState, onEvent = onWalletEvent)
         }
     }
 }
@@ -146,11 +145,105 @@ private fun PaymentsContent(
                         Spacer(modifier = Modifier.height(4.dp))
                     }
                     items(state.payments) { payment ->
-                        PaymentCard(payment = payment)
+                        PaymentCard(
+                            payment = payment,
+                            onClick = { onEvent(FinanceUiEvent.SelectPayment(payment)) },
+                        )
                     }
                 }
             }
         }
+    }
+
+    state.selectedPayment?.let { payment ->
+        PaymentActionSheet(
+            payment = payment,
+            onDismiss = { onEvent(FinanceUiEvent.DismissPaymentSheet) },
+            onRefund = { onEvent(FinanceUiEvent.RequestRefund(payment)) },
+        )
+    }
+
+    state.showRefundConfirmFor?.let { payment ->
+        AlertDialog(
+            onDismissRequest = { onEvent(FinanceUiEvent.DismissRefundConfirm) },
+            title = { Text("Confirm Refund") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text("Refund ${CurrencyUtil.formatPaise(payment.amount, payment.currency)}?")
+                    Text("This action cannot be undone.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (state.refundError != null) {
+                        Text(state.refundError, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { onEvent(FinanceUiEvent.ConfirmRefund) },
+                    enabled = !state.isRefunding,
+                ) {
+                    if (state.isRefunding) CircularProgressIndicator(modifier = Modifier.width(20.dp).height(20.dp), strokeWidth = 2.dp)
+                    else Text("Refund")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { onEvent(FinanceUiEvent.DismissRefundConfirm) }) {
+                    Text("Cancel")
+                }
+            },
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PaymentActionSheet(
+    payment: Payment,
+    onDismiss: () -> Unit,
+    onRefund: () -> Unit,
+) {
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(
+                CurrencyUtil.formatPaise(payment.amount, payment.currency),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
+            if (!payment.description.isNullOrBlank()) {
+                Text(payment.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+            DetailRow("Status", payment.status)
+            DetailRow("Date", DateUtil.toDisplayDate(payment.createdAt))
+            if (!payment.gateway.isNullOrBlank()) DetailRow("Gateway", payment.gateway)
+            DetailRow("ID", payment.id.toString())
+            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+            if (!payment.status.equals("refunded", ignoreCase = true)) {
+                OutlinedButton(
+                    onClick = onRefund,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.extraLarge,
+                ) {
+                    Text("Request Refund", color = MaterialTheme.colorScheme.error)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DetailRow(label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(value, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium)
     }
 }
 
@@ -214,8 +307,8 @@ private fun KpiCard(
 }
 
 @Composable
-private fun PaymentCard(payment: Payment) {
-    WellnessCard(modifier = Modifier.fillMaxWidth()) {
+private fun PaymentCard(payment: Payment, onClick: () -> Unit = {}) {
+    WellnessCard(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -251,7 +344,7 @@ private fun PaymentCard(payment: Payment) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = formatDate(payment.createdAt),
+                    text = DateUtil.toDisplayDate(payment.createdAt),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -277,21 +370,4 @@ private fun GatewayBadge(gateway: String) {
         color = MaterialTheme.colorScheme.primary,
         fontWeight = FontWeight.Medium,
     )
-}
-
-/**
- * Formats an ISO-8601 date string to "DD MMM YYYY".
- * Falls back to the raw string on any parse error.
- */
-private fun formatDate(iso: String): String {
-    return try {
-        val parts = iso.substringBefore('T').split("-")
-        if (parts.size < 3) return iso
-        val months = listOf("", "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
-        val month = parts[1].toIntOrNull() ?: return iso
-        "${parts[2]} ${months.getOrElse(month) { parts[1] }} ${parts[0]}"
-    } catch (_: Exception) {
-        iso
-    }
 }

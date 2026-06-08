@@ -3,11 +3,13 @@ package com.globussoft.wellness.patient.feature.booking.presentation.viewmodel
 import com.globussoft.wellness.patient.core.util.DateUtil
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.globussoft.wellness.patient.core.network.WellnessApiService
 import com.globussoft.wellness.patient.core.util.Result
 import com.globussoft.wellness.patient.feature.booking.domain.usecase.BookAppointmentUseCase
 import com.globussoft.wellness.patient.feature.booking.domain.usecase.GetPortalProductsUseCase
 import com.globussoft.wellness.patient.feature.booking.presentation.state.BookAppointmentUiEvent
 import com.globussoft.wellness.patient.feature.booking.presentation.state.BookAppointmentUiState
+import com.globussoft.wellness.patient.feature.booking.presentation.state.DoctorOption
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,6 +28,7 @@ sealed class BookAppointmentNavEvent {
 class BookAppointmentViewModel @Inject constructor(
     private val getProducts: GetPortalProductsUseCase,
     private val bookAppointment: BookAppointmentUseCase,
+    private val apiService: WellnessApiService,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(BookAppointmentUiState())
@@ -41,7 +44,8 @@ class BookAppointmentViewModel @Inject constructor(
     fun onEvent(event: BookAppointmentUiEvent) {
         when (event) {
             BookAppointmentUiEvent.LoadProducts -> loadProducts()
-            is BookAppointmentUiEvent.SelectProduct -> _uiState.value = _uiState.value.copy(selectedProduct = event.product)
+            is BookAppointmentUiEvent.SelectProduct -> _uiState.value = _uiState.value.copy(selectedProduct = event.product, error = null)
+            is BookAppointmentUiEvent.SelectDoctor -> _uiState.value = _uiState.value.copy(selectedDoctorId = event.doctorId, error = null)
             is BookAppointmentUiEvent.SelectDate -> _uiState.value = _uiState.value.copy(selectedDate = event.epochMs)
             is BookAppointmentUiEvent.SelectTime -> _uiState.value = _uiState.value.copy(selectedTime = event.time)
             is BookAppointmentUiEvent.EnterReason -> _uiState.value = _uiState.value.copy(reason = event.reason)
@@ -70,13 +74,44 @@ class BookAppointmentViewModel @Inject constructor(
         }
     }
 
+    private fun loadDoctors(date: String) {
+        viewModelScope.launch {
+            try {
+                val response = apiService.getDoctorAvailability(date)
+                if (response.isSuccessful) {
+                    val dtos = response.body() ?: emptyList()
+                    val options = listOf(DoctorOption(id = null, name = "No preference")) +
+                        dtos.filter { it.available }.map { DoctorOption(id = it.id, name = it.name) }
+                    _uiState.value = _uiState.value.copy(doctors = options)
+                }
+            } catch (_: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    doctors = listOf(DoctorOption(id = null, name = "No preference")),
+                )
+            }
+        }
+    }
+
     private fun nextStep() {
         val s = _uiState.value
         when (s.step) {
-            1 -> if (s.selectedProduct != null) _uiState.value = s.copy(step = 2)
-                 else _uiState.value = s.copy(error = "Please select a service")
-            2 -> if (s.selectedDate != null && s.selectedTime != null) _uiState.value = s.copy(step = 3)
-                 else _uiState.value = s.copy(error = "Please select a date and time")
+            1 -> {
+                if (s.selectedProduct != null) {
+                    val dateStr = s.selectedDate?.let { DateUtil.toApiDate(it) } ?: DateUtil.todayApiDate()
+                    loadDoctors(dateStr)
+                    _uiState.value = s.copy(step = 2, error = null)
+                } else {
+                    _uiState.value = s.copy(error = "Please select a service")
+                }
+            }
+            2 -> _uiState.value = s.copy(step = 3, error = null)
+            3 -> {
+                if (s.selectedDate != null && s.selectedTime != null) {
+                    _uiState.value = s.copy(step = 4, error = null)
+                } else {
+                    _uiState.value = s.copy(error = "Please select a date and time")
+                }
+            }
             else -> Unit
         }
     }
@@ -103,6 +138,7 @@ class BookAppointmentViewModel @Inject constructor(
                 reason = s.reason,
                 serviceId = s.selectedProduct?.id,
                 membershipId = s.membershipId,
+                doctorId = s.selectedDoctorId,
             )
             when (result) {
                 is Result.Success -> {

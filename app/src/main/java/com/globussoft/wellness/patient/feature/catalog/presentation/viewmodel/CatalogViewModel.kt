@@ -45,6 +45,8 @@ class CatalogViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(searchQuery = event.query)
             is CatalogUiEvent.SelectCategory ->
                 _uiState.value = _uiState.value.copy(selectedCategoryId = event.categoryId)
+            CatalogUiEvent.ClearCategoryFilter ->
+                _uiState.value = _uiState.value.copy(selectedCategoryId = null)
             is CatalogUiEvent.ShowServiceDetail ->
                 _uiState.value = _uiState.value.copy(
                     selectedService = event.service,

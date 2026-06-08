@@ -23,10 +23,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -67,6 +69,9 @@ fun CatalogTabScreen(
     var selectedTab by remember { mutableIntStateOf(0) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
+    // When a category is selected, switch to Services tab automatically
+    val activeCategoryId = state.selectedCategoryId
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -98,7 +103,14 @@ fun CatalogTabScreen(
             )
             1 -> ServiceCategoriesContent(
                 state = state,
-                onEvent = onEvent,
+                onEvent = { event ->
+                    if (event is CatalogUiEvent.SelectCategory) {
+                        onEvent(event)
+                        selectedTab = 0
+                    } else {
+                        onEvent(event)
+                    }
+                },
             )
         }
     }
@@ -153,6 +165,26 @@ private fun ServiceCatalogContent(
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp),
             )
+
+            // Active category filter chip
+            if (state.selectedCategoryId != null) {
+                val activeName = state.categories.find { it.id == state.selectedCategoryId }?.name
+                if (activeName != null) {
+                    FilterChip(
+                        selected = true,
+                        onClick = { onEvent(CatalogUiEvent.ClearCategoryFilter) },
+                        label = { Text("Showing: $activeName") },
+                        trailingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Clear filter",
+                                modifier = Modifier.size(14.dp),
+                            )
+                        },
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                    )
+                }
+            }
 
             when {
                 state.error != null -> Box(
@@ -411,7 +443,10 @@ private fun ServiceCategoriesContent(
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     items(filteredCategories) { category ->
-                        CategoryCard(category = category)
+                        CategoryCard(
+                            category = category,
+                            onClick = { onEvent(CatalogUiEvent.SelectCategory(category.id)) },
+                        )
                     }
                 }
             }
@@ -422,8 +457,9 @@ private fun ServiceCategoriesContent(
 @Composable
 private fun CategoryCard(
     category: ServiceCategory,
+    onClick: () -> Unit = {},
 ) {
-    WellnessCard(modifier = Modifier.fillMaxWidth()) {
+    WellnessCard(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()

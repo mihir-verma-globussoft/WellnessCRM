@@ -15,6 +15,7 @@ interface AppointmentRepository {
         serviceId: Int? = null,
         membershipId: Int? = null,
         bookingType: String? = null,
+        doctorId: Int? = null,
     ): Appointment
     suspend fun cancelAppointment(appointmentId: Int): Appointment
     suspend fun rescheduleAppointment(

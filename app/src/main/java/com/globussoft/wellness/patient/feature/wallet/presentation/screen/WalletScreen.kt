@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -20,8 +21,11 @@ import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
@@ -44,6 +48,8 @@ import com.globussoft.wellness.patient.feature.wallet.domain.model.Transaction
 import com.globussoft.wellness.patient.feature.wallet.domain.model.WalletSummary
 import com.globussoft.wellness.patient.feature.wallet.presentation.state.WalletUiEvent
 import com.globussoft.wellness.patient.feature.wallet.presentation.state.WalletUiState
+
+private val FILTER_LABELS = listOf("All", "Wallet", "Gift Cards", "Memberships", "Treatments")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,14 +74,42 @@ fun WalletScreen(
                 onRetry = { onEvent(WalletUiEvent.Refresh) },
                 modifier = Modifier.align(Alignment.Center),
             )
-            state.wallet != null -> WalletContent(wallet = state.wallet, currency = state.wallet.currency)
+            state.wallet != null -> WalletContent(
+                wallet = state.wallet,
+                activeFilter = state.activeFilter,
+                onEvent = onEvent,
+            )
         }
+    }
+
+    state.selectedTransaction?.let { txn ->
+        TransactionDetailSheet(
+            transaction = txn,
+            currency = state.wallet?.currency ?: "INR",
+            onDismiss = { onEvent(WalletUiEvent.DismissTransactionDetail) },
+        )
     }
 }
 
 @Composable
-private fun WalletContent(wallet: WalletSummary, currency: String) {
+private fun WalletContent(
+    wallet: WalletSummary,
+    activeFilter: String,
+    onEvent: (WalletUiEvent) -> Unit,
+) {
+    val filteredTxns = remember(wallet.transactions, activeFilter) {
+        if (activeFilter == "All") wallet.transactions
+        else wallet.transactions.filter {
+            it.category.equals(activeFilter, ignoreCase = true) ||
+                it.type.equals(activeFilter.replace(" ", "_"), ignoreCase = true)
+        }
+    }
+
     LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        item {
+            WalletKpiRow(wallet = wallet)
+        }
+
         item {
             GradientHeroCard(modifier = Modifier.fillMaxWidth()) {
                 Column(
@@ -89,7 +123,7 @@ private fun WalletContent(wallet: WalletSummary, currency: String) {
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = CurrencyUtil.formatPaise(wallet.balance, currency),
+                        text = CurrencyUtil.formatPaise(wallet.balance, wallet.currency),
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -97,6 +131,22 @@ private fun WalletContent(wallet: WalletSummary, currency: String) {
                 }
             }
         }
+
+        item {
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(horizontal = 0.dp),
+            ) {
+                items(FILTER_LABELS) { label ->
+                    FilterChip(
+                        selected = activeFilter == label,
+                        onClick = { onEvent(WalletUiEvent.FilterTransactions(label)) },
+                        label = { Text(label, style = MaterialTheme.typography.labelMedium) },
+                    )
+                }
+            }
+        }
+
         item {
             Text(
                 "Transaction History",
@@ -104,24 +154,68 @@ private fun WalletContent(wallet: WalletSummary, currency: String) {
                 fontWeight = FontWeight.SemiBold,
             )
         }
-        if (wallet.transactions.isEmpty()) {
+
+        if (filteredTxns.isEmpty()) {
             item {
                 Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                    Text("No transactions yet", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("No transactions found", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         } else {
-            items(wallet.transactions.sortedByDescending { it.date }) { txn ->
-                TransactionRow(transaction = txn, currency = currency)
+            items(filteredTxns.sortedByDescending { it.date }) { txn ->
+                TransactionRow(
+                    transaction = txn,
+                    currency = wallet.currency,
+                    onClick = { onEvent(WalletUiEvent.SelectTransaction(txn)) },
+                )
             }
         }
     }
 }
 
 @Composable
-private fun TransactionRow(transaction: Transaction, currency: String) {
+private fun WalletKpiRow(wallet: WalletSummary) {
+    val txns = wallet.transactions
+    val totalPaid = txns.filter { it.direction.equals("debit", ignoreCase = true) }.sumOf { it.amount }
+    val subscriptionCount = txns.count {
+        it.category.equals("membership", ignoreCase = true) ||
+            it.type.equals("membership", ignoreCase = true)
+    }
+
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        KpiCard(Modifier.weight(1f), "Total Paid", CurrencyUtil.formatPaise(totalPaid, wallet.currency))
+        KpiCard(Modifier.weight(1f), "Balance", CurrencyUtil.formatPaise(wallet.balance, wallet.currency))
+        KpiCard(Modifier.weight(1f), "Subscriptions", subscriptionCount.toString())
+        KpiCard(Modifier.weight(1f), "Transactions", txns.size.toString())
+    }
+}
+
+@Composable
+private fun KpiCard(modifier: Modifier, label: String, value: String) {
+    WellnessCard(modifier = modifier) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = value,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun TransactionRow(transaction: Transaction, currency: String, onClick: () -> Unit) {
     val isCredit = transaction.direction.lowercase() == "credit"
-    WellnessCard(modifier = Modifier.fillMaxWidth()) {
+    WellnessCard(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
         Row(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -171,5 +265,43 @@ private fun TransactionRow(transaction: Transaction, currency: String) {
                 color = if (isCredit) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.error,
             )
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TransactionDetailSheet(
+    transaction: Transaction,
+    currency: String,
+    onDismiss: () -> Unit,
+) {
+    val isCredit = transaction.direction.lowercase() == "credit"
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier.padding(horizontal = 24.dp).padding(bottom = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(transaction.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            HorizontalDivider()
+            ReceiptRow("Amount", "${if (isCredit) "+" else "-"}${CurrencyUtil.formatPaise(transaction.amount, currency)}")
+            ReceiptRow("Date", DateUtil.toDisplayDate(transaction.date))
+            ReceiptRow("Type", transaction.type)
+            ReceiptRow("Category", transaction.category)
+            ReceiptRow("Status", transaction.status)
+            if (!transaction.reference.isNullOrBlank()) {
+                ReceiptRow("Reference", transaction.reference)
+            }
+            if (transaction.balanceAfter != null) {
+                ReceiptRow("Balance after", CurrencyUtil.formatPaise(transaction.balanceAfter, currency))
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReceiptRow(label: String, value: String) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(value, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium)
     }
 }

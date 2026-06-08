@@ -29,4 +29,5 @@ sealed class ProfileUiEvent {
     object RequestDsarExport : ProfileUiEvent()
     object Logout : ProfileUiEvent()
     object NavigateBack : ProfileUiEvent()
+    object ToNotificationSettings : ProfileUiEvent()
 }

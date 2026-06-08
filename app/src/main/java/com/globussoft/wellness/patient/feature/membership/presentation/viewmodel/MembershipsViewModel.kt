@@ -44,6 +44,11 @@ class MembershipsViewModel @Inject constructor(
             MembershipsUiEvent.DismissDetail -> _uiState.value = _uiState.value.copy(selectedMembership = null)
             MembershipsUiEvent.TogglePlans -> _uiState.value = _uiState.value.copy(showPlans = !_uiState.value.showPlans)
             MembershipsUiEvent.NavigateBack -> viewModelScope.launch { _navEvent.send(MembershipsNavEvent.Back) }
+            is MembershipsUiEvent.SelectPlan -> _uiState.value = _uiState.value.copy(selectedPlan = event.plan)
+            MembershipsUiEvent.DismissPlanDetail -> _uiState.value = _uiState.value.copy(selectedPlan = null)
+            is MembershipsUiEvent.JoinPlan -> _uiState.value = _uiState.value.copy(showJoinConfirm = true)
+            MembershipsUiEvent.ConfirmJoin -> _uiState.value = _uiState.value.copy(showJoinConfirm = false, selectedPlan = null)
+            MembershipsUiEvent.DismissJoinConfirm -> _uiState.value = _uiState.value.copy(showJoinConfirm = false)
         }
     }
 

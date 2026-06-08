@@ -1,6 +1,7 @@
 package com.globussoft.wellness.patient.feature.booking.presentation.screen
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -163,11 +164,7 @@ fun MyAppointmentsScreen(
                                 items(list) { appt ->
                                     AppointmentCard(
                                         appointment = appt,
-                                        isCancelling = state.cancellingId == appt.id,
-                                        showCancel = appt.canCancel,
-                                        showReschedule = appt.canReschedule,
-                                        onCancel = { onEvent(MyAppointmentsUiEvent.RequestCancel(appt)) },
-                                        onReschedule = { onEvent(MyAppointmentsUiEvent.ShowRescheduleSheet(appt.id)) },
+                                        onClick = { onEvent(MyAppointmentsUiEvent.ShowActionSheet(appt)) },
                                     )
                                 }
                             }
@@ -207,6 +204,46 @@ fun MyAppointmentsScreen(
                 }
             },
         )
+    }
+
+    // Action sheet — shown when a card is tapped
+    state.actionSheetAppointment?.let { appt ->
+        ModalBottomSheet(
+            onDismissRequest = { onEvent(MyAppointmentsUiEvent.DismissActionSheet) },
+            sheetState = sheetState,
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(bottom = 16.dp),
+            ) {
+                Text(
+                    text = appt.serviceName ?: "Appointment",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
+                )
+                androidx.compose.material3.HorizontalDivider()
+                ActionSheetItem(
+                    label = "View details",
+                    onClick = { onEvent(MyAppointmentsUiEvent.DismissActionSheet) },
+                )
+                if (appt.canReschedule) {
+                    ActionSheetItem(
+                        label = "Reschedule",
+                        onClick = { onEvent(MyAppointmentsUiEvent.ShowRescheduleSheet(appt.id)) },
+                    )
+                }
+                if (appt.canCancel) {
+                    ActionSheetItem(
+                        label = "Cancel appointment",
+                        labelColor = MaterialTheme.colorScheme.error,
+                        onClick = { onEvent(MyAppointmentsUiEvent.RequestCancel(appt)) },
+                    )
+                }
+            }
+        }
     }
 
     if (state.rescheduleSheetAppointmentId != null) {
@@ -319,13 +356,9 @@ private fun KpiCard(label: String, count: Int, modifier: Modifier = Modifier) {
 @Composable
 private fun AppointmentCard(
     appointment: Appointment,
-    isCancelling: Boolean,
-    showCancel: Boolean,
-    showReschedule: Boolean,
-    onCancel: () -> Unit,
-    onReschedule: () -> Unit,
+    onClick: () -> Unit,
 ) {
-    WellnessCard(modifier = Modifier.fillMaxWidth()) {
+    WellnessCard(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -361,35 +394,27 @@ private fun AppointmentCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            if (showCancel || showReschedule) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    modifier = Modifier.align(Alignment.End),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    if (showReschedule) {
-                        OutlinedButton(
-                            onClick = onReschedule,
-                            shape = MaterialTheme.shapes.extraLarge,
-                        ) {
-                            Text("Reschedule")
-                        }
-                    }
-                    if (showCancel) {
-                        OutlinedButton(
-                            onClick = onCancel,
-                            enabled = !isCancelling,
-                            shape = MaterialTheme.shapes.extraLarge,
-                        ) {
-                            if (isCancelling) {
-                                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                            } else {
-                                Text("Cancel")
-                            }
-                        }
-                    }
-                }
-            }
         }
+    }
+}
+
+@Composable
+private fun ActionSheetItem(
+    label: String,
+    onClick: () -> Unit,
+    labelColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurface,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 20.dp, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            color = labelColor,
+        )
     }
 }

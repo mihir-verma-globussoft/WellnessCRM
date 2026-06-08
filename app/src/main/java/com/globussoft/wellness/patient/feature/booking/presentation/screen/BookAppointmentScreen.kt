@@ -12,9 +12,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -37,6 +39,7 @@ import com.globussoft.wellness.patient.core.util.DateUtil
 import com.globussoft.wellness.patient.feature.booking.domain.model.Product
 import com.globussoft.wellness.patient.feature.booking.presentation.state.BookAppointmentUiEvent
 import com.globussoft.wellness.patient.feature.booking.presentation.state.BookAppointmentUiState
+import com.globussoft.wellness.patient.feature.booking.presentation.state.DoctorOption
 import java.util.Calendar
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -51,7 +54,7 @@ fun BookAppointmentScreen(
             .background(MaterialTheme.colorScheme.background),
     ) {
         LinearProgressIndicator(
-            progress = { state.step / 3f },
+            progress = { state.step / 4f },
             modifier = Modifier.fillMaxWidth(),
         )
 
@@ -70,8 +73,9 @@ fun BookAppointmentScreen(
             }
             else -> when (state.step) {
                 1 -> Step1Products(state = state, onEvent = onEvent)
-                2 -> Step2DateTime(state = state, onEvent = onEvent)
-                else -> Step3Confirm(state = state, onEvent = onEvent)
+                2 -> Step2DoctorSelection(state = state, onEvent = onEvent)
+                3 -> Step3DateTime(state = state, onEvent = onEvent)
+                else -> Step4Confirm(state = state, onEvent = onEvent)
             }
         }
     }
@@ -170,9 +174,70 @@ private fun ProductCardContent(product: Product, isSelected: Boolean) {
     }
 }
 
+@Composable
+private fun Step2DoctorSelection(state: BookAppointmentUiState, onEvent: (BookAppointmentUiEvent) -> Unit) {
+    val doctors = if (state.doctors.isEmpty()) {
+        listOf(DoctorOption(id = null, name = "No preference"))
+    } else {
+        state.doctors
+    }
+
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        Text("Choose a doctor", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+        Spacer(modifier = Modifier.height(4.dp))
+        WellnessCard(modifier = Modifier.fillMaxWidth()) {
+            Text(
+                "If you choose no preference, the clinic will assign a doctor.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(12.dp),
+            )
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        LazyColumn(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            items(doctors) { doc ->
+                val isSelected = state.selectedDoctorId == doc.id
+                WellnessCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = { onEvent(BookAppointmentUiEvent.SelectDoctor(doc.id)) },
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text(
+                            text = doc.name,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                        )
+                        if (isSelected) {
+                            Text(
+                                "✓",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+        Button(
+            onClick = { onEvent(BookAppointmentUiEvent.NextStep) },
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.extraLarge,
+        ) { Text("Continue") }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun Step2DateTime(state: BookAppointmentUiState, onEvent: (BookAppointmentUiEvent) -> Unit) {
+private fun Step3DateTime(state: BookAppointmentUiState, onEvent: (BookAppointmentUiEvent) -> Unit) {
     val timeSlots = remember {
         listOf(
             "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
@@ -233,7 +298,8 @@ private fun Step2DateTime(state: BookAppointmentUiState, onEvent: (BookAppointme
 }
 
 @Composable
-private fun Step3Confirm(state: BookAppointmentUiState, onEvent: (BookAppointmentUiEvent) -> Unit) {
+private fun Step4Confirm(state: BookAppointmentUiState, onEvent: (BookAppointmentUiEvent) -> Unit) {
+    val doctorLabel = state.doctors.find { it.id == state.selectedDoctorId }?.name ?: "No preference"
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Text("Confirm booking", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
         Spacer(modifier = Modifier.height(16.dp))
@@ -241,6 +307,7 @@ private fun Step3Confirm(state: BookAppointmentUiState, onEvent: (BookAppointmen
         WellnessCard(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 InfoRow("Service", state.selectedProduct?.name ?: "—")
+                InfoRow("Doctor", doctorLabel)
                 InfoRow("Date", DateUtil.toDisplayDate(state.selectedDate ?: 0L))
                 InfoRow("Time", state.selectedTime ?: "—")
             }

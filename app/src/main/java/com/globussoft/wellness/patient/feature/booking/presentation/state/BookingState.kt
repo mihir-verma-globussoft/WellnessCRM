@@ -19,10 +19,13 @@ data class MyAppointmentsUiState(
     val rescheduleError: String? = null,
     val showCancelConfirmDialog: Boolean = false,
     val appointmentToCancel: Appointment? = null,
+    val actionSheetAppointment: Appointment? = null,
 )
 
 sealed class MyAppointmentsUiEvent {
     object Refresh : MyAppointmentsUiEvent()
+    data class ShowActionSheet(val appointment: Appointment) : MyAppointmentsUiEvent()
+    object DismissActionSheet : MyAppointmentsUiEvent()
     data class RequestCancel(val appointment: Appointment) : MyAppointmentsUiEvent()
     object ConfirmCancel : MyAppointmentsUiEvent()
     object DismissCancel : MyAppointmentsUiEvent()
@@ -40,7 +43,9 @@ sealed class MyAppointmentsUiEvent {
     object NavigateBack : MyAppointmentsUiEvent()
 }
 
-// ── Book Appointment (3-step) ─────────────────────────────────────────────────
+data class DoctorOption(val id: Int?, val name: String)
+
+// ── Book Appointment (4-step) ─────────────────────────────────────────────────
 data class BookAppointmentUiState(
     val step: Int = 1,
     val isLoading: Boolean = true,
@@ -48,6 +53,8 @@ data class BookAppointmentUiState(
     val products: List<Product> = emptyList(),
     val categories: List<ProductCategory> = emptyList(),
     val selectedProduct: Product? = null,
+    val doctors: List<DoctorOption> = emptyList(),
+    val selectedDoctorId: Int? = null,
     val selectedDate: Long? = null,
     val selectedTime: String? = null,
     val reason: String = "",
@@ -59,6 +66,7 @@ data class BookAppointmentUiState(
 sealed class BookAppointmentUiEvent {
     object LoadProducts : BookAppointmentUiEvent()
     data class SelectProduct(val product: Product) : BookAppointmentUiEvent()
+    data class SelectDoctor(val doctorId: Int?) : BookAppointmentUiEvent()
     data class SelectDate(val epochMs: Long) : BookAppointmentUiEvent()
     data class SelectTime(val time: String) : BookAppointmentUiEvent()
     data class EnterReason(val reason: String) : BookAppointmentUiEvent()

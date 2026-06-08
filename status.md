@@ -1,7 +1,7 @@
 # WellnessCRM Patient App — Implementation Status
 
-Last updated: 2026-06-08 19:30
-Current phase: Phase Complete — Android feature gap closed + full QA pass done
+Last updated: 2026-06-08 21:00
+Current phase: Phase Complete — Google Doc spec parity pass done + BUILD SUCCESSFUL
 
 ## Legend
 ✅ Done  🔄 In Progress  ⬜ Not started  🔴 Blocked
@@ -90,6 +90,25 @@ Current phase: Phase Complete — Android feature gap closed + full QA pass done
   ✅ Consent Forms — signed documents list
   ✅ Notifications — empty state (no FCM messages yet)
   ✅ No crashes after build at 18:04 on 2026-06-08
+
+---
+
+## Google Doc Spec Parity Pass (2026-06-08 session 2)
+
+✅ Fix A1 — TAB_ROOT_ROUTES set; back arrow suppressed on all 5 tab roots
+✅ Fix A2 — Logout uses popUpTo(0) to fully clear back stack
+✅ Fix A3 — Finance tab rewired: GiftCards + Transactions embedded inline (no navigate-away flash)
+✅ Fix B1 — Dashboard: stats row above next-appt, TodayAtAGlance card, "Clinical" + "Catalog" group renames
+✅ Fix B2 — Finance FinanceTabScreen accepts 3 state/event pairs; all 3 VMs injected in NavGraph
+✅ Fix B3 — My Appointments: whole card tappable → action sheet with View/Reschedule/Cancel
+✅ Fix B4 — Profile: "Edit profile" OutlinedButton added; "Notification settings" entry added
+✅ Fix B5 — Book Appointment: Step 2 Doctor Selection added (4-step flow); GET /doctors/availability wired; "No preference" + info note
+✅ Fix C1 — NotificationSettingsScreen: 5 category toggles, 3 channel toggles, quiet hours, Save button
+✅ Fix C2 — WalletScreen: KPI row (4 cards) + filter chips (All/Wallet/GiftCards/Memberships/Treatments) + receipt detail sheet
+✅ Fix C3 — Memberships: plan cards clickable → PlanDetailSheet with "Join Now" + confirm dialog
+✅ Fix C4 — Service Categories: tap to filter → switches to Services tab with active FilterChip
+✅ Fix C5 — Payment cards tappable → action sheet (View Invoice + Request Refund) + AlertDialog confirm → POST /api/payments/:id/refund
+✅ BUILD SUCCESSFUL — assembleDebug green, only pre-existing menuAnchor deprecation warning
 
 ---
 

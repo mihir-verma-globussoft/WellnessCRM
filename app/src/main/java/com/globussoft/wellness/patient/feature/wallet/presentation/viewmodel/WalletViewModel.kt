@@ -40,6 +40,12 @@ class WalletViewModel @Inject constructor(
             WalletUiEvent.Refresh -> load()
             WalletUiEvent.NavigateToGiftCards -> viewModelScope.launch { _navEvent.send(WalletNavEvent.ToGiftCards) }
             WalletUiEvent.NavigateBack -> viewModelScope.launch { _navEvent.send(WalletNavEvent.Back) }
+            is WalletUiEvent.FilterTransactions ->
+                _uiState.value = _uiState.value.copy(activeFilter = event.type)
+            is WalletUiEvent.SelectTransaction ->
+                _uiState.value = _uiState.value.copy(selectedTransaction = event.transaction)
+            WalletUiEvent.DismissTransactionDetail ->
+                _uiState.value = _uiState.value.copy(selectedTransaction = null)
         }
     }
 

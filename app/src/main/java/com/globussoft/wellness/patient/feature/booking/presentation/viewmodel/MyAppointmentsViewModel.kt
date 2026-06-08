@@ -45,8 +45,13 @@ class MyAppointmentsViewModel @Inject constructor(
     fun onEvent(event: MyAppointmentsUiEvent) {
         when (event) {
             MyAppointmentsUiEvent.Refresh -> load()
+            is MyAppointmentsUiEvent.ShowActionSheet ->
+                _uiState.value = _uiState.value.copy(actionSheetAppointment = event.appointment)
+            MyAppointmentsUiEvent.DismissActionSheet ->
+                _uiState.value = _uiState.value.copy(actionSheetAppointment = null)
             is MyAppointmentsUiEvent.RequestCancel ->
                 _uiState.value = _uiState.value.copy(
+                    actionSheetAppointment = null,
                     showCancelConfirmDialog = true,
                     appointmentToCancel = event.appointment,
                 )
@@ -59,7 +64,11 @@ class MyAppointmentsViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(showCancelConfirmDialog = false, appointmentToCancel = null)
             is MyAppointmentsUiEvent.Cancel -> cancel(event.appointmentId)
             is MyAppointmentsUiEvent.ShowRescheduleSheet ->
-                _uiState.value = _uiState.value.copy(rescheduleSheetAppointmentId = event.appointmentId, rescheduleError = null)
+                _uiState.value = _uiState.value.copy(
+                    actionSheetAppointment = null,
+                    rescheduleSheetAppointmentId = event.appointmentId,
+                    rescheduleError = null,
+                )
             MyAppointmentsUiEvent.DismissRescheduleSheet ->
                 _uiState.value = _uiState.value.copy(rescheduleSheetAppointmentId = null, rescheduleError = null)
             is MyAppointmentsUiEvent.ConfirmReschedule -> reschedule(event.newDate, event.newTime)

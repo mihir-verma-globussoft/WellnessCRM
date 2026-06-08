@@ -80,6 +80,13 @@ private fun ViewProfileContent(state: ProfileUiState, onEvent: (ProfileUiEvent) 
                         else -> profile.gender
                     },
                 )
+                OutlinedButton(
+                    onClick = { onEvent(ProfileUiEvent.StartEdit) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.extraLarge,
+                ) {
+                    Text("Edit profile")
+                }
             }
         }
 
@@ -103,6 +110,14 @@ private fun ViewProfileContent(state: ProfileUiState, onEvent: (ProfileUiEvent) 
                     }
                 }
             }
+        }
+
+        OutlinedButton(
+            onClick = { onEvent(ProfileUiEvent.ToNotificationSettings) },
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.extraLarge,
+        ) {
+            Text("Notification settings")
         }
 
         Button(
