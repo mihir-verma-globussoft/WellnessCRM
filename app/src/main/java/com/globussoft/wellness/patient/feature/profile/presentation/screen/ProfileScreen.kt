@@ -1,5 +1,6 @@
 package com.globussoft.wellness.patient.feature.profile.presentation.screen
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,22 +10,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,43 +31,25 @@ import com.globussoft.wellness.patient.core.util.DateUtil
 import com.globussoft.wellness.patient.feature.profile.presentation.state.ProfileUiEvent
 import com.globussoft.wellness.patient.feature.profile.presentation.state.ProfileUiState
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
     state: ProfileUiState,
     onEvent: (ProfileUiEvent) -> Unit,
 ) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Profile") },
-                navigationIcon = {
-                    IconButton(onClick = { onEvent(ProfileUiEvent.NavigateBack) }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                actions = {
-                    if (!state.isEditing) {
-                        IconButton(onClick = { onEvent(ProfileUiEvent.StartEdit) }) {
-                            Icon(Icons.Default.Edit, contentDescription = "Edit profile")
-                        }
-                    }
-                },
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+    ) {
+        when {
+            state.isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            state.error != null -> ErrorState(
+                message = state.error,
+                onRetry = { onEvent(ProfileUiEvent.Refresh) },
+                modifier = Modifier.align(Alignment.Center),
             )
-        },
-        containerColor = MaterialTheme.colorScheme.background,
-    ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
-            when {
-                state.isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                state.error != null -> ErrorState(
-                    message = state.error,
-                    onRetry = { onEvent(ProfileUiEvent.Refresh) },
-                    modifier = Modifier.align(Alignment.Center),
-                )
-                state.isEditing -> EditProfileContent(state = state, onEvent = onEvent)
-                else -> ViewProfileContent(state = state, onEvent = onEvent)
-            }
+            state.isEditing -> EditProfileContent(state = state, onEvent = onEvent)
+            else -> ViewProfileContent(state = state, onEvent = onEvent)
         }
     }
 }

@@ -3,6 +3,7 @@ package com.globussoft.wellness.patient.core.storage
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.firstOrNull
@@ -20,6 +21,7 @@ class DataStoreManager @Inject constructor(
         val KEY_CLINIC_NAME = stringPreferencesKey("tenant_clinic_name")
         val KEY_CLINIC_LOGO = stringPreferencesKey("tenant_clinic_logo_url")
         val KEY_TENANT_ID = intPreferencesKey("tenant_id")
+        val KEY_DARK_THEME = booleanPreferencesKey("dark_theme")
     }
 
     suspend fun saveToken(token: String) {
@@ -55,4 +57,12 @@ class DataStoreManager @Inject constructor(
 
     suspend fun getTenantId(): Int? =
         dataStore.data.map { it[KEY_TENANT_ID] }.firstOrNull()
+
+    fun isDarkThemeFlow() = dataStore.data.map { it[KEY_DARK_THEME] ?: false }
+
+    fun clinicNameFlow() = dataStore.data.map { it[KEY_CLINIC_NAME] ?: "" }
+
+    suspend fun setDarkTheme(enabled: Boolean) {
+        dataStore.edit { it[KEY_DARK_THEME] = enabled }
+    }
 }

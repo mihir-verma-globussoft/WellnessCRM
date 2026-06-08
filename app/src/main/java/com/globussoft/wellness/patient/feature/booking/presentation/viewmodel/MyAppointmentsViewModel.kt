@@ -45,6 +45,18 @@ class MyAppointmentsViewModel @Inject constructor(
     fun onEvent(event: MyAppointmentsUiEvent) {
         when (event) {
             MyAppointmentsUiEvent.Refresh -> load()
+            is MyAppointmentsUiEvent.RequestCancel ->
+                _uiState.value = _uiState.value.copy(
+                    showCancelConfirmDialog = true,
+                    appointmentToCancel = event.appointment,
+                )
+            MyAppointmentsUiEvent.ConfirmCancel -> {
+                val id = _uiState.value.appointmentToCancel?.id ?: return
+                _uiState.value = _uiState.value.copy(showCancelConfirmDialog = false, appointmentToCancel = null)
+                cancel(id)
+            }
+            MyAppointmentsUiEvent.DismissCancel ->
+                _uiState.value = _uiState.value.copy(showCancelConfirmDialog = false, appointmentToCancel = null)
             is MyAppointmentsUiEvent.Cancel -> cancel(event.appointmentId)
             is MyAppointmentsUiEvent.ShowRescheduleSheet ->
                 _uiState.value = _uiState.value.copy(rescheduleSheetAppointmentId = event.appointmentId, rescheduleError = null)

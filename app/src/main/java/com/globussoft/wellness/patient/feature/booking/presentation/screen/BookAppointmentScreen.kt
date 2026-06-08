@@ -1,5 +1,6 @@
 package com.globussoft.wellness.patient.feature.booking.presentation.screen
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,21 +15,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -50,51 +45,33 @@ fun BookAppointmentScreen(
     state: BookAppointmentUiState,
     onEvent: (BookAppointmentUiEvent) -> Unit,
 ) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        when (state.step) {
-                            1 -> "Select Service"
-                            2 -> "Choose Date & Time"
-                            else -> "Review & Confirm"
-                        }
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = { onEvent(BookAppointmentUiEvent.PreviousStep) }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                },
-            )
-        },
-        containerColor = MaterialTheme.colorScheme.background,
-    ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            LinearProgressIndicator(
-                progress = { state.step / 3f },
-                modifier = Modifier.fillMaxWidth(),
-            )
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+    ) {
+        LinearProgressIndicator(
+            progress = { state.step / 3f },
+            modifier = Modifier.fillMaxWidth(),
+        )
 
-            when {
-                state.isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
-                state.error != null && state.products.isEmpty() -> Box(
-                    Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    ErrorState(
-                        message = state.error,
-                        onRetry = { onEvent(BookAppointmentUiEvent.LoadProducts) },
-                    )
-                }
-                else -> when (state.step) {
-                    1 -> Step1Products(state = state, onEvent = onEvent)
-                    2 -> Step2DateTime(state = state, onEvent = onEvent)
-                    else -> Step3Confirm(state = state, onEvent = onEvent)
-                }
+        when {
+            state.isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+            state.error != null && state.products.isEmpty() -> Box(
+                Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                ErrorState(
+                    message = state.error,
+                    onRetry = { onEvent(BookAppointmentUiEvent.LoadProducts) },
+                )
+            }
+            else -> when (state.step) {
+                1 -> Step1Products(state = state, onEvent = onEvent)
+                2 -> Step2DateTime(state = state, onEvent = onEvent)
+                else -> Step3Confirm(state = state, onEvent = onEvent)
             }
         }
     }

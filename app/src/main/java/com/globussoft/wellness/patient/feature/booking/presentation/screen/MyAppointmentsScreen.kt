@@ -1,5 +1,6 @@
 package com.globussoft.wellness.patient.feature.booking.presentation.screen
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,29 +15,30 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.History
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -73,31 +75,44 @@ fun MyAppointmentsScreen(
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var isRefreshing by remember { mutableStateOf(false) }
+    LaunchedEffect(state.isLoading) { if (!state.isLoading) isRefreshing = false }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("My Appointments") },
-                navigationIcon = {
-                    IconButton(onClick = { onEvent(MyAppointmentsUiEvent.NavigateBack) }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { onEvent(MyAppointmentsUiEvent.NavigateToHistory) }) {
-                        Icon(Icons.Default.History, contentDescription = "Visit history")
-                    }
-                },
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(onClick = { onEvent(MyAppointmentsUiEvent.NavigateToBook) }) {
-                Icon(Icons.Default.Add, contentDescription = "Book appointment")
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            // 4 KPI count cards
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                KpiCard(
+                    label = "Upcoming",
+                    count = state.upcoming.size,
+                    modifier = Modifier.weight(1f),
+                )
+                KpiCard(
+                    label = "Pending",
+                    count = state.pending.size,
+                    modifier = Modifier.weight(1f),
+                )
+                KpiCard(
+                    label = "Completed",
+                    count = state.past.size,
+                    modifier = Modifier.weight(1f),
+                )
+                KpiCard(
+                    label = "Cancelled",
+                    count = state.cancelled.size,
+                    modifier = Modifier.weight(1f),
+                )
             }
-        },
-        containerColor = MaterialTheme.colorScheme.background,
-    ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+
             ScrollableTabRow(selectedTabIndex = selectedTab, edgePadding = 0.dp) {
                 TAB_LABELS.forEachIndexed { index, label ->
                     Tab(
@@ -108,53 +123,90 @@ fun MyAppointmentsScreen(
                 }
             }
 
-            when {
-                state.isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
-                state.error != null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    ErrorState(
-                        message = state.error,
-                        onRetry = { onEvent(MyAppointmentsUiEvent.Refresh) },
-                    )
-                }
-                else -> {
-                    val list = when (selectedTab) {
-                        0 -> state.upcoming
-                        1 -> state.pending
-                        2 -> state.past
-                        else -> state.cancelled
+            PullToRefreshBox(
+                isRefreshing = isRefreshing,
+                onRefresh = { isRefreshing = true; onEvent(MyAppointmentsUiEvent.Refresh) },
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                when {
+                    state.isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
                     }
-                    val emptyLabel = TAB_LABELS[selectedTab].let { "No $it appointments" }.lowercase()
-                        .replaceFirstChar { it.uppercase() }
-                    if (list.isEmpty()) {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text(
-                                text = emptyLabel,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                    state.error != null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        ErrorState(
+                            message = state.error,
+                            onRetry = { onEvent(MyAppointmentsUiEvent.Refresh) },
+                        )
+                    }
+                    else -> {
+                        val list = when (selectedTab) {
+                            0 -> state.upcoming
+                            1 -> state.pending
+                            2 -> state.past
+                            else -> state.cancelled
                         }
-                    } else {
-                        LazyColumn(
-                            contentPadding = PaddingValues(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                            items(list) { appt ->
-                                AppointmentCard(
-                                    appointment = appt,
-                                    isCancelling = state.cancellingId == appt.id,
-                                    showCancel = appt.canCancel,
-                                    showReschedule = appt.canReschedule,
-                                    onCancel = { onEvent(MyAppointmentsUiEvent.Cancel(appt.id)) },
-                                    onReschedule = { onEvent(MyAppointmentsUiEvent.ShowRescheduleSheet(appt.id)) },
+                        val emptyLabel = TAB_LABELS[selectedTab].let { "No $it appointments" }.lowercase()
+                            .replaceFirstChar { it.uppercase() }
+                        if (list.isEmpty()) {
+                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = emptyLabel,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
+                            }
+                        } else {
+                            LazyColumn(
+                                contentPadding = PaddingValues(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp),
+                            ) {
+                                items(list) { appt ->
+                                    AppointmentCard(
+                                        appointment = appt,
+                                        isCancelling = state.cancellingId == appt.id,
+                                        showCancel = appt.canCancel,
+                                        showReschedule = appt.canReschedule,
+                                        onCancel = { onEvent(MyAppointmentsUiEvent.RequestCancel(appt)) },
+                                        onReschedule = { onEvent(MyAppointmentsUiEvent.ShowRescheduleSheet(appt.id)) },
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
         }
+
+        FloatingActionButton(
+            onClick = { onEvent(MyAppointmentsUiEvent.NavigateToBook) },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp),
+        ) {
+            Icon(Icons.Default.Add, contentDescription = "Book appointment")
+        }
+    }
+
+    // Cancel confirmation dialog
+    if (state.showCancelConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { onEvent(MyAppointmentsUiEvent.DismissCancel) },
+            title = { Text("Cancel appointment?") },
+            text = {
+                val apptName = state.appointmentToCancel?.serviceName ?: "this appointment"
+                Text("Are you sure you want to cancel $apptName? This action cannot be undone.")
+            },
+            confirmButton = {
+                Button(onClick = { onEvent(MyAppointmentsUiEvent.ConfirmCancel) }) {
+                    Text("Cancel appointment")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { onEvent(MyAppointmentsUiEvent.DismissCancel) }) {
+                    Text("Keep it")
+                }
+            },
+        )
     }
 
     if (state.rescheduleSheetAppointmentId != null) {
@@ -235,6 +287,31 @@ fun MyAppointmentsScreen(
 
                 Spacer(Modifier.height(8.dp))
             }
+        }
+    }
+}
+
+@Composable
+private fun KpiCard(label: String, count: Int, modifier: Modifier = Modifier) {
+    ElevatedCard(modifier = modifier) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 10.dp, horizontal = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Text(
+                text = count.toString(),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }

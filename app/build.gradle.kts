@@ -53,7 +53,7 @@ android {
     buildTypes {
         debug {
             buildConfigField("String", "BASE_URL", "\"https://crm-staging.globusdemos.com/api/wellness/\"")
-            buildConfigField("String", "TENANT_SLUG", "\"testing\"")
+            buildConfigField("String", "TENANT_SLUG", "\"enhanced-wellness\"")
             buildConfigField("int", "TENANT_ID", "1")
         }
         release {

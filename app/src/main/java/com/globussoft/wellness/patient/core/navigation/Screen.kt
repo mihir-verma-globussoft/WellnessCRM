@@ -26,4 +26,7 @@ sealed class Screen(val route: String) {
     object Loyalty : Screen("loyalty")                 // Phase 2
     object Profile : Screen("profile")
     object Notifications : Screen("notifications")
+    object CatalogTab : Screen("tab_catalog")
+    object FinanceTab : Screen("tab_finance")
+    object Waitlist : Screen("waitlist")
 }

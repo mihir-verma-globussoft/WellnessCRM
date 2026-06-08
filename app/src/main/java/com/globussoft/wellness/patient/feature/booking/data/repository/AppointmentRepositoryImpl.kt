@@ -4,12 +4,14 @@ import com.globussoft.wellness.patient.core.network.WellnessApiService
 import com.globussoft.wellness.patient.feature.booking.data.local.dao.VisitDao
 import com.globussoft.wellness.patient.feature.booking.data.mapper.toDomain
 import com.globussoft.wellness.patient.feature.booking.data.mapper.toEntity
+import com.globussoft.wellness.patient.feature.booking.data.remote.dto.AddWaitlistDto
 import com.globussoft.wellness.patient.feature.booking.data.remote.dto.BookAppointmentDto
 import com.globussoft.wellness.patient.feature.booking.data.remote.dto.RescheduleAppointmentDto
 import com.globussoft.wellness.patient.feature.booking.domain.model.Appointment
 import com.globussoft.wellness.patient.feature.booking.domain.model.Product
 import com.globussoft.wellness.patient.feature.booking.domain.model.ProductCategory
 import com.globussoft.wellness.patient.feature.booking.domain.model.Visit
+import com.globussoft.wellness.patient.feature.booking.domain.model.WaitlistEntry
 import com.globussoft.wellness.patient.feature.booking.domain.repository.AppointmentRepository
 import retrofit2.HttpException
 import javax.inject.Inject
@@ -94,5 +96,17 @@ class AppointmentRepositoryImpl @Inject constructor(
 
     override suspend fun cacheVisits(visits: List<Visit>) {
         visitDao.insertAll(visits.map { it.toEntity() })
+    }
+
+    override suspend fun getWaitlist(): List<WaitlistEntry> {
+        val response = api.getWaitlist()
+        if (!response.isSuccessful) throw HttpException(response)
+        return response.body()!!.map { it.toDomain() }
+    }
+
+    override suspend fun addToWaitlist(serviceId: Int, patientId: Int, notes: String?): WaitlistEntry {
+        val response = api.addToWaitlist(AddWaitlistDto(serviceId = serviceId, patientId = patientId, notes = notes))
+        if (!response.isSuccessful) throw HttpException(response)
+        return response.body()!!.toDomain()
     }
 }

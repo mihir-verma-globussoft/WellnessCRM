@@ -1,5 +1,6 @@
 package com.globussoft.wellness.patient.feature.wallet.presentation.screen
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,19 +13,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,46 +32,35 @@ import com.globussoft.wellness.patient.feature.wallet.domain.model.GiftCard
 import com.globussoft.wellness.patient.feature.wallet.presentation.state.GiftCardsUiEvent
 import com.globussoft.wellness.patient.feature.wallet.presentation.state.GiftCardsUiState
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GiftCardsScreen(
     state: GiftCardsUiState,
     onEvent: (GiftCardsUiEvent) -> Unit,
 ) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Gift Cards") },
-                navigationIcon = {
-                    IconButton(onClick = { onEvent(GiftCardsUiEvent.NavigateBack) }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                },
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+    ) {
+        when {
+            state.isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            state.error != null -> ErrorState(
+                message = state.error,
+                onRetry = { onEvent(GiftCardsUiEvent.Refresh) },
+                modifier = Modifier.align(Alignment.Center),
             )
-        },
-        containerColor = MaterialTheme.colorScheme.background,
-    ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
-            when {
-                state.isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                state.error != null -> ErrorState(
-                    message = state.error,
-                    onRetry = { onEvent(GiftCardsUiEvent.Refresh) },
-                    modifier = Modifier.align(Alignment.Center),
-                )
-                state.giftCards.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No gift cards available", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                else -> LazyVerticalGrid(
-                    columns = GridCells.Fixed(2),
-                    contentPadding = PaddingValues(16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.fillMaxSize(),
-                ) {
-                    items(state.giftCards) { card ->
-                        GiftCardItem(card = card, onClick = { onEvent(GiftCardsUiEvent.SelectCard(card)) })
-                    }
+            state.giftCards.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("No gift cards available", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            else -> LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                contentPadding = PaddingValues(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                items(state.giftCards) { card ->
+                    GiftCardItem(card = card, onClick = { onEvent(GiftCardsUiEvent.SelectCard(card)) })
                 }
             }
         }

@@ -3,11 +3,11 @@ package com.globussoft.wellness.patient.feature.health.presentation.screen
 import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,38 +22,27 @@ import com.globussoft.wellness.patient.feature.health.presentation.state.Prescri
 import com.globussoft.wellness.patient.feature.health.presentation.state.PrescriptionPdfUiState
 import java.io.File
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PrescriptionPdfScreen(
     state: PrescriptionPdfUiState,
     onEvent: (PrescriptionPdfUiEvent) -> Unit,
 ) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Prescription") },
-                navigationIcon = {
-                    IconButton(onClick = { onEvent(PrescriptionPdfUiEvent.NavigateBack) }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                },
-            )
-        },
-        containerColor = MaterialTheme.colorScheme.background,
-    ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
-            when {
-                state.isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                state.error != null -> Column(
-                    modifier = Modifier.align(Alignment.Center).padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    Icon(Icons.Default.CloudOff, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(48.dp))
-                    Text(state.error, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                state.pdfBytes != null -> PdfViewer(pdfBytes = state.pdfBytes)
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+    ) {
+        when {
+            state.isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            state.error != null -> Column(
+                modifier = Modifier.align(Alignment.Center).padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Icon(Icons.Default.CloudOff, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(48.dp))
+                Text(state.error, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
+            state.pdfBytes != null -> PdfViewer(pdfBytes = state.pdfBytes)
         }
     }
 }

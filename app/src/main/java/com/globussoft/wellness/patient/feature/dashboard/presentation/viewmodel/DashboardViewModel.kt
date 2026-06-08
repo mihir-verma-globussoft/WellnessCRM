@@ -29,6 +29,7 @@ sealed class DashboardNavEvent {
     object ToVisitHistory : DashboardNavEvent()
     object ToTreatmentPlans : DashboardNavEvent()
     object ToConsentForms : DashboardNavEvent()
+    object ToWaitlist : DashboardNavEvent()
     object ToLogin : DashboardNavEvent()
 }
 
@@ -63,6 +64,7 @@ class DashboardViewModel @Inject constructor(
             DashboardUiEvent.NavigateToVisitHistory -> emit(DashboardNavEvent.ToVisitHistory)
             DashboardUiEvent.NavigateToTreatmentPlans -> emit(DashboardNavEvent.ToTreatmentPlans)
             DashboardUiEvent.NavigateToConsentForms -> emit(DashboardNavEvent.ToConsentForms)
+            DashboardUiEvent.NavigateToWaitlist -> emit(DashboardNavEvent.ToWaitlist)
             DashboardUiEvent.Logout -> logout()
         }
     }

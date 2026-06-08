@@ -1,5 +1,6 @@
 package com.globussoft.wellness.patient.feature.booking.data.remote.dto
 
+import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 @JsonClass(generateAdapter = true)
@@ -121,13 +122,13 @@ data class ProductDto(
     val id: Int,
     val name: String,
     val description: String?,
-    val price: Double?,
+    @Json(name = "basePrice") val price: Double?,
     val discountedPrice: Double?,
     val imageUrl: String?,
     val brandName: String?,
     val volume: String?,
     val unit: String?,
-    val category: ProductCategoryRefDto?,
+    @Json(name = "category") val categoryName: String?,
 )
 
 @JsonClass(generateAdapter = true)
@@ -137,4 +138,21 @@ data class ProductCategoryDto(
     val parentId: Int?,
     val imageUrl: String?,
     val color: String?,
+)
+
+@JsonClass(generateAdapter = true)
+data class WaitlistEntryDto(
+    val id: Int,
+    val serviceId: Int?,
+    val serviceName: String?,
+    val status: String?,       // pending | notified | cancelled
+    val notes: String?,
+    val createdAt: String?,
+)
+
+@JsonClass(generateAdapter = true)
+data class AddWaitlistDto(
+    val serviceId: Int,
+    val patientId: Int,
+    val notes: String?,
 )

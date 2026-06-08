@@ -16,19 +16,20 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
-import androidx.compose.material.icons.filled.CardGiftcard
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -50,34 +51,24 @@ fun WalletScreen(
     state: WalletUiState,
     onEvent: (WalletUiEvent) -> Unit,
 ) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Wallet") },
-                navigationIcon = {
-                    IconButton(onClick = { onEvent(WalletUiEvent.NavigateBack) }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { onEvent(WalletUiEvent.NavigateToGiftCards) }) {
-                        Icon(Icons.Default.CardGiftcard, contentDescription = "Gift Cards")
-                    }
-                },
+    var isRefreshing by remember { mutableStateOf(false) }
+    LaunchedEffect(state.isLoading) { if (!state.isLoading) isRefreshing = false }
+
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = { isRefreshing = true; onEvent(WalletUiEvent.Refresh) },
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+    ) {
+        when {
+            state.isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            state.error != null -> ErrorState(
+                message = state.error,
+                onRetry = { onEvent(WalletUiEvent.Refresh) },
+                modifier = Modifier.align(Alignment.Center),
             )
-        },
-        containerColor = MaterialTheme.colorScheme.background,
-    ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
-            when {
-                state.isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                state.error != null -> ErrorState(
-                    message = state.error,
-                    onRetry = { onEvent(WalletUiEvent.Refresh) },
-                    modifier = Modifier.align(Alignment.Center),
-                )
-                state.wallet != null -> WalletContent(wallet = state.wallet, currency = state.wallet.currency)
-            }
+            state.wallet != null -> WalletContent(wallet = state.wallet, currency = state.wallet.currency)
         }
     }
 }

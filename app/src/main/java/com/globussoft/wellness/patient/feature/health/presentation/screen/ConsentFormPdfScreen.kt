@@ -3,6 +3,7 @@ package com.globussoft.wellness.patient.feature.health.presentation.screen
 import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,16 +14,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -36,43 +32,32 @@ import com.globussoft.wellness.patient.feature.health.presentation.state.Consent
 import com.globussoft.wellness.patient.feature.health.presentation.state.ConsentFormPdfUiState
 import java.io.File
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ConsentFormPdfScreen(
     state: ConsentFormPdfUiState,
     onEvent: (ConsentFormPdfUiEvent) -> Unit,
 ) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Consent Form") },
-                navigationIcon = {
-                    IconButton(onClick = { onEvent(ConsentFormPdfUiEvent.NavigateBack) }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-            )
-        },
-        containerColor = MaterialTheme.colorScheme.background,
-    ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
-            when {
-                state.isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                state.error != null -> Column(
-                    modifier = Modifier.align(Alignment.Center).padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    Icon(
-                        Icons.Default.CloudOff,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(48.dp),
-                    )
-                    Text(state.error, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                state.pdfBytes != null -> ConsentPdfViewer(pdfBytes = state.pdfBytes)
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+    ) {
+        when {
+            state.isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            state.error != null -> Column(
+                modifier = Modifier.align(Alignment.Center).padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Icon(
+                    Icons.Default.CloudOff,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(48.dp),
+                )
+                Text(state.error, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
+            state.pdfBytes != null -> ConsentPdfViewer(pdfBytes = state.pdfBytes)
         }
     }
 }

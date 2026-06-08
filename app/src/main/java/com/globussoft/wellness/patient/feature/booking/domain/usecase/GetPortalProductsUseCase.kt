@@ -11,7 +11,7 @@ class GetPortalProductsUseCase @Inject constructor(
     private val repository: AppointmentRepository,
 ) {
     suspend operator fun invoke(): Result<List<Product>> = try {
-        Result.Success(repository.getPortalProducts())
+        Result.Success(repository.getPortalProducts().distinctBy { it.name })
     } catch (e: HttpException) {
         Result.Error("HTTP_${e.code()}", e.message() ?: "Server error", e.code())
     } catch (e: IOException) {

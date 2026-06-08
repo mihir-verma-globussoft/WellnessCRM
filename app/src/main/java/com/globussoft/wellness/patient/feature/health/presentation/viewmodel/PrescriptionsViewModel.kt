@@ -41,6 +41,15 @@ class PrescriptionsViewModel @Inject constructor(
     fun onEvent(event: PrescriptionsUiEvent) {
         when (event) {
             PrescriptionsUiEvent.Refresh -> load()
+            is PrescriptionsUiEvent.RequestViewPdf ->
+                _uiState.value = _uiState.value.copy(showPdfConfirm = true, prescriptionToOpen = event.prescriptionId)
+            PrescriptionsUiEvent.ConfirmViewPdf -> {
+                val id = _uiState.value.prescriptionToOpen ?: return
+                _uiState.value = _uiState.value.copy(showPdfConfirm = false, prescriptionToOpen = null)
+                viewModelScope.launch { _navEvent.send(PrescriptionsNavEvent.ToPdf(id)) }
+            }
+            PrescriptionsUiEvent.DismissPdfConfirm ->
+                _uiState.value = _uiState.value.copy(showPdfConfirm = false, prescriptionToOpen = null)
             is PrescriptionsUiEvent.ViewPdf -> viewModelScope.launch { _navEvent.send(PrescriptionsNavEvent.ToPdf(event.prescriptionId)) }
             PrescriptionsUiEvent.NavigateBack -> viewModelScope.launch { _navEvent.send(PrescriptionsNavEvent.Back) }
         }

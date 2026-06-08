@@ -1,0 +1,125 @@
+# WellnessCRM Patient App — Implementation Status
+
+Last updated: 2026-06-08 19:30
+Current phase: Phase Complete — Android feature gap closed + full QA pass done
+
+## Legend
+✅ Done  🔄 In Progress  ⬜ Not started  🔴 Blocked
+
+---
+
+## Google Doc Feature Gap — Android Implementation (2026-06-08 session)
+
+✅ Step 1 — Navigation Architecture
+  ✅ 5-tab BottomNavigation (Home / Bookings / Catalog / Finance / Profile)
+  ✅ Global WellnessTopAppBar with clinic name, bell badge, dark/light toggle, back arrow
+  ✅ WellnessBottomNavBar with per-tab back-stack save/restore
+  ✅ Tab sealed class (Tab.kt) with icons
+  ✅ MainViewModel — isDarkTheme, clinicName, unreadNotificationCount
+  ✅ isDarkTheme key in DataStoreManager (persisted)
+  ✅ Auth screens (Splash/Login/Register) shown without chrome
+  ✅ All 14 existing screens stripped of inner Scaffold/TopAppBar
+
+✅ Step 2 — Dashboard Restructure
+  ✅ Inner Scaffold removed from DashboardScreen
+  ✅ Greeting header with time-based salutation + CUSTOMER role badge
+  ✅ Stats row (Wallet / Members / Loyalty) unchanged and functional
+  ✅ Next appointment banner / Book now CTA unchanged
+  ✅ Waitlist tile added to Appointments section
+
+✅ Step 3 — Service Catalog + Categories (Catalog tab)
+  ✅ feature/catalog/ package created
+  ✅ CatalogTabScreen with Services | Categories | Memberships tabs
+  ✅ ServiceCatalogContent — LazyVerticalGrid(2), search, service detail ModalBottomSheet, "Book this service" CTA
+  ✅ ServiceCategoriesContent — LazyColumn, pull-to-refresh
+  ✅ CatalogRepository + GetServicesUseCase + GetCategoriesUseCase
+  ✅ getCatalogServices() + getCatalogServiceCategories() in WellnessApiService (portal/products, portal/product-categories)
+  ✅ Catalog tab wired in NavGraph (tab_catalog route)
+
+✅ Step 4 — Payments Dashboard (Finance tab)
+  ✅ feature/finance/ package created
+  ✅ FinanceTabScreen with Payments | Gift Cards | Transactions tabs
+  ✅ Payments tab — KPI row (collected/pending/failed) + LazyColumn payment cards + pull-to-refresh
+  ✅ Gift Cards / Transactions tabs navigate to existing screens
+  ✅ FinanceRepository + GetPaymentsUseCase
+  ✅ getPayments() + getPaymentConfig() in WellnessApiService (/api/payments, /api/payments/config)
+  ✅ Finance tab wired in NavGraph (tab_finance route)
+
+✅ Step 5 — Waitlist Screen (Appointments tab)
+  ✅ WaitlistScreen in feature/booking/presentation/screen/
+  ✅ WaitlistViewModel + WaitlistState
+  ✅ GetWaitlist + AddToWaitlist support in AppointmentRepository
+  ✅ portal/waitlist GET + POST → fixed to waitlist (no portal/ prefix) in WellnessApiService
+  ✅ FAB → ModalBottomSheet form (service dropdown + notes)
+  ✅ Waitlist tile added to Dashboard Appointments section
+  ✅ Deep link: wellnesspatient://screen/waitlist
+  ✅ Wired in NavGraph
+
+✅ Step 6 — UX Consistency Pass
+  ✅ MyAppointmentsScreen — 4 KPI count cards (Upcoming/Pending/Completed/Cancelled)
+  ✅ MyAppointmentsScreen — Cancel confirm AlertDialog
+  ✅ MyAppointmentsScreen — Pull-to-refresh
+  ✅ PrescriptionsScreen — PDF download confirm AlertDialog
+  ✅ PrescriptionsScreen — Pull-to-refresh
+  ✅ MembershipsScreen — Pull-to-refresh
+  ✅ LoyaltyScreen — Pull-to-refresh
+  ✅ NotificationInboxScreen — Pull-to-refresh
+  ✅ WalletScreen — Pull-to-refresh
+
+✅ Step 7 — Full on-device QA pass (2026-06-08)
+  ✅ assembleDebug — BUILD SUCCESSFUL
+  ✅ Dashboard — stats, tiles, navigation all working
+  ✅ My Bookings — 4 KPI buckets, all tabs (Upcoming/Pending/Completed/Cancelled)
+  ✅ Visit History — grouped by month, amounts, doctors
+  ✅ Book Appointment — 3-step flow (service → date/time → confirm → success)
+    ✅ Fixed: appointmentDate was "YYYY-MM-DDT00:00:00Z" → backend needs "YYYY-MM-DD"
+  ✅ Waitlist — list loads, FAB opens form, service dropdown populated, submission works
+    ✅ Fixed: portal/waitlist → waitlist endpoint
+    ✅ Fixed: portal/products (403) → services?public=true
+    ✅ Fixed: ProductDto.category (Object) → String to match services API
+    ✅ Fixed: AddWaitlistDto missing patientId (backend 400)
+  ✅ Catalog Services — 2-col grid, no duplicates
+  ✅ Catalog Categories — loads (0 services per category is backend data issue, not app bug)
+  ✅ Catalog Memberships — active plans list
+  ✅ Finance Payments — KPIs (₹510.95 total), Razorpay payment list
+  ✅ Finance Gift Cards — empty state (no gift cards in tenant)
+  ✅ Finance Transactions — wallet balance ₹20.00, transaction history
+  ✅ Profile — personal info display, logout
+  ✅ Prescriptions — medication list with doctor/date
+  ✅ Treatment Plans — active plans with session counts
+  ✅ Consent Forms — signed documents list
+  ✅ Notifications — empty state (no FCM messages yet)
+  ✅ No crashes after build at 18:04 on 2026-06-08
+
+---
+
+## Backend Gap Endpoints (status as of 2026-06-08)
+
+✅ GET /services?public=true — live (was portal/products; changed because CUSTOMER role denied portal/products)
+✅ GET /service-categories — live (service categories)
+✅ GET /waitlist — live (fixed from portal/waitlist which 404'd)
+✅ POST /waitlist (with patientId) — live (fixed: backend requires patientId in body)
+✅ GET /portal/appointments?bucket= — live (4-bucket my bookings)
+✅ PATCH /portal/appointments/:id/reschedule — live
+✅ GET /portal/waitlist — built in backend (needs confirmation)
+✅ POST /portal/waitlist — built in backend (needs confirmation)
+✅ GET /api/payments — live
+✅ GET /api/payments/config — live
+✅ GET /portal/prescriptions — live
+✅ GET /api/wellness/my-transactions — live
+✅ GET /appointments/my-memberships — live
+
+---
+
+## Earlier Phases (pre-2026-06-08)
+
+✅ Phase 0 — Bootstrap complete
+✅ Phase 1 — Core module complete
+✅ Phase 2 — Auth feature complete
+✅ Phase 3 — Dashboard feature complete (restructured 2026-06-08)
+✅ Phase 4 — Booking feature complete (Waitlist added 2026-06-08)
+✅ Phase 5 — Health feature complete
+✅ Phase 6 — Membership feature complete
+✅ Phase 7 — Wallet + Gift cards complete
+✅ Phase 8 — Profile + Notifications complete
+✅ Phase 9 — FCM push complete

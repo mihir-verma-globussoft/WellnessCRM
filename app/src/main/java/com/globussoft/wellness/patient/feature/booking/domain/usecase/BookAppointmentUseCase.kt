@@ -30,7 +30,14 @@ class BookAppointmentUseCase @Inject constructor(
         )
     } catch (e: HttpException) {
         when (e.code()) {
-            400 -> Result.Error("MISSING_FIELDS", "Please fill in all required fields", 400)
+            400 -> {
+                val body = runCatching { e.response()?.errorBody()?.string() }.getOrNull() ?: ""
+                val msg = when {
+                    "INVALID_DATE" in body -> "Invalid appointment date. Please try again."
+                    else -> "Please fill in all required fields"
+                }
+                Result.Error("MISSING_FIELDS", msg, 400)
+            }
             409 -> Result.Error("DOCTOR_UNAVAILABLE", "This slot is no longer available", 409)
             else -> Result.Error("HTTP_${e.code()}", e.message() ?: "Server error", e.code())
         }

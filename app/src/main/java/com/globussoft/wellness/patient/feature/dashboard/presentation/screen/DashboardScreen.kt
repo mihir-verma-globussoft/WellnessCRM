@@ -16,29 +16,26 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.EventNote
 import androidx.compose.material.icons.filled.AccountBalanceWallet
-import androidx.compose.material.icons.filled.Assignment
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.CardGiftcard
 import androidx.compose.material.icons.filled.CardMembership
 import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.automirrored.filled.EventNote
 import androidx.compose.material.icons.filled.Healing
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.MedicalServices
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -70,67 +67,24 @@ private data class PortalTile(
     val event: DashboardUiEvent,
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
     state: DashboardUiState,
     onEvent: (DashboardUiEvent) -> Unit,
 ) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    val greeting = remember {
-                        val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
-                        when {
-                            hour < 12 -> "Good morning"
-                            hour < 17 -> "Good afternoon"
-                            else -> "Good evening"
-                        }
-                    }
-                    val name = state.dashboard?.patientName.orEmpty()
-                    Column {
-                        Text(
-                            text = if (name.isNotBlank()) "$greeting, $name" else greeting,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                        Text(
-                            text = "Welcome back",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { onEvent(DashboardUiEvent.NavigateToNotifications) }) {
-                        Icon(
-                            imageVector = Icons.Default.Notifications,
-                            contentDescription = "Notifications",
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                ),
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+    ) {
+        when {
+            state.isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            state.error != null -> ErrorState(
+                message = state.error,
+                onRetry = { onEvent(DashboardUiEvent.Refresh) },
+                modifier = Modifier.align(Alignment.Center),
             )
-        },
-        containerColor = MaterialTheme.colorScheme.background,
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
-        ) {
-            when {
-                state.isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                state.error != null -> ErrorState(
-                    message = state.error,
-                    onRetry = { onEvent(DashboardUiEvent.Refresh) },
-                    modifier = Modifier.align(Alignment.Center),
-                )
-                else -> DashboardContent(state = state, onEvent = onEvent)
-            }
+            else -> DashboardContent(state = state, onEvent = onEvent)
         }
     }
 }
@@ -147,6 +101,8 @@ private fun DashboardContent(
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
+        GreetingHeader(patientName = state.dashboard?.patientName.orEmpty())
+
         if (state.dashboard?.nextVisit != null) {
             NextVisitCard(
                 visit = state.dashboard.nextVisit,
@@ -172,6 +128,50 @@ private fun DashboardContent(
         PortalMenu(onEvent = onEvent)
 
         Spacer(modifier = Modifier.height(8.dp))
+    }
+}
+
+@Composable
+private fun GreetingHeader(patientName: String) {
+    val greeting = remember {
+        val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+        when {
+            hour < 12 -> "Good morning"
+            hour < 17 -> "Good afternoon"
+            else -> "Good evening"
+        }
+    }
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column {
+            Text(
+                text = if (patientName.isNotBlank()) "$greeting, $patientName" else greeting,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = "Welcome back",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        AssistChip(
+            onClick = {},
+            label = {
+                Text(
+                    text = "CUSTOMER",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                )
+            },
+            colors = AssistChipDefaults.assistChipColors(
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                labelColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            ),
+        )
     }
 }
 
@@ -343,8 +343,9 @@ private fun PortalMenu(onEvent: (DashboardUiEvent) -> Unit) {
             iconTint = cs.primary,
             tiles = listOf(
                 PortalTile("Book Appointment", "Schedule a visit", Icons.Default.CalendarToday, DashboardUiEvent.NavigateToBooking),
-                PortalTile("My Appointments", "Upcoming & past", Icons.AutoMirrored.Filled.EventNote, DashboardUiEvent.NavigateToAppointments),
+                PortalTile("My Bookings", "Upcoming & past", Icons.AutoMirrored.Filled.EventNote, DashboardUiEvent.NavigateToAppointments),
                 PortalTile("Visit History", "All visits", Icons.Default.History, DashboardUiEvent.NavigateToVisitHistory),
+                PortalTile("Waitlist", "Join a queue", Icons.Default.AccessTime, DashboardUiEvent.NavigateToWaitlist),
             ),
             onEvent = onEvent,
         )

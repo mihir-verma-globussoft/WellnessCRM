@@ -33,7 +33,12 @@ class NotificationsViewModel @Inject constructor(
     val navEvent = _navEvent.receiveAsFlow()
 
     init {
+        load()
+    }
+
+    private fun load() {
         viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true)
             getNotifications().collect { list ->
                 _uiState.value = NotificationsUiState(isLoading = false, notifications = list)
             }
@@ -42,6 +47,7 @@ class NotificationsViewModel @Inject constructor(
 
     fun onEvent(event: NotificationsUiEvent) {
         when (event) {
+            NotificationsUiEvent.Refresh -> load()
             is NotificationsUiEvent.MarkRead -> viewModelScope.launch { markRead(event.notificationId) }
             NotificationsUiEvent.MarkAllRead -> viewModelScope.launch { markRead.markAll() }
             is NotificationsUiEvent.TapNotification -> {

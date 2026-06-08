@@ -6,10 +6,12 @@ import com.globussoft.wellness.patient.feature.booking.data.remote.dto.Appointme
 import com.globussoft.wellness.patient.feature.booking.data.remote.dto.ProductCategoryDto
 import com.globussoft.wellness.patient.feature.booking.data.remote.dto.ProductDto
 import com.globussoft.wellness.patient.feature.booking.data.remote.dto.VisitDto
+import com.globussoft.wellness.patient.feature.booking.data.remote.dto.WaitlistEntryDto
 import com.globussoft.wellness.patient.feature.booking.domain.model.Appointment
 import com.globussoft.wellness.patient.feature.booking.domain.model.Product
 import com.globussoft.wellness.patient.feature.booking.domain.model.ProductCategory
 import com.globussoft.wellness.patient.feature.booking.domain.model.Visit
+import com.globussoft.wellness.patient.feature.booking.domain.model.WaitlistEntry
 
 fun AppointmentDto.toDomain() = Appointment(
     id = id,
@@ -69,7 +71,7 @@ fun ProductDto.toDomain() = Product(
     price = price,
     discountedPrice = discountedPrice,
     imageUrl = imageUrl,
-    categoryName = category?.name,
+    categoryName = categoryName,
 )
 
 fun ProductCategoryDto.toDomain() = ProductCategory(
@@ -77,4 +79,13 @@ fun ProductCategoryDto.toDomain() = ProductCategory(
     name = name,
     imageUrl = imageUrl,
     color = color,
+)
+
+fun WaitlistEntryDto.toDomain() = WaitlistEntry(
+    id = id,
+    serviceId = serviceId,
+    serviceName = serviceName,
+    status = status ?: "pending",
+    notes = notes,
+    createdAt = createdAt ?: "",
 )

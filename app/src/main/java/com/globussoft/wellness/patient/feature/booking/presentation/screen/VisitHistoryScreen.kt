@@ -1,5 +1,6 @@
 package com.globussoft.wellness.patient.feature.booking.presentation.screen
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,18 +11,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,56 +31,45 @@ import com.globussoft.wellness.patient.feature.booking.domain.model.Visit
 import com.globussoft.wellness.patient.feature.booking.presentation.state.VisitHistoryUiEvent
 import com.globussoft.wellness.patient.feature.booking.presentation.state.VisitHistoryUiState
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VisitHistoryScreen(
     state: VisitHistoryUiState,
     onEvent: (VisitHistoryUiEvent) -> Unit,
 ) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Visit History") },
-                navigationIcon = {
-                    IconButton(onClick = { onEvent(VisitHistoryUiEvent.NavigateBack) }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                },
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+    ) {
+        when {
+            state.isLoading -> CircularProgressIndicator(
+                modifier = Modifier.align(Alignment.Center),
             )
-        },
-        containerColor = MaterialTheme.colorScheme.background,
-    ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
-            when {
-                state.isLoading -> CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center),
-                )
-                state.error != null -> ErrorState(
-                    message = state.error,
-                    onRetry = { onEvent(VisitHistoryUiEvent.Refresh) },
-                    modifier = Modifier.align(Alignment.Center),
-                )
-                state.visits.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No visits yet", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                else -> LazyColumn(
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    val grouped = state.visits.groupBy { DateUtil.toDisplayMonthYear(it.visitDate) }
-                    grouped.forEach { (monthLabel, visits) ->
-                        item {
-                            SectionLabel(
-                                text = monthLabel,
-                                modifier = Modifier.padding(vertical = 4.dp),
-                            )
-                        }
-                        items(visits) { visit ->
-                            VisitCard(
-                                visit = visit,
-                                onClick = { onEvent(VisitHistoryUiEvent.SelectVisit(visit)) },
-                            )
-                        }
+            state.error != null -> ErrorState(
+                message = state.error,
+                onRetry = { onEvent(VisitHistoryUiEvent.Refresh) },
+                modifier = Modifier.align(Alignment.Center),
+            )
+            state.visits.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("No visits yet", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            else -> LazyColumn(
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                val grouped = state.visits.groupBy { DateUtil.toDisplayMonthYear(it.visitDate) }
+                grouped.forEach { (monthLabel, visits) ->
+                    item {
+                        SectionLabel(
+                            text = monthLabel,
+                            modifier = Modifier.padding(vertical = 4.dp),
+                        )
+                    }
+                    items(visits) { visit ->
+                        VisitCard(
+                            visit = visit,
+                            onClick = { onEvent(VisitHistoryUiEvent.SelectVisit(visit)) },
+                        )
                     }
                 }
             }

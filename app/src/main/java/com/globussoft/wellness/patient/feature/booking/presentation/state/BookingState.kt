@@ -17,10 +17,15 @@ data class MyAppointmentsUiState(
     val rescheduleSheetAppointmentId: Int? = null,
     val isRescheduling: Boolean = false,
     val rescheduleError: String? = null,
+    val showCancelConfirmDialog: Boolean = false,
+    val appointmentToCancel: Appointment? = null,
 )
 
 sealed class MyAppointmentsUiEvent {
     object Refresh : MyAppointmentsUiEvent()
+    data class RequestCancel(val appointment: Appointment) : MyAppointmentsUiEvent()
+    object ConfirmCancel : MyAppointmentsUiEvent()
+    object DismissCancel : MyAppointmentsUiEvent()
     data class Cancel(val appointmentId: Int) : MyAppointmentsUiEvent()
     data class ShowRescheduleSheet(
         val appointmentId: Int,

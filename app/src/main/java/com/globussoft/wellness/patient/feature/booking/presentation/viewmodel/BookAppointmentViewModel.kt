@@ -98,7 +98,7 @@ class BookAppointmentViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = s.copy(isBooking = true, error = null)
             val result = bookAppointment(
-                appointmentDate = DateUtil.toApiDate(dateMs) + "T00:00:00Z",
+                appointmentDate = DateUtil.toApiDate(dateMs),
                 appointmentTime = time,
                 reason = s.reason,
                 serviceId = s.selectedProduct?.id,

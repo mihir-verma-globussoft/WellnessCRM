@@ -1,5 +1,9 @@
 package com.globussoft.wellness.patient.core.di
 
+import com.globussoft.wellness.patient.feature.catalog.data.repository.CatalogRepositoryImpl
+import com.globussoft.wellness.patient.feature.catalog.domain.repository.CatalogRepository
+import com.globussoft.wellness.patient.feature.finance.data.repository.FinanceRepositoryImpl
+import com.globussoft.wellness.patient.feature.finance.domain.repository.FinanceRepository
 import com.globussoft.wellness.patient.feature.auth.data.repository.AuthRepositoryImpl
 import com.globussoft.wellness.patient.feature.auth.domain.repository.AuthRepository
 import com.globussoft.wellness.patient.feature.health.data.repository.ConsentFormRepositoryImpl
@@ -69,4 +73,10 @@ abstract class RepositoryModule {
 
     @Binds @Singleton
     abstract fun bindLoyaltyRepository(impl: LoyaltyRepositoryImpl): LoyaltyRepository
+
+    @Binds @Singleton
+    abstract fun bindCatalogRepository(impl: CatalogRepositoryImpl): CatalogRepository
+
+    @Binds @Singleton
+    abstract fun bindFinanceRepository(impl: FinanceRepositoryImpl): FinanceRepository
 }

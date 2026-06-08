@@ -22,5 +22,6 @@ sealed class DashboardUiEvent {
     object NavigateToVisitHistory : DashboardUiEvent()
     object NavigateToTreatmentPlans : DashboardUiEvent()
     object NavigateToConsentForms : DashboardUiEvent()
+    object NavigateToWaitlist : DashboardUiEvent()
     object Logout : DashboardUiEvent()
 }

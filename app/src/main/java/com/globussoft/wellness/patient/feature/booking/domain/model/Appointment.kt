@@ -42,3 +42,12 @@ data class ProductCategory(
     val imageUrl: String?,
     val color: String?,
 )
+
+data class WaitlistEntry(
+    val id: Int,
+    val serviceId: Int?,
+    val serviceName: String?,
+    val status: String,
+    val notes: String?,
+    val createdAt: String,
+)

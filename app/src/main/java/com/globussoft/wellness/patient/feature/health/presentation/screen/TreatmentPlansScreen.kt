@@ -1,5 +1,6 @@
 package com.globussoft.wellness.patient.feature.health.presentation.screen
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,17 +12,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,55 +29,40 @@ import com.globussoft.wellness.patient.feature.health.domain.model.TreatmentPlan
 import com.globussoft.wellness.patient.feature.health.presentation.state.TreatmentPlansUiEvent
 import com.globussoft.wellness.patient.feature.health.presentation.state.TreatmentPlansUiState
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TreatmentPlansScreen(
     state: TreatmentPlansUiState,
     onEvent: (TreatmentPlansUiEvent) -> Unit,
 ) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("My Treatment Plans") },
-                navigationIcon = {
-                    IconButton(onClick = { onEvent(TreatmentPlansUiEvent.NavigateBack) }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+    ) {
+        when {
+            state.isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            state.error != null -> Column(
+                modifier = Modifier.align(Alignment.Center),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(state.error, color = MaterialTheme.colorScheme.error)
+                Spacer(Modifier.height(12.dp))
+                Button(onClick = { onEvent(TreatmentPlansUiEvent.Refresh) }, shape = MaterialTheme.shapes.extraLarge) { Text("Retry") }
+            }
+            state.plans.isEmpty() -> Text(
+                text = "No treatment plans found",
+                modifier = Modifier.align(Alignment.Center),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-        },
-        containerColor = MaterialTheme.colorScheme.background,
-    ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-        ) {
-            when {
-                state.isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                state.error != null -> Column(
-                    modifier = Modifier.align(Alignment.Center),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Text(state.error, color = MaterialTheme.colorScheme.error)
-                    Spacer(Modifier.height(12.dp))
-                    Button(onClick = { onEvent(TreatmentPlansUiEvent.Refresh) }, shape = MaterialTheme.shapes.extraLarge) { Text("Retry") }
-                }
-                state.plans.isEmpty() -> Text(
-                    text = "No treatment plans found",
-                    modifier = Modifier.align(Alignment.Center),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                else -> LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    items(state.plans, key = { it.id }) { plan ->
-                        TreatmentPlanCard(plan)
-                    }
+            else -> LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                items(state.plans, key = { it.id }) { plan ->
+                    TreatmentPlanCard(plan)
                 }
             }
         }

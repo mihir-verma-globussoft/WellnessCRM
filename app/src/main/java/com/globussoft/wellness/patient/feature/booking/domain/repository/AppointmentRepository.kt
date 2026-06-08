@@ -4,6 +4,7 @@ import com.globussoft.wellness.patient.feature.booking.domain.model.Appointment
 import com.globussoft.wellness.patient.feature.booking.domain.model.Product
 import com.globussoft.wellness.patient.feature.booking.domain.model.ProductCategory
 import com.globussoft.wellness.patient.feature.booking.domain.model.Visit
+import com.globussoft.wellness.patient.feature.booking.domain.model.WaitlistEntry
 
 interface AppointmentRepository {
     suspend fun getMyAppointments(bucket: String? = null): List<Appointment>
@@ -26,4 +27,6 @@ interface AppointmentRepository {
     suspend fun getVisitHistory(upcomingOnly: Boolean = false): List<Visit>
     suspend fun getCachedVisits(): List<Visit>
     suspend fun cacheVisits(visits: List<Visit>)
+    suspend fun getWaitlist(): List<WaitlistEntry>
+    suspend fun addToWaitlist(serviceId: Int, patientId: Int, notes: String?): WaitlistEntry
 }

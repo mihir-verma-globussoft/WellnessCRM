@@ -16,19 +16,19 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -45,41 +45,29 @@ fun NotificationInboxScreen(
     state: NotificationsUiState,
     onEvent: (NotificationsUiEvent) -> Unit,
 ) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Notifications") },
-                navigationIcon = {
-                    IconButton(onClick = { onEvent(NotificationsUiEvent.NavigateBack) }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                actions = {
-                    if (state.notifications.any { !it.isRead }) {
-                        IconButton(onClick = { onEvent(NotificationsUiEvent.MarkAllRead) }) {
-                            Icon(Icons.Default.DoneAll, contentDescription = "Mark all read")
-                        }
-                    }
-                },
+    var isRefreshing by remember { mutableStateOf(false) }
+    LaunchedEffect(state.isLoading) { if (!state.isLoading) isRefreshing = false }
+
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = { isRefreshing = true; onEvent(NotificationsUiEvent.Refresh) },
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+    ) {
+        when {
+            state.isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            state.notifications.isEmpty() -> EmptyState(
+                message = "No notifications yet",
+                icon = Icons.Default.Notifications,
+                modifier = Modifier.align(Alignment.Center),
             )
-        },
-        containerColor = MaterialTheme.colorScheme.background,
-    ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
-            when {
-                state.isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                state.notifications.isEmpty() -> EmptyState(
-                    message = "No notifications yet",
-                    icon = Icons.Default.Notifications,
-                    modifier = Modifier.align(Alignment.Center),
-                )
-                else -> LazyColumn(contentPadding = PaddingValues(vertical = 8.dp)) {
-                    items(state.notifications, key = { it.id }) { notification ->
-                        NotificationRow(
-                            notification = notification,
-                            onClick = { onEvent(NotificationsUiEvent.TapNotification(notification)) },
-                        )
-                    }
+            else -> LazyColumn(contentPadding = PaddingValues(vertical = 8.dp)) {
+                items(state.notifications, key = { it.id }) { notification ->
+                    NotificationRow(
+                        notification = notification,
+                        onClick = { onEvent(NotificationsUiEvent.TapNotification(notification)) },
+                    )
                 }
             }
         }

@@ -7,6 +7,9 @@ import com.globussoft.wellness.patient.feature.auth.data.remote.dto.PortalHealth
 import com.globussoft.wellness.patient.feature.auth.data.remote.dto.RegisterRequestDto
 import com.globussoft.wellness.patient.feature.auth.data.remote.dto.RegisterResponseDto
 import com.globussoft.wellness.patient.feature.auth.data.remote.dto.TenantBrandingResponseDto
+import com.globussoft.wellness.patient.feature.catalog.data.remote.dto.CatalogServiceCategoryDto
+import com.globussoft.wellness.patient.feature.catalog.data.remote.dto.CatalogServiceDto
+import com.globussoft.wellness.patient.feature.booking.data.remote.dto.AddWaitlistDto
 import com.globussoft.wellness.patient.feature.booking.data.remote.dto.AppointmentListResponseDto
 import com.globussoft.wellness.patient.feature.booking.data.remote.dto.BookAppointmentDto
 import com.globussoft.wellness.patient.feature.booking.data.remote.dto.BookAppointmentResponseDto
@@ -16,6 +19,7 @@ import com.globussoft.wellness.patient.feature.booking.data.remote.dto.ProductDt
 import com.globussoft.wellness.patient.feature.booking.data.remote.dto.RescheduleAppointmentDto
 import com.globussoft.wellness.patient.feature.booking.data.remote.dto.RescheduleAppointmentResponseDto
 import com.globussoft.wellness.patient.feature.booking.data.remote.dto.VisitDto
+import com.globussoft.wellness.patient.feature.booking.data.remote.dto.WaitlistEntryDto
 import com.globussoft.wellness.patient.feature.health.data.remote.dto.ConsentFormDto
 import com.globussoft.wellness.patient.feature.health.data.remote.dto.PrescriptionDto
 import com.globussoft.wellness.patient.feature.health.data.remote.dto.TreatmentPlanDto
@@ -27,6 +31,8 @@ import com.globussoft.wellness.patient.feature.profile.data.remote.dto.DsarExpor
 import com.globussoft.wellness.patient.feature.profile.data.remote.dto.ProfileDto
 import com.globussoft.wellness.patient.feature.profile.data.remote.dto.UpdateAuthProfileDto
 import com.globussoft.wellness.patient.feature.wallet.data.remote.dto.FcmTokenDto
+import com.globussoft.wellness.patient.feature.finance.data.remote.dto.PaymentConfigDto
+import com.globussoft.wellness.patient.feature.finance.data.remote.dto.PaymentDto
 import com.globussoft.wellness.patient.feature.wallet.data.remote.dto.GiftCardConfirmDto
 import com.globussoft.wellness.patient.feature.wallet.data.remote.dto.GiftCardConfirmResponseDto
 import com.globussoft.wellness.patient.feature.wallet.data.remote.dto.GiftCardOrderDto
@@ -128,13 +134,27 @@ interface WellnessApiService {
         @Body body: RescheduleAppointmentDto,
     ): Response<RescheduleAppointmentResponseDto>
 
+    // ── Waitlist ──────────────────────────────────────────────────────────────
+    @GET("waitlist")
+    suspend fun getWaitlist(): Response<List<WaitlistEntryDto>>
+
+    @POST("waitlist")
+    suspend fun addToWaitlist(@Body body: AddWaitlistDto): Response<WaitlistEntryDto>
+
     // ── Products / Services (patient-facing catalogue) ────────────────────────
-    // Requires portal permission "products.read". Excludes Consumption-type products.
-    @GET("portal/products")
-    suspend fun getPortalProducts(): Response<List<ProductDto>>
+    // portal/products requires products.read (CUSTOMER role denied). Use public services endpoint.
+    @GET("services")
+    suspend fun getPortalProducts(@Query("public") public: Boolean = true): Response<List<ProductDto>>
 
     @GET("portal/product-categories")
     suspend fun getPortalProductCategories(): Response<List<ProductCategoryDto>>
+
+    // ── Catalog (catalog feature — own DTOs, no cross-feature import from booking) ──
+    @GET("services")
+    suspend fun getCatalogServices(@Query("public") public: Boolean = true): Response<List<CatalogServiceDto>>
+
+    @GET("service-categories")
+    suspend fun getCatalogServiceCategories(@Query("public") public: Boolean = true): Response<List<CatalogServiceCategoryDto>>
 
     // ── Prescriptions ─────────────────────────────────────────────────────────
     @GET("portal/prescriptions")
@@ -210,4 +230,11 @@ interface WellnessApiService {
         @Path("id") giftCardId: Int,
         @Body body: GiftCardConfirmDto,
     ): Response<GiftCardConfirmResponseDto>
+
+    // ── Payments ─────────────────────────────────────────────────────────────
+    @GET("/api/payments")
+    suspend fun getPayments(): Response<List<PaymentDto>>
+
+    @GET("/api/payments/config")
+    suspend fun getPaymentConfig(): Response<PaymentConfigDto>
 }

@@ -1,5 +1,6 @@
 package com.globussoft.wellness.patient.feature.health.presentation.screen
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,18 +13,23 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.PictureAsPdf
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -41,48 +47,62 @@ fun PrescriptionsScreen(
     state: PrescriptionsUiState,
     onEvent: (PrescriptionsUiEvent) -> Unit,
 ) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Prescriptions") },
-                navigationIcon = {
-                    IconButton(onClick = { onEvent(PrescriptionsUiEvent.NavigateBack) }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                },
+    var isRefreshing by remember { mutableStateOf(false) }
+    LaunchedEffect(state.isLoading) { if (!state.isLoading) isRefreshing = false }
+
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = { isRefreshing = true; onEvent(PrescriptionsUiEvent.Refresh) },
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+    ) {
+        when {
+            state.isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            state.permissionBlocked -> ErrorState(
+                message = "Prescription access is not enabled for your account. Contact your clinic.",
+                onRetry = { onEvent(PrescriptionsUiEvent.Refresh) },
+                modifier = Modifier.align(Alignment.Center),
             )
-        },
-        containerColor = MaterialTheme.colorScheme.background,
-    ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
-            when {
-                state.isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                state.permissionBlocked -> ErrorState(
-                    message = "Prescription access is not enabled for your account. Contact your clinic.",
-                    onRetry = { onEvent(PrescriptionsUiEvent.Refresh) },
-                    modifier = Modifier.align(Alignment.Center),
-                )
-                state.error != null -> ErrorState(
-                    message = state.error,
-                    onRetry = { onEvent(PrescriptionsUiEvent.Refresh) },
-                    modifier = Modifier.align(Alignment.Center),
-                )
-                state.prescriptions.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No prescriptions found", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                else -> LazyColumn(
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    items(state.prescriptions) { prescription ->
-                        PrescriptionCard(
-                            prescription = prescription,
-                            onClick = { onEvent(PrescriptionsUiEvent.ViewPdf(prescription.id)) },
-                        )
-                    }
+            state.error != null -> ErrorState(
+                message = state.error,
+                onRetry = { onEvent(PrescriptionsUiEvent.Refresh) },
+                modifier = Modifier.align(Alignment.Center),
+            )
+            state.prescriptions.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("No prescriptions found", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            else -> LazyColumn(
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                items(state.prescriptions) { prescription ->
+                    PrescriptionCard(
+                        prescription = prescription,
+                        onClick = { onEvent(PrescriptionsUiEvent.RequestViewPdf(prescription.id)) },
+                    )
                 }
             }
         }
+    }
+
+    // PDF download confirmation dialog
+    if (state.showPdfConfirm) {
+        AlertDialog(
+            onDismissRequest = { onEvent(PrescriptionsUiEvent.DismissPdfConfirm) },
+            title = { Text("Open prescription PDF?") },
+            text = { Text("This will download the document to view it in the app.") },
+            confirmButton = {
+                Button(onClick = { onEvent(PrescriptionsUiEvent.ConfirmViewPdf) }) {
+                    Text("Open")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { onEvent(PrescriptionsUiEvent.DismissPdfConfirm) }) {
+                    Text("Cancel")
+                }
+            },
+        )
     }
 }
 

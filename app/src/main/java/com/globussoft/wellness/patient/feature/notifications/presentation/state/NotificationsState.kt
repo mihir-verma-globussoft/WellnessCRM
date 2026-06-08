@@ -8,6 +8,7 @@ data class NotificationsUiState(
 )
 
 sealed class NotificationsUiEvent {
+    object Refresh : NotificationsUiEvent()
     data class MarkRead(val notificationId: String) : NotificationsUiEvent()
     object MarkAllRead : NotificationsUiEvent()
     data class TapNotification(val notification: Notification) : NotificationsUiEvent()

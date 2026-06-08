@@ -9,10 +9,15 @@ data class PrescriptionsUiState(
     val error: String? = null,
     val prescriptions: List<Prescription> = emptyList(),
     val permissionBlocked: Boolean = false,
+    val showPdfConfirm: Boolean = false,
+    val prescriptionToOpen: Int? = null,
 )
 
 sealed class PrescriptionsUiEvent {
     object Refresh : PrescriptionsUiEvent()
+    data class RequestViewPdf(val prescriptionId: Int) : PrescriptionsUiEvent()
+    object ConfirmViewPdf : PrescriptionsUiEvent()
+    object DismissPdfConfirm : PrescriptionsUiEvent()
     data class ViewPdf(val prescriptionId: Int) : PrescriptionsUiEvent()
     object NavigateBack : PrescriptionsUiEvent()
 }

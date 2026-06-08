@@ -15,7 +15,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.RemoveCircle
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
@@ -23,13 +22,16 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,36 +53,27 @@ fun LoyaltyScreen(
     state: LoyaltyUiState,
     onEvent: (LoyaltyUiEvent) -> Unit,
 ) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Loyalty Points") },
-                navigationIcon = {
-                    IconButton(onClick = { onEvent(LoyaltyUiEvent.NavigateBack) }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-            )
-        },
-        containerColor = MaterialTheme.colorScheme.background,
-    ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-        ) {
-            when {
-                state.isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                state.error != null -> Column(
-                    modifier = Modifier.align(Alignment.Center),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Text(state.error, color = MaterialTheme.colorScheme.error)
-                    Spacer(Modifier.height(12.dp))
-                    Button(onClick = { onEvent(LoyaltyUiEvent.Refresh) }, shape = MaterialTheme.shapes.extraLarge) { Text("Retry") }
-                }
-                state.loyaltyData != null -> LoyaltyContent(state.loyaltyData)
+    var isRefreshing by remember { mutableStateOf(false) }
+    LaunchedEffect(state.isLoading) { if (!state.isLoading) isRefreshing = false }
+
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = { isRefreshing = true; onEvent(LoyaltyUiEvent.Refresh) },
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+    ) {
+        when {
+            state.isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            state.error != null -> Column(
+                modifier = Modifier.align(Alignment.Center),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(state.error, color = MaterialTheme.colorScheme.error)
+                Spacer(Modifier.height(12.dp))
+                Button(onClick = { onEvent(LoyaltyUiEvent.Refresh) }, shape = MaterialTheme.shapes.extraLarge) { Text("Retry") }
             }
+            state.loyaltyData != null -> LoyaltyContent(state.loyaltyData)
         }
     }
 }

@@ -11,12 +11,14 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.globussoft.wellness.patient.core.navigation.WellnessNavGraph
 import com.globussoft.wellness.patient.core.theme.WellnessTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -24,12 +26,12 @@ import dagger.hilt.android.AndroidEntryPoint
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    // Updated when a notification intent arrives while the app is already running.
-    // Observed by WellnessNavGraph to trigger handleDeepLink on the NavController.
+    private val mainVm: MainViewModel by viewModels()
+
     private var notificationIntent by mutableStateOf<Intent?>(null)
 
     private val requestNotificationPermission =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* granted or denied — no action needed here */ }
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* no-op */ }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,16 +39,23 @@ class MainActivity : ComponentActivity() {
         requestPostNotificationsPermissionIfNeeded()
         enableEdgeToEdge()
         setContent {
-            WellnessTheme {
+            val isDarkTheme by mainVm.isDarkTheme.collectAsStateWithLifecycle()
+            val clinicName by mainVm.clinicName.collectAsStateWithLifecycle()
+            val unreadCount by mainVm.unreadNotificationCount.collectAsStateWithLifecycle()
+
+            WellnessTheme(darkTheme = isDarkTheme) {
                 WellnessNavGraph(
                     modifier = Modifier.fillMaxSize(),
                     notificationIntent = notificationIntent,
+                    isDarkTheme = isDarkTheme,
+                    onToggleDarkTheme = mainVm::toggleDarkTheme,
+                    clinicName = clinicName,
+                    unreadNotificationCount = unreadCount,
                 )
             }
         }
     }
 
-    // Called when the app is already running and a notification tap brings it to foreground.
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
