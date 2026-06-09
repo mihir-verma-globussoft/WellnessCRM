@@ -7,15 +7,14 @@ object CurrencyUtil {
 
     private val indianLocale = Locale("en", "IN")
 
-    fun formatPaise(paise: Double, currency: String = "INR"): String = formatPaise(paise.toLong(), currency)
+    fun formatPaise(amount: Double, currency: String = "INR"): String = formatPaise(amount.toLong(), currency)
 
-    fun formatPaise(paise: Long, currency: String = "INR"): String {
-        val amount = paise / 100.0
+    fun formatPaise(amount: Long, currency: String = "INR"): String {
         return if (currency == "INR") {
             val formatter = NumberFormat.getCurrencyInstance(indianLocale)
-            formatter.format(amount)
+            formatter.format(amount.toDouble())
         } else {
-            "%.2f %s".format(amount, currency)
+            "%.2f %s".format(amount.toDouble(), currency)
         }
     }
 
@@ -25,6 +24,4 @@ object CurrencyUtil {
     }
 
     fun formatRupees(rupees: Long): String = formatRupees(rupees.toDouble())
-
-    fun paiseTo(paise: Long): Double = paise / 100.0
 }
