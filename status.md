@@ -126,6 +126,24 @@ Current phase: UI Redesign Pass — JSFiddle prototype parity (session 2)
 
 ---
 
+## Polish Pass — Zylu cleanup, Overflow, Responsiveness, Pickers, Typography, Spacing (2026-06-09)
+
+✅ MembershipMappers.kt — sanitiseDescription() strips "Imported from Zylu" and migration metadata from plan descriptions
+✅ WellnessBottomNavBar.kt — bottom nav labels use basicMarquee() instead of TextOverflow.Ellipsis
+✅ WellnessComponents.kt — SectionLabel upgraded to labelLarge+0.8sp tracking (muted, distinct from card titles); SpacingXs/Sm/Md/Lg/Xl constants added
+✅ DashboardScreen.kt — MenuTile ellipsis removed (text wraps naturally); typography: tile label→titleSmall, tile subtitle→bodySmall, stat chip label→bodySmall; screen padding→16dp, spacedBy→20dp
+✅ BookAppointmentScreen.kt — Step3DateTime: DatePickerDialog + TimePicker (AlertDialog) replace FilterChip rows; services grid→GridCells.Adaptive(156dp); ProductCard typography: name→titleSmall, category→bodySmall, price→labelLarge; InfoRow: label→labelMedium, value→bodyMedium
+✅ MyAppointmentsScreen.kt — Reschedule sheet: DatePickerDialog + TimePicker replace FlowRow FilterChips; removed unused Calendar/SimpleDateFormat/TIME_SLOTS
+✅ CatalogTabScreen.kt — services grid→GridCells.Adaptive(156dp); active-category FilterChip widthIn(max=280dp); service card→spacedBy(4dp), name→titleSmall (no maxLines)
+✅ GiftCardsScreen.kt — grid→GridCells.Adaptive(160dp)
+✅ WalletScreen.kt — KpiRow: Row→FlowRow (maxItemsInEachRow=4, wraps to 2×2 on narrow); KpiCard padding→horizontal=8+vertical=12, value→titleSmall SemiBold, label→bodySmall
+✅ FinanceTabScreen.kt — KpiRow: Row→FlowRow (maxItemsInEachRow=3); payment description maxLines removed
+✅ MembershipsScreen.kt — button labels hardcoded fontSize→labelSmall/labelMedium typography tokens
+✅ ProfileScreen.kt — ProfileField label→labelMedium; screen spacedBy→20dp
+✅ BUILD SUCCESSFUL — assembleDebug green
+
+---
+
 ## Backend Gap Endpoints (status as of 2026-06-08)
 
 ✅ GET /services?public=true — live (was portal/products; changed because CUSTOMER role denied portal/products)

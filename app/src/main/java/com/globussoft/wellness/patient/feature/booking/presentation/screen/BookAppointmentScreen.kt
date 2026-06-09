@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,22 +11,37 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -40,7 +54,6 @@ import com.globussoft.wellness.patient.feature.booking.domain.model.Product
 import com.globussoft.wellness.patient.feature.booking.presentation.state.BookAppointmentUiEvent
 import com.globussoft.wellness.patient.feature.booking.presentation.state.BookAppointmentUiState
 import com.globussoft.wellness.patient.feature.booking.presentation.state.DoctorOption
-import java.util.Calendar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -92,7 +105,7 @@ private fun Step1Products(state: BookAppointmentUiState, onEvent: (BookAppointme
             }
         } else {
             LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
+                columns = GridCells.Adaptive(minSize = 156.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.weight(1f),
@@ -147,18 +160,17 @@ private fun ProductCard(product: Product, isSelected: Boolean, onClick: () -> Un
 
 @Composable
 private fun ProductCardContent(product: Product, isSelected: Boolean) {
-    Column(modifier = Modifier.padding(12.dp)) {
+    Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Text(
             text = product.name,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
+            style = MaterialTheme.typography.titleSmall,
             color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
                     else MaterialTheme.colorScheme.onSurface,
         )
         if (!product.categoryName.isNullOrBlank()) {
             Text(
                 text = product.categoryName,
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.bodySmall,
                 color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                         else MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -166,7 +178,8 @@ private fun ProductCardContent(product: Product, isSelected: Boolean) {
         if (product.price != null) {
             Text(
                 text = CurrencyUtil.formatRupees(product.price),
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
                 color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
                         else MaterialTheme.colorScheme.primary,
             )
@@ -238,62 +251,105 @@ private fun Step2DoctorSelection(state: BookAppointmentUiState, onEvent: (BookAp
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun Step3DateTime(state: BookAppointmentUiState, onEvent: (BookAppointmentUiEvent) -> Unit) {
-    val timeSlots = remember {
-        listOf(
-            "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
-            "12:00", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00",
-        )
-    }
-    val dateOptions = remember {
-        (0..29).map { offset ->
-            val cal = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, offset) }
-            Pair(cal.timeInMillis, DateUtil.toDisplayDate(cal.timeInMillis))
-        }
-    }
+    var showDatePicker by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text("Select date", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-        Spacer(modifier = Modifier.height(8.dp))
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = state.selectedDate ?: System.currentTimeMillis(),
+        selectableDates = object : androidx.compose.material3.SelectableDates {
+            override fun isSelectableDate(utcTimeMillis: Long) = utcTimeMillis >= System.currentTimeMillis() - 86_400_000L
+        },
+    )
+    val timePickerState = rememberTimePickerState(initialHour = 9, initialMinute = 0, is24Hour = true)
 
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            dateOptions.take(7).forEach { (ms, label) ->
-                FilterChip(
-                    selected = state.selectedDate == ms,
-                    onClick = { onEvent(BookAppointmentUiEvent.SelectDate(ms)) },
-                    label = { Text(label.take(6), style = MaterialTheme.typography.labelSmall) },
-                )
-            }
-        }
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Text("Select date & time", style = MaterialTheme.typography.titleMedium)
 
-        Spacer(modifier = Modifier.height(16.dp))
-        Text("Select time", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-        Spacer(modifier = Modifier.height(8.dp))
-
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(4),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.weight(1f),
+        // Date picker button
+        OutlinedButton(
+            onClick = { showDatePicker = true },
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.medium,
         ) {
-            items(timeSlots) { time ->
-                FilterChip(
-                    selected = state.selectedTime == time,
-                    onClick = { onEvent(BookAppointmentUiEvent.SelectTime(time)) },
-                    label = { Text(time) },
-                )
-            }
+            Icon(Icons.Default.CalendarToday, contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = state.selectedDate?.let { DateUtil.toDisplayDate(it) } ?: "Select appointment date",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
+
+        // Time picker button
+        OutlinedButton(
+            onClick = { showTimePicker = true },
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.medium,
+        ) {
+            Icon(Icons.Default.Schedule, contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = state.selectedTime ?: "Select appointment time",
+                style = MaterialTheme.typography.bodyMedium,
+            )
         }
 
         if (state.error != null) {
             Text(state.error, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
         }
-        Spacer(modifier = Modifier.height(16.dp))
+
+        Spacer(modifier = Modifier.weight(1f))
+
         Button(
             onClick = { onEvent(BookAppointmentUiEvent.NextStep) },
             enabled = state.selectedDate != null && state.selectedTime != null,
             modifier = Modifier.fillMaxWidth(),
             shape = MaterialTheme.shapes.extraLarge,
         ) { Text("Continue") }
+    }
+
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { onEvent(BookAppointmentUiEvent.SelectDate(it)) }
+                    showDatePicker = false
+                }) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) { Text("Cancel") }
+            },
+        ) {
+            DatePicker(state = datePickerState, showModeToggle = false)
+        }
+    }
+
+    if (showTimePicker) {
+        AlertDialog(
+            onDismissRequest = { showTimePicker = false },
+            title = { Text("Select time", style = MaterialTheme.typography.titleMedium) },
+            text = {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth()) {
+                    TimePicker(state = timePickerState)
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val h = timePickerState.hour.toString().padStart(2, '0')
+                    val m = timePickerState.minute.toString().padStart(2, '0')
+                    onEvent(BookAppointmentUiEvent.SelectTime("$h:$m"))
+                    showTimePicker = false
+                }) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showTimePicker = false }) { Text("Cancel") }
+            },
+        )
     }
 }
 
@@ -348,12 +404,12 @@ private fun InfoRow(label: String, value: String) {
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         Text(
             text = label,
-            style = MaterialTheme.typography.bodySmall,
+            style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
             text = value,
-            style = MaterialTheme.typography.bodySmall,
+            style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Medium,
         )
     }

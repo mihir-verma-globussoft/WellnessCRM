@@ -367,7 +367,7 @@ private fun ProfessionalPlanCard(
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = contentColor),
                         border = BorderStroke(1.dp, contentColor.copy(alpha = 0.60f)),
                     ) {
-                        Text("View Details", fontSize = 12.sp)
+                        Text("View Details", style = MaterialTheme.typography.labelMedium)
                     }
 
                     Button(
@@ -380,9 +380,9 @@ private fun ProfessionalPlanCard(
                         ),
                     ) {
                         if (isOwned && ownedUntil != null) {
-                            Text("Until $ownedUntil", fontSize = 11.sp, maxLines = 1)
+                            Text("Until $ownedUntil", style = MaterialTheme.typography.labelSmall)
                         } else {
-                            Text("Join Now", fontSize = 12.sp)
+                            Text("Join Now", style = MaterialTheme.typography.labelMedium)
                         }
                     }
                 }

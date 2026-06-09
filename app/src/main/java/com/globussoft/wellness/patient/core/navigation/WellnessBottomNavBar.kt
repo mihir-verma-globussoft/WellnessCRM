@@ -5,7 +5,8 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.Modifier
+import androidx.compose.foundation.basicMarquee
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
 
@@ -34,7 +35,7 @@ fun WellnessBottomNavBar(
                     }
                 },
                 icon = { Icon(imageVector = tab.icon, contentDescription = tab.label) },
-                label = { Text(text = tab.label, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                label = { Text(text = tab.label, maxLines = 1, modifier = Modifier.basicMarquee()) },
             )
         }
     }

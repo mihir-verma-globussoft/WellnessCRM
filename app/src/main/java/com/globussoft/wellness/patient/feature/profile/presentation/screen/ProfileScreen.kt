@@ -91,7 +91,7 @@ private fun ViewProfileContent(state: ProfileUiState, onEvent: (ProfileUiEvent) 
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         // ── Avatar header card ──────────────────────────────────────────────
         WellnessCard(modifier = Modifier.fillMaxWidth()) {
@@ -371,8 +371,8 @@ private fun ChangePasswordCard() {
 
 @Composable
 private fun ProfileField(label: String, value: String) {
-    Column {
-        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(value, style = MaterialTheme.typography.bodyMedium)
     }
 }

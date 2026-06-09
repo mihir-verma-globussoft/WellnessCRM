@@ -32,6 +32,14 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+
+// ── Shared spacing scale ──────────────────────────────────────────────────────
+val SpacingXs = 4.dp   // icon-to-text gap, chip inner gap
+val SpacingSm = 8.dp   // between related items (label → value)
+val SpacingMd = 16.dp  // card content padding, between sections within a card
+val SpacingLg = 24.dp  // between cards / major sections
+val SpacingXl = 32.dp  // screen-level top/bottom breathing room
 
 /**
  * Standard card: white fill + 2dp shadow elevation.
@@ -147,9 +155,9 @@ fun SectionLabel(
 ) {
     Text(
         text = text,
-        style = MaterialTheme.typography.titleSmall,
+        style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 0.8.sp),
         fontWeight = FontWeight.SemiBold,
-        color = MaterialTheme.colorScheme.onSurface,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = modifier,
     )
 }

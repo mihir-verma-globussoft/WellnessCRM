@@ -33,6 +33,8 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -255,9 +257,12 @@ private fun PaymentsKpiRow(payments: List<Payment>) {
     val pendingCount = payments.count { it.status.equals("pending", ignoreCase = true) }
     val failedCount = payments.count { it.status.equals("failed", ignoreCase = true) }
 
-    Row(
+    @OptIn(ExperimentalLayoutApi::class)
+    FlowRow(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        maxItemsInEachRow = 3,
     ) {
         KpiCard(
             modifier = Modifier.weight(1f),
@@ -334,7 +339,6 @@ private fun PaymentCard(payment: Payment, onClick: () -> Unit = {}) {
                     text = payment.description,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
                 )
             }
 

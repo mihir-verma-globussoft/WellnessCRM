@@ -34,6 +34,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -173,6 +175,7 @@ private fun WalletContent(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun WalletKpiRow(wallet: WalletSummary) {
     val txns = wallet.transactions
@@ -182,7 +185,12 @@ private fun WalletKpiRow(wallet: WalletSummary) {
             it.type.equals("membership", ignoreCase = true)
     }
 
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    FlowRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        maxItemsInEachRow = 4,
+    ) {
         KpiCard(Modifier.weight(1f), "Total Paid", CurrencyUtil.formatPaise(totalPaid, wallet.currency))
         KpiCard(Modifier.weight(1f), "Balance", CurrencyUtil.formatPaise(wallet.balance, wallet.currency))
         KpiCard(Modifier.weight(1f), "Subscriptions", subscriptionCount.toString())
@@ -194,18 +202,21 @@ private fun WalletKpiRow(wallet: WalletSummary) {
 private fun KpiCard(modifier: Modifier, label: String, value: String) {
     WellnessCard(modifier = modifier) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             Text(
                 text = value,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.primary,
             )
             Text(
                 text = label,
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }

@@ -31,12 +31,24 @@ fun MembershipBalanceDto.toDomain() = MembershipBalance(
 fun MembershipPlanDto.toDomain() = MembershipPlan(
     id = id,
     name = name,
-    description = description,
+    description = description.sanitiseDescription(),
     price = price,
     currency = currency,
     durationDays = durationDays,
     entitlements = entitlements,
 )
+
+private fun String?.sanitiseDescription(): String? {
+    if (this == null) return null
+    val cleaned = lines()
+        .filterNot { line ->
+            line.contains("zylu", ignoreCase = true) ||
+                line.trimStart().startsWith("Imported from", ignoreCase = true)
+        }
+        .joinToString("\n")
+        .trim()
+    return cleaned.ifBlank { null }
+}
 
 fun Membership.toEntity(): CachedMembership {
     val startMs = DateUtil.isoToEpochMs(startDate)
