@@ -15,7 +15,14 @@ class GetMyTransactionsUseCase @Inject constructor(
     suspend operator fun invoke(): Result<WalletSummary> = try {
         val patientId = encryptedPrefs.getPatientId()
         val summary = if (patientId != null) {
-            repository.getWalletSummary(patientId)
+            try {
+                repository.getWalletSummary(patientId)
+            } catch (e: HttpException) {
+                // 403 = CUSTOMER role not permitted on patient wallet endpoint → fall back to my-transactions
+                if (e.code() == 403 || e.code() == 401) {
+                    repository.getMyTransactions()
+                } else throw e
+            }
         } else {
             repository.getMyTransactions()
         }
@@ -24,5 +31,7 @@ class GetMyTransactionsUseCase @Inject constructor(
         Result.Error("HTTP_${e.code()}", e.message() ?: "Server error", e.code())
     } catch (e: IOException) {
         Result.Error("NETWORK_ERROR", "No internet connection. Please try again.")
+    } catch (e: Exception) {
+        Result.Error("UNEXPECTED_ERROR", e.message ?: "An unexpected error occurred")
     }
 }

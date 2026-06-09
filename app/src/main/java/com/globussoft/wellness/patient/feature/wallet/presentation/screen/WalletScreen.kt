@@ -189,7 +189,7 @@ private fun WalletKpiRow(wallet: WalletSummary) {
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
-        maxItemsInEachRow = 4,
+        maxItemsInEachRow = 2,
     ) {
         KpiCard(Modifier.weight(1f), "Total Paid", CurrencyUtil.formatPaise(totalPaid, wallet.currency))
         KpiCard(Modifier.weight(1f), "Balance", CurrencyUtil.formatPaise(wallet.balance, wallet.currency))

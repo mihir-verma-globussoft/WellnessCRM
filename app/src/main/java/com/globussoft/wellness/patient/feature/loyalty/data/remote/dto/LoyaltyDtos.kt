@@ -9,7 +9,7 @@ import com.squareup.moshi.JsonClass
 // ownership check (req.user.userId → Patient.userId === patientId).
 @JsonClass(generateAdapter = true)
 data class LoyaltyResponseDto(
-    val patient: LoyaltyPatientRefDto,
+    val patient: LoyaltyPatientRefDto? = null,
     val balance: Int,
     val earnedThisMonth: Int,
     val transactions: List<LoyaltyTransactionDto>,

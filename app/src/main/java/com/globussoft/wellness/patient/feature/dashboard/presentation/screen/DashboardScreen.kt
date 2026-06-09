@@ -1,6 +1,7 @@
 package com.globussoft.wellness.patient.feature.dashboard.presentation.screen
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -147,15 +148,17 @@ private fun GreetingHeader(patientName: String) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column {
+        Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
             Text(
                 text = if (patientName.isNotBlank()) "$greeting, $patientName" else greeting,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                modifier = Modifier.basicMarquee(),
             )
             Text(
                 text = "Welcome back",
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }

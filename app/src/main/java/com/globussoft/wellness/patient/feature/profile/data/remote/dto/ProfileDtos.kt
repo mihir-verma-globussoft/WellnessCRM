@@ -43,5 +43,5 @@ data class AuthProfileResponseDto(
     val email: String?,
     val role: String,
     val profilePicture: String?,
-    val createdAt: String,
+    val createdAt: String? = null,
 )

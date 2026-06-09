@@ -13,5 +13,7 @@ class LogoutUseCase @Inject constructor(
         Result.Success(Unit)
     } catch (e: IOException) {
         Result.Error("STORAGE_ERROR", "Failed to clear session data")
+    } catch (e: Exception) {
+        Result.Error("UNEXPECTED_ERROR", e.message ?: "An unexpected error occurred")
     }
 }

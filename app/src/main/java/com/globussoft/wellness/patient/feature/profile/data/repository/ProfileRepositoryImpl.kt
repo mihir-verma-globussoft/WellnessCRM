@@ -8,6 +8,9 @@ import com.globussoft.wellness.patient.feature.profile.data.mapper.toDomain
 import com.globussoft.wellness.patient.feature.profile.data.remote.dto.UpdateAuthProfileDto
 import com.globussoft.wellness.patient.feature.profile.domain.model.Profile
 import com.globussoft.wellness.patient.feature.profile.domain.repository.ProfileRepository
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import retrofit2.HttpException
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -22,7 +25,15 @@ class ProfileRepositoryImpl @Inject constructor(
     override suspend fun getProfile(): Profile {
         val response = api.getProfile()
         if (!response.isSuccessful) throw HttpException(response)
-        return response.body()!!.toDomain()
+        var profile = response.body()!!.toDomain()
+        // Merge profilePicture from the auth layer (best-effort — doesn't fail the load)
+        try {
+            val authResponse = api.getAuthProfile()
+            if (authResponse.isSuccessful) {
+                profile = authResponse.body()!!.mergeInto(profile)
+            }
+        } catch (_: Exception) { }
+        return profile
     }
 
     override suspend fun updateProfile(
@@ -44,6 +55,28 @@ class ProfileRepositoryImpl @Inject constructor(
         val updated = response.body()!!.mergeInto(current)
         encryptedPrefs.saveUserInfo(encryptedPrefs.getUserId(), updated.name, updated.email ?: "")
         return updated
+    }
+
+    override suspend fun uploadProfilePicture(bytes: ByteArray, mimeType: String): Profile {
+        val requestBody = bytes.toRequestBody(mimeType.toMediaType())
+        val part = MultipartBody.Part.createFormData("file", "profile.jpg", requestBody)
+        val response = api.uploadProfilePicture(part)
+        if (!response.isSuccessful) throw HttpException(response)
+        val current = try { getProfile() } catch (_: Exception) {
+            val dto = response.body()!!
+            Profile(patientId = 0, name = dto.name, phone = null, email = dto.email, dob = null, gender = null)
+        }
+        return response.body()!!.mergeInto(current)
+    }
+
+    override suspend fun removeProfilePicture(): Profile {
+        val response = api.deleteProfilePicture()
+        if (!response.isSuccessful) throw HttpException(response)
+        val current = try { getProfile() } catch (_: Exception) {
+            val dto = response.body()!!
+            Profile(patientId = 0, name = dto.name, phone = null, email = dto.email, dob = null, gender = null)
+        }
+        return current.copy(profilePictureUrl = null)
     }
 
     override suspend fun requestDsarExport() {

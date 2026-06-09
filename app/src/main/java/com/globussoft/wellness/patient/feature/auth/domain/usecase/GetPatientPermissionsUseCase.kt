@@ -17,5 +17,7 @@ class GetPatientPermissionsUseCase @Inject constructor(
         else Result.Error("HTTP_${e.code()}", e.message() ?: "Server error", e.code())
     } catch (e: IOException) {
         Result.Success(PatientPermissions.EMPTY)
+    } catch (e: Exception) {
+        Result.Error("UNEXPECTED_ERROR", e.message ?: "An unexpected error occurred")
     }
 }

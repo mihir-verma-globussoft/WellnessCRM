@@ -95,8 +95,8 @@ data class WalletDetailDto(
     val patientId: Int,
     val balance: Double,
     val currency: String,
-    val createdAt: String,
-    val updatedAt: String,
+    val createdAt: String? = null,
+    val updatedAt: String? = null,
 )
 
 @JsonClass(generateAdapter = true)

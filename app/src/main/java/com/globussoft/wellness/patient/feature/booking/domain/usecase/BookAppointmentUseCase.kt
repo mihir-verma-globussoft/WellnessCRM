@@ -45,5 +45,7 @@ class BookAppointmentUseCase @Inject constructor(
         }
     } catch (e: IOException) {
         Result.Error("NETWORK_ERROR", "No internet connection. Please try again.")
+    } catch (e: Exception) {
+        Result.Error("UNEXPECTED_ERROR", e.message ?: "An unexpected error occurred")
     }
 }

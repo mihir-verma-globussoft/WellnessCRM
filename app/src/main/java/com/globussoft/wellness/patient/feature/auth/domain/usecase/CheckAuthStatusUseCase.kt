@@ -12,5 +12,7 @@ class CheckAuthStatusUseCase @Inject constructor(
         Result.Success(repository.hasValidToken())
     } catch (e: IOException) {
         Result.Error("STORAGE_ERROR", "Failed to read auth state")
+    } catch (e: Exception) {
+        Result.Error("UNEXPECTED_ERROR", e.message ?: "An unexpected error occurred")
     }
 }

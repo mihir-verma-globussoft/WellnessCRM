@@ -18,5 +18,7 @@ class GetPrescriptionsUseCase @Inject constructor(
         val cached = repository.getCachedPrescriptions()
         if (cached.isNotEmpty()) Result.Success(cached)
         else Result.Error("NETWORK_ERROR", "No internet connection. Please try again.")
+    } catch (e: Exception) {
+        Result.Error("UNEXPECTED_ERROR", e.message ?: "An unexpected error occurred")
     }
 }

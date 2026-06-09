@@ -7,21 +7,17 @@ import retrofit2.HttpException
 import java.io.IOException
 import javax.inject.Inject
 
-class UpdateProfileUseCase @Inject constructor(
+class UploadProfilePictureUseCase @Inject constructor(
     private val repository: ProfileRepository,
 ) {
-    suspend operator fun invoke(
-        name: String? = null,
-        email: String? = null,
-        currentPassword: String? = null,
-        newPassword: String? = null,
-    ): Result<Profile> = try {
-        Result.Success(repository.updateProfile(name, email, currentPassword, newPassword))
+    suspend operator fun invoke(bytes: ByteArray, mimeType: String): Result<Profile> = try {
+        Result.Success(repository.uploadProfilePicture(bytes, mimeType))
     } catch (e: HttpException) {
         when (e.code()) {
-            400 -> Result.Error("INVALID_INPUT", "Invalid input — check your current password", 400)
-            401 -> Result.Error("UNAUTHORIZED", "Current password is incorrect", 401)
-            else -> Result.Error("HTTP_${e.code()}", e.message() ?: "Server error", e.code())
+            400 -> Result.Error("NO_FILE", "No file uploaded", 400)
+            415 -> Result.Error("UNSUPPORTED_MEDIA", "Only image files are supported", 415)
+            503 -> Result.Error("STORAGE_UNCONFIGURED", "Photo upload is not available right now", 503)
+            else -> Result.Error("HTTP_${e.code()}", e.message() ?: "Upload failed", e.code())
         }
     } catch (e: IOException) {
         Result.Error("NETWORK_ERROR", "No internet connection. Please try again.")

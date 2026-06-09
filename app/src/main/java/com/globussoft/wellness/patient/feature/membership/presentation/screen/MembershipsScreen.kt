@@ -63,6 +63,7 @@ fun MembershipsScreen(
     onEvent: (MembershipsUiEvent) -> Unit,
 ) {
     var isRefreshing by remember { mutableStateOf(false) }
+    var showAvailablePlans by remember { mutableStateOf(true) }
     LaunchedEffect(state.isLoading) { if (!state.isLoading) isRefreshing = false }
 
     PullToRefreshBox(
@@ -73,22 +74,48 @@ fun MembershipsScreen(
             .background(MaterialTheme.colorScheme.background),
     ) {
         when {
-            state.isLoading -> androidx.compose.material3.CircularProgressIndicator(
-                modifier = Modifier.align(Alignment.Center),
-            )
-            state.error != null -> ErrorState(
+            state.isLoading && state.memberships.isEmpty() && state.plans.isEmpty() ->
+                androidx.compose.material3.CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            state.error != null && state.memberships.isEmpty() && state.plans.isEmpty() -> ErrorState(
                 message = state.error,
                 onRetry = { onEvent(MembershipsUiEvent.Refresh) },
                 modifier = Modifier.align(Alignment.Center),
             )
-            state.showPlans -> PlanCatalog(
-                plans = state.plans,
-                onSelect = { onEvent(MembershipsUiEvent.SelectPlan(it)) },
-            )
-            else -> MyMembershipsList(
-                memberships = state.memberships,
-                onSelect = { onEvent(MembershipsUiEvent.SelectMembership(it)) },
-            )
+            else -> Column(modifier = Modifier.fillMaxSize()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    FilterChip(
+                        selected = showAvailablePlans,
+                        onClick = { showAvailablePlans = true },
+                        label = { Text("Available") },
+                    )
+                    FilterChip(
+                        selected = !showAvailablePlans,
+                        onClick = { showAvailablePlans = false },
+                        label = { Text("Mine") },
+                    )
+                }
+                if (showAvailablePlans) {
+                    AvailablePlansContent(
+                        plans = state.plans,
+                        myMemberships = state.memberships,
+                        onViewDetails = { onEvent(MembershipsUiEvent.SelectPlan(it)) },
+                        onJoinNow = { plan ->
+                            onEvent(MembershipsUiEvent.SelectPlan(plan))
+                            onEvent(MembershipsUiEvent.JoinPlan(plan.id))
+                        },
+                    )
+                } else {
+                    MyMembershipsList(
+                        memberships = state.memberships,
+                        onSelect = { onEvent(MembershipsUiEvent.SelectMembership(it)) },
+                    )
+                }
+            }
         }
     }
 

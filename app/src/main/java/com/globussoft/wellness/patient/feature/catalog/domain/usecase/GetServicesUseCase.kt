@@ -16,5 +16,7 @@ class GetServicesUseCase @Inject constructor(
         Result.Error("HTTP_${e.code()}", e.message() ?: "Server error", e.code())
     } catch (e: IOException) {
         Result.Error("NETWORK_ERROR", "No internet connection.")
+    } catch (e: Exception) {
+        Result.Error("UNEXPECTED_ERROR", e.message ?: "An unexpected error occurred")
     }
 }

@@ -1,6 +1,7 @@
 package com.globussoft.wellness.patient.feature.booking.presentation.viewmodel
 
 import com.globussoft.wellness.patient.core.util.DateUtil
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.globussoft.wellness.patient.core.network.WellnessApiService
@@ -26,10 +27,13 @@ sealed class BookAppointmentNavEvent {
 
 @HiltViewModel
 class BookAppointmentViewModel @Inject constructor(
+    private val savedStateHandle: SavedStateHandle,
     private val getProducts: GetPortalProductsUseCase,
     private val bookAppointment: BookAppointmentUseCase,
     private val apiService: WellnessApiService,
 ) : ViewModel() {
+
+    private val preselectedServiceId: Int? = savedStateHandle.get<String>("serviceId")?.toIntOrNull()
 
     private val _uiState = MutableStateFlow(BookAppointmentUiState())
     val uiState: StateFlow<BookAppointmentUiState> = _uiState.asStateFlow()
@@ -61,10 +65,14 @@ class BookAppointmentViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             when (val result = getProducts()) {
-                is Result.Success -> _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    products = result.data,
-                )
+                is Result.Success -> {
+                    val preselected = preselectedServiceId?.let { id -> result.data.find { it.id == id } }
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        products = result.data,
+                        selectedProduct = preselected,
+                    )
+                }
                 is Result.Error -> _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     error = result.message,

@@ -15,6 +15,8 @@ data class ProfileUiState(
     val saveError: String? = null,
     val saveSuccess: Boolean = false,
     val exportRequested: Boolean = false,
+    val isPhotoUploading: Boolean = false,
+    val photoError: String? = null,
 )
 
 sealed class ProfileUiEvent {
@@ -26,6 +28,8 @@ sealed class ProfileUiEvent {
     data class EditCurrentPassword(val password: String) : ProfileUiEvent()
     data class EditNewPassword(val password: String) : ProfileUiEvent()
     object SaveChanges : ProfileUiEvent()
+    data class PhotoPicked(val bytes: ByteArray, val mimeType: String) : ProfileUiEvent()
+    object RemovePhoto : ProfileUiEvent()
     object RequestDsarExport : ProfileUiEvent()
     object Logout : ProfileUiEvent()
     object NavigateBack : ProfileUiEvent()

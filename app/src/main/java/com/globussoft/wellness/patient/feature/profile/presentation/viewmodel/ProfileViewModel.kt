@@ -5,8 +5,10 @@ import androidx.lifecycle.viewModelScope
 import com.globussoft.wellness.patient.core.util.Result
 import com.globussoft.wellness.patient.feature.auth.domain.usecase.LogoutUseCase
 import com.globussoft.wellness.patient.feature.profile.domain.usecase.GetProfileUseCase
+import com.globussoft.wellness.patient.feature.profile.domain.usecase.RemoveProfilePictureUseCase
 import com.globussoft.wellness.patient.feature.profile.domain.usecase.RequestDsarExportUseCase
 import com.globussoft.wellness.patient.feature.profile.domain.usecase.UpdateProfileUseCase
+import com.globussoft.wellness.patient.feature.profile.domain.usecase.UploadProfilePictureUseCase
 import com.globussoft.wellness.patient.feature.profile.presentation.state.ProfileUiEvent
 import com.globussoft.wellness.patient.feature.profile.presentation.state.ProfileUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -28,6 +30,8 @@ sealed class ProfileNavEvent {
 class ProfileViewModel @Inject constructor(
     private val getProfile: GetProfileUseCase,
     private val updateProfile: UpdateProfileUseCase,
+    private val uploadProfilePicture: UploadProfilePictureUseCase,
+    private val removeProfilePicture: RemoveProfilePictureUseCase,
     private val requestDsarExport: RequestDsarExportUseCase,
     private val logout: LogoutUseCase,
 ) : ViewModel() {
@@ -62,6 +66,8 @@ class ProfileViewModel @Inject constructor(
             is ProfileUiEvent.EditCurrentPassword -> _uiState.value = _uiState.value.copy(currentPassword = event.password)
             is ProfileUiEvent.EditNewPassword -> _uiState.value = _uiState.value.copy(newPassword = event.password)
             ProfileUiEvent.SaveChanges -> save()
+            is ProfileUiEvent.PhotoPicked -> uploadPhoto(event.bytes, event.mimeType)
+            ProfileUiEvent.RemovePhoto -> doRemovePhoto()
             ProfileUiEvent.RequestDsarExport -> requestExport()
             ProfileUiEvent.Logout -> doLogout()
             ProfileUiEvent.NavigateBack -> viewModelScope.launch { _navEvent.send(ProfileNavEvent.Back) }
@@ -95,6 +101,40 @@ class ProfileViewModel @Inject constructor(
                     isSaving = false, isEditing = false, saveSuccess = true, profile = result.data,
                 )
                 is Result.Error -> _uiState.value = _uiState.value.copy(isSaving = false, saveError = result.message)
+                Result.Loading -> Unit
+            }
+        }
+    }
+
+    private fun uploadPhoto(bytes: ByteArray, mimeType: String) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isPhotoUploading = true, photoError = null)
+            when (val result = uploadProfilePicture(bytes, mimeType)) {
+                is Result.Success -> _uiState.value = _uiState.value.copy(
+                    isPhotoUploading = false,
+                    profile = result.data,
+                )
+                is Result.Error -> _uiState.value = _uiState.value.copy(
+                    isPhotoUploading = false,
+                    photoError = result.message,
+                )
+                Result.Loading -> Unit
+            }
+        }
+    }
+
+    private fun doRemovePhoto() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isPhotoUploading = true, photoError = null)
+            when (val result = removeProfilePicture()) {
+                is Result.Success -> _uiState.value = _uiState.value.copy(
+                    isPhotoUploading = false,
+                    profile = result.data,
+                )
+                is Result.Error -> _uiState.value = _uiState.value.copy(
+                    isPhotoUploading = false,
+                    photoError = result.message,
+                )
                 Result.Loading -> Unit
             }
         }

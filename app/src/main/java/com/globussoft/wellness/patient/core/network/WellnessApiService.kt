@@ -40,14 +40,17 @@ import com.globussoft.wellness.patient.feature.wallet.data.remote.dto.GiftCardOr
 import com.globussoft.wellness.patient.feature.wallet.data.remote.dto.GiftCardStorefrontResponseDto
 import com.globussoft.wellness.patient.feature.wallet.data.remote.dto.MyTransactionsResponseDto
 import com.globussoft.wellness.patient.feature.wallet.data.remote.dto.PatientWalletResponseDto
+import okhttp3.MultipartBody
 import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.Multipart
 import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.PUT
+import retrofit2.http.Part
 import retrofit2.http.Path
 import retrofit2.http.Query
 
@@ -92,6 +95,15 @@ interface WellnessApiService {
     suspend fun updateAuthProfile(
         @Body body: UpdateAuthProfileDto,
     ): Response<AuthProfileResponseDto>
+
+    @Multipart
+    @POST("/api/auth/me/profile-picture")
+    suspend fun uploadProfilePicture(
+        @Part file: MultipartBody.Part,
+    ): Response<AuthProfileResponseDto>
+
+    @DELETE("/api/auth/me/profile-picture")
+    suspend fun deleteProfilePicture(): Response<AuthProfileResponseDto>
 
     @POST("portal/export")
     suspend fun requestDsarExport(): Response<DsarExportResponseDto>

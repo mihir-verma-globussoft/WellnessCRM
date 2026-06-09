@@ -1,5 +1,7 @@
 package com.globussoft.wellness.patient.feature.booking.presentation.screen
 
+import java.text.SimpleDateFormat
+import java.util.Locale
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -46,6 +48,12 @@ import com.globussoft.wellness.patient.core.ui.WellnessCard
 import com.globussoft.wellness.patient.feature.booking.domain.model.WaitlistEntry
 import com.globussoft.wellness.patient.feature.booking.presentation.state.WaitlistUiEvent
 import com.globussoft.wellness.patient.feature.booking.presentation.state.WaitlistUiState
+
+private fun formatWaitlistDate(iso: String): String = try {
+    val parser = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).apply { isLenient = true }
+    val date = parser.parse(iso.take(19)) ?: return iso
+    SimpleDateFormat("d MMM yyyy, h:mm a", Locale.getDefault()).format(date)
+} catch (e: Exception) { iso }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -150,7 +158,7 @@ private fun WaitlistEntryCard(entry: WaitlistEntry) {
             }
             if (entry.createdAt.isNotEmpty()) {
                 Text(
-                    text = "Added: ${entry.createdAt}",
+                    text = "Added: ${formatWaitlistDate(entry.createdAt)}",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.outline,
                 )

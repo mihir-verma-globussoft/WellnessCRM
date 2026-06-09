@@ -27,6 +27,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
 import com.globussoft.wellness.patient.feature.auth.presentation.screen.LoginScreen
 import com.globussoft.wellness.patient.feature.auth.presentation.screen.RegisterScreen
@@ -266,6 +268,10 @@ fun WellnessNavGraph(
             // ── Appointments tab ──────────────────────────────────────────────────
             composable(
                 route = Screen.BookAppointment.route,
+                arguments = listOf(
+                    navArgument("serviceId") { type = NavType.StringType; nullable = true; defaultValue = null },
+                    navArgument("membershipId") { type = NavType.StringType; nullable = true; defaultValue = null },
+                ),
                 deepLinks = listOf(navDeepLink { uriPattern = "wellnesspatient://screen/book" }),
             ) {
                 val vm: BookAppointmentViewModel = hiltViewModel()

@@ -72,6 +72,7 @@ fun MyAppointmentsScreen(
     var selectedTab by remember { mutableIntStateOf(0) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var isRefreshing by remember { mutableStateOf(false) }
+    var detailAppointment by remember { mutableStateOf<Appointment?>(null) }
     LaunchedEffect(state.isLoading) { if (!state.isLoading) isRefreshing = false }
 
     Box(
@@ -222,7 +223,10 @@ fun MyAppointmentsScreen(
                 androidx.compose.material3.HorizontalDivider()
                 ActionSheetItem(
                     label = "View details",
-                    onClick = { onEvent(MyAppointmentsUiEvent.DismissActionSheet) },
+                    onClick = {
+                        detailAppointment = appt
+                        onEvent(MyAppointmentsUiEvent.DismissActionSheet)
+                    },
                 )
                 if (appt.canReschedule) {
                     ActionSheetItem(
@@ -363,6 +367,10 @@ fun MyAppointmentsScreen(
             )
         }
     }
+
+    detailAppointment?.let { appt ->
+        AppointmentDetailSheet(appointment = appt, onDismiss = { detailAppointment = null })
+    }
 }
 
 @Composable
@@ -453,5 +461,40 @@ private fun ActionSheetItem(
             style = MaterialTheme.typography.bodyLarge,
             color = labelColor,
         )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AppointmentDetailSheet(appointment: Appointment, onDismiss: () -> Unit) {
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = appointment.serviceName ?: "Appointment",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            androidx.compose.material3.HorizontalDivider()
+            DetailInfoRow("Status", appointment.status)
+            DetailInfoRow("Date & Time", DateUtil.toDisplayDateTime(appointment.appointmentDate))
+            if (!appointment.doctorName.isNullOrBlank()) DetailInfoRow("Doctor", appointment.doctorName)
+            if (!appointment.reason.isNullOrBlank()) DetailInfoRow("Reason", appointment.reason)
+            DetailInfoRow("ID", "#${appointment.id}")
+        }
+    }
+}
+
+@Composable
+private fun DetailInfoRow(label: String, value: String) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(value, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium)
     }
 }

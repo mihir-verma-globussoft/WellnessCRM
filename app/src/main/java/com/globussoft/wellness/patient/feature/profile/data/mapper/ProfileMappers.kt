@@ -16,4 +16,5 @@ fun ProfileDto.toDomain() = Profile(
 fun AuthProfileResponseDto.mergeInto(profile: Profile) = profile.copy(
     name = name,
     email = email ?: profile.email,
+    profilePictureUrl = profilePicture ?: profile.profilePictureUrl,
 )

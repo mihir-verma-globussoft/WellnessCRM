@@ -7,4 +7,5 @@ data class Profile(
     val email: String?,
     val dob: String?,
     val gender: String?,
+    val profilePictureUrl: String? = null,
 )
