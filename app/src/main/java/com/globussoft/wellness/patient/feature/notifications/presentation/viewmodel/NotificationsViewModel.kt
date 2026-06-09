@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.globussoft.wellness.patient.feature.notifications.domain.usecase.GetNotificationsUseCase
 import com.globussoft.wellness.patient.feature.notifications.domain.usecase.MarkNotificationReadUseCase
+import com.globussoft.wellness.patient.feature.notifications.domain.usecase.SyncPortalNotificationsUseCase
 import com.globussoft.wellness.patient.feature.notifications.presentation.state.NotificationsUiEvent
 import com.globussoft.wellness.patient.feature.notifications.presentation.state.NotificationsUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -24,6 +25,7 @@ sealed class NotificationsNavEvent {
 class NotificationsViewModel @Inject constructor(
     private val getNotifications: GetNotificationsUseCase,
     private val markRead: MarkNotificationReadUseCase,
+    private val syncPortalNotifications: SyncPortalNotificationsUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(NotificationsUiState())
@@ -34,6 +36,7 @@ class NotificationsViewModel @Inject constructor(
 
     init {
         load()
+        viewModelScope.launch { syncPortalNotifications() }
     }
 
     private fun load() {
@@ -47,7 +50,10 @@ class NotificationsViewModel @Inject constructor(
 
     fun onEvent(event: NotificationsUiEvent) {
         when (event) {
-            NotificationsUiEvent.Refresh -> load()
+            NotificationsUiEvent.Refresh -> {
+                load()
+                viewModelScope.launch { syncPortalNotifications() }
+            }
             is NotificationsUiEvent.MarkRead -> viewModelScope.launch { markRead(event.notificationId) }
             NotificationsUiEvent.MarkAllRead -> viewModelScope.launch { markRead.markAll() }
             is NotificationsUiEvent.TapNotification -> {

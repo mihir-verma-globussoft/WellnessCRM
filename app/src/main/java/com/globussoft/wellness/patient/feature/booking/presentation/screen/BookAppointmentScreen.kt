@@ -17,9 +17,11 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
@@ -96,12 +98,34 @@ fun BookAppointmentScreen(
 
 @Composable
 private fun Step1Products(state: BookAppointmentUiState, onEvent: (BookAppointmentUiEvent) -> Unit) {
+    val filteredProducts = remember(state.products, state.serviceSearchQuery) {
+        if (state.serviceSearchQuery.isBlank()) state.products
+        else state.products.filter { p ->
+            p.name.contains(state.serviceSearchQuery, ignoreCase = true) ||
+                p.categoryName?.contains(state.serviceSearchQuery, ignoreCase = true) == true
+        }
+    }
+
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Text("Choose a service", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+        Spacer(modifier = Modifier.height(12.dp))
+        OutlinedTextField(
+            value = state.serviceSearchQuery,
+            onValueChange = { onEvent(BookAppointmentUiEvent.UpdateServiceSearch(it)) },
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = { Text("Search services…") },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+            singleLine = true,
+            shape = RoundedCornerShape(12.dp),
+        )
         Spacer(modifier = Modifier.height(12.dp))
         if (state.products.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text("No services available", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        } else if (filteredProducts.isEmpty()) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("No services match \"${state.serviceSearchQuery}\"", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         } else {
             LazyVerticalGrid(
@@ -110,7 +134,7 @@ private fun Step1Products(state: BookAppointmentUiState, onEvent: (BookAppointme
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.weight(1f),
             ) {
-                items(state.products) { product ->
+                items(filteredProducts) { product ->
                     ProductCard(
                         product = product,
                         isSelected = state.selectedProduct?.id == product.id,

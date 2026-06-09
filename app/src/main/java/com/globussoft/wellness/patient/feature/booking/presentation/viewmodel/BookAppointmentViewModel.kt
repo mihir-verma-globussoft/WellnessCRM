@@ -48,6 +48,7 @@ class BookAppointmentViewModel @Inject constructor(
     fun onEvent(event: BookAppointmentUiEvent) {
         when (event) {
             BookAppointmentUiEvent.LoadProducts -> loadProducts()
+            is BookAppointmentUiEvent.UpdateServiceSearch -> _uiState.value = _uiState.value.copy(serviceSearchQuery = event.query)
             is BookAppointmentUiEvent.SelectProduct -> _uiState.value = _uiState.value.copy(selectedProduct = event.product, error = null)
             is BookAppointmentUiEvent.SelectDoctor -> _uiState.value = _uiState.value.copy(selectedDoctorId = event.doctorId, error = null)
             is BookAppointmentUiEvent.SelectDate -> _uiState.value = _uiState.value.copy(selectedDate = event.epochMs)

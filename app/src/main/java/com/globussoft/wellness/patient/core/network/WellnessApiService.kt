@@ -30,6 +30,7 @@ import com.globussoft.wellness.patient.feature.profile.data.remote.dto.AuthProfi
 import com.globussoft.wellness.patient.feature.profile.data.remote.dto.DsarExportResponseDto
 import com.globussoft.wellness.patient.feature.profile.data.remote.dto.ProfileDto
 import com.globussoft.wellness.patient.feature.profile.data.remote.dto.UpdateAuthProfileDto
+import com.globussoft.wellness.patient.feature.notifications.data.remote.dto.PortalNotificationsResponseDto
 import com.globussoft.wellness.patient.feature.wallet.data.remote.dto.FcmTokenDto
 import com.globussoft.wellness.patient.feature.finance.data.remote.dto.PaymentConfigDto
 import com.globussoft.wellness.patient.feature.finance.data.remote.dto.PaymentDto
@@ -108,7 +109,7 @@ interface WellnessApiService {
     @POST("portal/export")
     suspend fun requestDsarExport(): Response<DsarExportResponseDto>
 
-    // ── FCM Token — BLOCKED: push.js is WebPush/VAPID only; no Android FCM endpoint. ──
+    // ── FCM Token ─────────────────────────────────────────────────────────────
     @POST("portal/me/fcm-token")
     suspend fun registerFcmToken(
         @Body body: FcmTokenDto,
@@ -116,6 +117,19 @@ interface WellnessApiService {
 
     @DELETE("portal/me/fcm-token")
     suspend fun deregisterFcmToken(): Response<Unit>
+
+    // ── Portal Notifications ──────────────────────────────────────────────────
+    @GET("portal/me/notifications")
+    suspend fun getPortalNotifications(
+        @Query("page") page: Int = 1,
+        @Query("limit") limit: Int = 50,
+    ): Response<PortalNotificationsResponseDto>
+
+    @PUT("portal/me/notifications/{id}/read")
+    suspend fun markPortalNotificationRead(@Path("id") id: String): Response<Unit>
+
+    @POST("portal/me/notifications/read-all")
+    suspend fun markAllPortalNotificationsRead(): Response<Unit>
 
     // ── Visits ────────────────────────────────────────────────────────────────
     @GET("portal/visits")

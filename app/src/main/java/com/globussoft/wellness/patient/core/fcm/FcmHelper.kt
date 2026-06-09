@@ -11,25 +11,21 @@ class FcmHelper @Inject constructor(
     private val apiService: WellnessApiService,
     private val encryptedPrefs: EncryptedPrefsManager,
 ) {
-    // Stores token locally and attempts backend registration.
-    // POST /portal/me/fcm-token is blocked (backend is WebPush/VAPID only) —
-    // network call fails silently so no error surfaces to the user.
     suspend fun registerToken(token: String) {
         encryptedPrefs.saveFcmToken(token)
         try {
             apiService.registerFcmToken(FcmTokenDto(token = token, platform = "android"))
         } catch (_: Exception) {
-            // Backend endpoint not yet implemented; local token saved above.
+            // Local token saved; network failure is non-fatal.
         }
     }
 
-    // Clears local token and attempts backend deregistration on logout.
     suspend fun deregisterToken() {
         encryptedPrefs.saveFcmToken("")
         try {
             apiService.deregisterFcmToken()
         } catch (_: Exception) {
-            // Backend endpoint not yet implemented; no action needed.
+            // Non-fatal; token already cleared locally.
         }
     }
 }

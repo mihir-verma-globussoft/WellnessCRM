@@ -1,6 +1,5 @@
 package com.globussoft.wellness.patient.feature.wallet.presentation.screen
 
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,41 +13,37 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.itemsIndexed
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CardGiftcard
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.globussoft.wellness.patient.core.ui.EmptyState
+import com.globussoft.wellness.patient.core.ui.ErrorState
 import com.globussoft.wellness.patient.core.util.CurrencyUtil
+import com.globussoft.wellness.patient.feature.wallet.domain.model.GiftCard
 import com.globussoft.wellness.patient.feature.wallet.presentation.state.GiftCardsUiEvent
 import com.globussoft.wellness.patient.feature.wallet.presentation.state.GiftCardsUiState
-
-private val DEMO_DENOMINATIONS = listOf(500, 1_000, 2_000, 5_000, 10_000)
 
 private val CARD_COLORS = listOf(
     Color(0xFF265855),
@@ -64,135 +59,79 @@ fun GiftCardsScreen(
     state: GiftCardsUiState,
     onEvent: (GiftCardsUiEvent) -> Unit,
 ) {
-    var searchQuery by remember { mutableStateOf("") }
-    var showBuySheet by remember { mutableStateOf(false) }
-    var selectedDenom by remember { mutableIntStateOf(0) }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val context = LocalContext.current
+    var showWebDialog by remember { mutableStateOf(false) }
 
-    val filteredDenoms = remember(searchQuery) {
-        DEMO_DENOMINATIONS.filter { denom ->
-            searchQuery.isBlank() || denom.toString().contains(searchQuery.trim())
-        }
-    }
-
-    Column(
+    PullToRefreshBox(
+        isRefreshing = state.isLoading,
+        onRefresh = { onEvent(GiftCardsUiEvent.Refresh) },
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background),
     ) {
-        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-            Text(
-                text = "Dr. Haror's Wellness Gift Cards",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-            )
-            Spacer(Modifier.height(2.dp))
-            Text(
-                text = "Give the gift of wellness — redeemable for any service or session.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(10.dp))
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Search by amount…") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                singleLine = true,
-                shape = RoundedCornerShape(12.dp),
-            )
-        }
-
-        if (filteredDenoms.isEmpty()) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
                 Text(
-                    "No gift cards match \"$searchQuery\"",
-                    style = MaterialTheme.typography.bodyMedium,
+                    text = "Dr. Haror's Wellness Gift Cards",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = "Give the gift of wellness — redeemable for any service or session.",
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-        } else {
-            LazyVerticalGrid(
-                columns = GridCells.Adaptive(minSize = 160.dp),
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = Modifier.fillMaxSize(),
-            ) {
-                itemsIndexed(filteredDenoms) { index, denom ->
-                    DemoGiftCard(
-                        amount = denom,
-                        color = CARD_COLORS[index % CARD_COLORS.size],
-                        onBuy = {
-                            selectedDenom = denom
-                            showBuySheet = true
-                        },
-                    )
+
+            when {
+                state.error != null -> Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    ErrorState(message = state.error, onRetry = { onEvent(GiftCardsUiEvent.Refresh) })
+                }
+
+                !state.isLoading && state.giftCards.isEmpty() -> Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    EmptyState(message = "No gift cards available right now.")
+                }
+
+                else -> LazyVerticalGrid(
+                    columns = GridCells.Adaptive(minSize = 160.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    items(state.giftCards) { card ->
+                        GiftCardTile(
+                            card = card,
+                            color = cardColor(card),
+                            onBuy = { showWebDialog = true },
+                        )
+                    }
                 }
             }
         }
     }
 
-    if (showBuySheet) {
-        ModalBottomSheet(
-            onDismissRequest = { showBuySheet = false },
-            sheetState = sheetState,
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-                    .padding(bottom = 32.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp),
-            ) {
-                Text(
-                    "Confirm Purchase",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                )
-                HorizontalDivider()
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Text("Gift Card Value", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(CurrencyUtil.formatRupees(selectedDenom.toDouble()), fontWeight = FontWeight.Medium)
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Text("Validity", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("365 days", fontWeight = FontWeight.Medium)
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Text("Redeemable at", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("Dr. Haror's Wellness", fontWeight = FontWeight.Medium)
-                }
-
-                Button(
-                    onClick = {
-                        showBuySheet = false
-                        Toast.makeText(context, "Gift card purchase — contact clinic to complete", Toast.LENGTH_SHORT).show()
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.extraLarge,
-                ) {
-                    Text("Buy ${CurrencyUtil.formatRupees(selectedDenom.toDouble())}")
-                }
-            }
-        }
+    if (showWebDialog) {
+        AlertDialog(
+            onDismissRequest = { showWebDialog = false },
+            icon = { Icon(Icons.Default.CardGiftcard, contentDescription = null) },
+            title = { Text("Purchase on Web") },
+            text = { Text("Gift card purchases are completed on our website. Please visit the web portal to buy a gift card.") },
+            confirmButton = {
+                TextButton(onClick = { showWebDialog = false }) { Text("Got it") }
+            },
+        )
     }
 }
 
 @Composable
-private fun DemoGiftCard(amount: Int, color: Color, onBuy: () -> Unit) {
+private fun GiftCardTile(card: GiftCard, color: Color, onBuy: () -> Unit) {
     Surface(
         shape = MaterialTheme.shapes.large,
         color = color,
@@ -208,10 +147,11 @@ private fun DemoGiftCard(amount: Int, color: Color, onBuy: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "Dr. Haror's\nWellness",
+                    text = card.name,
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.White.copy(alpha = 0.85f),
                     lineHeight = 14.sp,
+                    modifier = Modifier.weight(1f),
                 )
                 AssistChip(
                     onClick = {},
@@ -223,7 +163,6 @@ private fun DemoGiftCard(amount: Int, color: Color, onBuy: () -> Unit) {
                             Icons.Default.CardGiftcard,
                             contentDescription = null,
                             tint = Color.White,
-                            modifier = Modifier.padding(start = 2.dp),
                         )
                     },
                 )
@@ -232,14 +171,14 @@ private fun DemoGiftCard(amount: Int, color: Color, onBuy: () -> Unit) {
             Spacer(Modifier.height(4.dp))
 
             Text(
-                text = CurrencyUtil.formatRupees(amount.toDouble()),
+                text = CurrencyUtil.formatRupees(card.amount.toDouble()),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.ExtraBold,
                 color = Color.White,
             )
 
             Text(
-                text = "Valid 365 days",
+                text = "Valid ${card.validityDays} days",
                 style = MaterialTheme.typography.labelSmall,
                 color = Color.White.copy(alpha = 0.70f),
             )
@@ -259,4 +198,12 @@ private fun DemoGiftCard(amount: Int, color: Color, onBuy: () -> Unit) {
             }
         }
     }
+}
+
+private fun cardColor(card: GiftCard): Color {
+    if (!card.color.isNullOrBlank()) {
+        runCatching { Color(android.graphics.Color.parseColor(card.color)) }.getOrNull()
+            ?.let { return it }
+    }
+    return CARD_COLORS[card.id % CARD_COLORS.size]
 }

@@ -52,6 +52,7 @@ data class BookAppointmentUiState(
     val error: String? = null,
     val products: List<Product> = emptyList(),
     val categories: List<ProductCategory> = emptyList(),
+    val serviceSearchQuery: String = "",
     val selectedProduct: Product? = null,
     val doctors: List<DoctorOption> = emptyList(),
     val selectedDoctorId: Int? = null,
@@ -65,6 +66,7 @@ data class BookAppointmentUiState(
 
 sealed class BookAppointmentUiEvent {
     object LoadProducts : BookAppointmentUiEvent()
+    data class UpdateServiceSearch(val query: String) : BookAppointmentUiEvent()
     data class SelectProduct(val product: Product) : BookAppointmentUiEvent()
     data class SelectDoctor(val doctorId: Int?) : BookAppointmentUiEvent()
     data class SelectDate(val epochMs: Long) : BookAppointmentUiEvent()
