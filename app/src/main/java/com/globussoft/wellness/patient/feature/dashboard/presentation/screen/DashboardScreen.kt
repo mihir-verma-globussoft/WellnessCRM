@@ -276,8 +276,8 @@ private fun StatRow(
         )
         StatChip(
             modifier = Modifier.weight(1f),
-            label = "Members",
-            value = membershipCount.toString(),
+            label = "Membership",
+            value = if (membershipCount > 0) "Active" else "—",
             icon = Icons.Default.CardMembership,
             onClick = onMembershipsClick,
         )

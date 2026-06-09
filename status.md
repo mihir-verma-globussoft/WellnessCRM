@@ -1,7 +1,7 @@
 # WellnessCRM Patient App — Implementation Status
 
-Last updated: 2026-06-08 21:00
-Current phase: Phase Complete — Google Doc spec parity pass done + BUILD SUCCESSFUL
+Last updated: 2026-06-08 23:30
+Current phase: UI Redesign Pass — JSFiddle prototype parity (session 2)
 
 ## Legend
 ✅ Done  🔄 In Progress  ⬜ Not started  🔴 Blocked
@@ -109,6 +109,20 @@ Current phase: Phase Complete — Google Doc spec parity pass done + BUILD SUCCE
 ✅ Fix C4 — Service Categories: tap to filter → switches to Services tab with active FilterChip
 ✅ Fix C5 — Payment cards tappable → action sheet (View Invoice + Request Refund) + AlertDialog confirm → POST /api/payments/:id/refund
 ✅ BUILD SUCCESSFUL — assembleDebug green, only pre-existing menuAnchor deprecation warning
+
+---
+
+## UI Redesign Pass — JSFiddle Prototype Parity (2026-06-08 session 3)
+
+✅ WellnessTopAppBar — search icon added (shows Close when active, Search when inactive)
+✅ DashboardScreen — stat tile "Members" → "Membership", shows "Active" / "—"
+✅ MyAppointmentsScreen — LazyColumn bottom = 96.dp (FAB no longer overlaps last card)
+✅ CatalogTabScreen — redesigned ServiceDetailSheet (category label, severity pill, 3-box stats, description, Book service, Service ID footer, Got it close); signature changed to membershipsContent lambda
+✅ MembershipsScreen — added public InlineMembershipsTab with Available/Mine toggle + ProfessionalPlanCard (Diamond/Gold/Platinum colored cards with perks, View Details ghost + Join Now buttons)
+✅ GiftCardsScreen — replaced server-driven content with local DEMO_DENOMINATIONS (₹500–₹10,000); 2-column grid with search bar + demo-safe Buy confirmation sheet
+✅ ProfileScreen — added ProfileHeaderCard (avatar, camera overlay, CUSTOMER chip, Remove picture); added ChangePasswordCard (3 fields with eye toggles, local validation, Toast); notification settings as clickable WellnessCard row with chevron
+✅ NavGraph — search state + AnimatedVisibility search bar on Dashboard; CatalogTab injects MembershipsViewModel and passes InlineMembershipsTab as membershipsContent lambda
+✅ BUILD SUCCESSFUL — assembleDebug green
 
 ---
 

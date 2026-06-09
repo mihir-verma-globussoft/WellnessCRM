@@ -1,13 +1,25 @@
 package com.globussoft.wellness.patient.core.navigation
 
 import android.content.Intent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
@@ -65,6 +77,7 @@ import com.globussoft.wellness.patient.feature.catalog.presentation.viewmodel.Ca
 import com.globussoft.wellness.patient.feature.loyalty.presentation.screen.LoyaltyScreen
 import com.globussoft.wellness.patient.feature.loyalty.presentation.viewmodel.LoyaltyNavEvent
 import com.globussoft.wellness.patient.feature.loyalty.presentation.viewmodel.LoyaltyViewModel
+import com.globussoft.wellness.patient.feature.membership.presentation.screen.InlineMembershipsTab
 import com.globussoft.wellness.patient.feature.membership.presentation.screen.MembershipsScreen
 import com.globussoft.wellness.patient.feature.membership.presentation.viewmodel.MembershipsNavEvent
 import com.globussoft.wellness.patient.feature.membership.presentation.viewmodel.MembershipsViewModel
@@ -110,23 +123,45 @@ fun WellnessNavGraph(
     val currentRoute = navBackStackEntry?.destination?.route
     val showChrome = currentRoute != null && currentRoute !in AUTH_ROUTES
     val canNavigateBack = currentRoute !in TAB_ROOT_ROUTES && navController.previousBackStackEntry != null
+    val onDashboard = currentRoute == Screen.Dashboard.route
+    var isSearchOpen by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
 
     Scaffold(
         modifier = modifier,
         topBar = {
             if (showChrome) {
-                WellnessTopAppBar(
-                    clinicName = clinicName,
-                    unreadCount = unreadNotificationCount,
-                    isDarkTheme = isDarkTheme,
-                    onToggleDarkTheme = onToggleDarkTheme,
-                    onNotificationsClick = {
-                        navController.navigate(Screen.Notifications.route) {
-                            launchSingleTop = true
-                        }
-                    },
-                    onBack = if (canNavigateBack) { { navController.popBackStack() } } else null,
-                )
+                Column {
+                    WellnessTopAppBar(
+                        clinicName = clinicName,
+                        unreadCount = unreadNotificationCount,
+                        isDarkTheme = isDarkTheme,
+                        onToggleDarkTheme = onToggleDarkTheme,
+                        onNotificationsClick = {
+                            navController.navigate(Screen.Notifications.route) {
+                                launchSingleTop = true
+                            }
+                        },
+                        onBack = if (canNavigateBack) { { navController.popBackStack() } } else null,
+                        onSearchClick = if (onDashboard) {
+                            { isSearchOpen = !isSearchOpen; if (!isSearchOpen) searchQuery = "" }
+                        } else null,
+                        isSearchActive = isSearchOpen,
+                    )
+                    AnimatedVisibility(visible = onDashboard && isSearchOpen) {
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 6.dp),
+                            placeholder = { androidx.compose.material3.Text("Search…") },
+                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                            singleLine = true,
+                            shape = RoundedCornerShape(12.dp),
+                        )
+                    }
+                }
             }
         },
         bottomBar = {
@@ -330,7 +365,9 @@ fun WellnessNavGraph(
             // ── Catalog tab ───────────────────────────────────────────────────────
             composable(route = Screen.CatalogTab.route) {
                 val vm: CatalogViewModel = hiltViewModel()
+                val membershipsVm: MembershipsViewModel = hiltViewModel()
                 val state by vm.uiState.collectAsStateWithLifecycle()
+                val membershipsState by membershipsVm.uiState.collectAsStateWithLifecycle()
                 LaunchedEffect(Unit) {
                     vm.navEvent.collect { event ->
                         when (event) {
@@ -343,7 +380,12 @@ fun WellnessNavGraph(
                 CatalogTabScreen(
                     state = state,
                     onEvent = vm::onEvent,
-                    onNavigateToMemberships = { navController.navigate(Screen.Memberships.route) },
+                    membershipsContent = {
+                        InlineMembershipsTab(
+                            state = membershipsState,
+                            onEvent = membershipsVm::onEvent,
+                        )
+                    },
                 )
             }
 

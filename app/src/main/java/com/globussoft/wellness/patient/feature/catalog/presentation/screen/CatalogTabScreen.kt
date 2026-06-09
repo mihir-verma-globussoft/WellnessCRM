@@ -21,24 +21,23 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Category
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.AssistChip
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.ScrollableTabRow
+import androidx.compose.material3.Surface
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -47,8 +46,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.globussoft.wellness.patient.core.ui.EmptyState
 import com.globussoft.wellness.patient.core.ui.ErrorState
 import com.globussoft.wellness.patient.core.ui.WellnessCard
@@ -64,13 +65,10 @@ private val TAB_LABELS = listOf("Services", "Categories", "Memberships")
 fun CatalogTabScreen(
     state: CatalogUiState,
     onEvent: (CatalogUiEvent) -> Unit,
-    onNavigateToMemberships: () -> Unit = {},
+    membershipsContent: @Composable () -> Unit = {},
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-
-    // When a category is selected, switch to Services tab automatically
-    val activeCategoryId = state.selectedCategoryId
 
     Column(
         modifier = Modifier
@@ -84,23 +82,14 @@ fun CatalogTabScreen(
             TAB_LABELS.forEachIndexed { index, label ->
                 Tab(
                     selected = selectedTab == index,
-                    onClick = {
-                        if (index == 2) {
-                            onNavigateToMemberships()
-                        } else {
-                            selectedTab = index
-                        }
-                    },
+                    onClick = { selectedTab = index },
                     text = { Text(label) },
                 )
             }
         }
 
         when (selectedTab) {
-            0 -> ServiceCatalogContent(
-                state = state,
-                onEvent = onEvent,
-            )
+            0 -> ServiceCatalogContent(state = state, onEvent = onEvent)
             1 -> ServiceCategoriesContent(
                 state = state,
                 onEvent = { event ->
@@ -112,6 +101,7 @@ fun CatalogTabScreen(
                     }
                 },
             )
+            2 -> membershipsContent()
         }
     }
 
@@ -153,7 +143,6 @@ private fun ServiceCatalogContent(
         modifier = Modifier.fillMaxSize(),
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Search field
             OutlinedTextField(
                 value = state.searchQuery,
                 onValueChange = { onEvent(CatalogUiEvent.UpdateSearch(it)) },
@@ -166,7 +155,6 @@ private fun ServiceCatalogContent(
                 shape = RoundedCornerShape(12.dp),
             )
 
-            // Active category filter chip
             if (state.selectedCategoryId != null) {
                 val activeName = state.categories.find { it.id == state.selectedCategoryId }?.name
                 if (activeName != null) {
@@ -191,10 +179,7 @@ private fun ServiceCatalogContent(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center,
                 ) {
-                    ErrorState(
-                        message = state.error,
-                        onRetry = { onEvent(CatalogUiEvent.LoadServices) },
-                    )
+                    ErrorState(message = state.error, onRetry = { onEvent(CatalogUiEvent.LoadServices) })
                 }
 
                 filteredServices.isEmpty() && !state.isLoading -> Box(
@@ -224,14 +209,8 @@ private fun ServiceCatalogContent(
 }
 
 @Composable
-private fun ServiceCard(
-    service: Service,
-    onClick: () -> Unit,
-) {
-    WellnessCard(
-        modifier = Modifier.fillMaxWidth(),
-        onClick = onClick,
-    ) {
+private fun ServiceCard(service: Service, onClick: () -> Unit) {
+    WellnessCard(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
         Column(modifier = Modifier.padding(12.dp)) {
             Text(
                 text = service.name,
@@ -244,12 +223,7 @@ private fun ServiceCard(
                 Spacer(modifier = Modifier.height(4.dp))
                 SuggestionChip(
                     onClick = {},
-                    label = {
-                        Text(
-                            text = service.categoryName,
-                            style = MaterialTheme.typography.labelSmall,
-                        )
-                    },
+                    label = { Text(service.categoryName, style = MaterialTheme.typography.labelSmall) },
                 )
             }
 
@@ -289,39 +263,94 @@ private fun ServiceCard(
 }
 
 @Composable
-private fun ServiceDetailSheet(
-    service: Service,
-    onBook: () -> Unit,
-    onDismiss: () -> Unit,
-) {
+private fun ServiceDetailSheet(service: Service, onBook: () -> Unit, onDismiss: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 16.dp),
+            .padding(horizontal = 20.dp)
+            .padding(top = 8.dp, bottom = 28.dp),
     ) {
-        Text(
-            text = service.name,
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.SemiBold,
-        )
-
+        // Category label
         if (service.categoryName != null) {
-            Spacer(modifier = Modifier.height(6.dp))
-            AssistChip(
-                onClick = {},
-                label = { Text(service.categoryName) },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Category,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
+            Text(
+                text = service.categoryName.uppercase(),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Medium,
+                letterSpacing = 1.sp,
+            )
+            Spacer(Modifier.height(6.dp))
+        }
+
+        // Title + severity pill
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(
+                text = service.name,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f),
+            )
+            val severity = when {
+                (service.price ?: 0.0) >= 25000.0 -> Pair("HIGH", Color(0xFFE63946))
+                (service.price ?: 0.0) >= 10000.0 -> Pair("MEDIUM", Color(0xFFE09B2D))
+                else -> null
+            }
+            if (severity != null) {
+                Spacer(Modifier.width(8.dp))
+                Surface(
+                    shape = RoundedCornerShape(4.dp),
+                    color = severity.second.copy(alpha = 0.15f),
+                ) {
+                    Text(
+                        text = severity.first,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = severity.second,
                     )
-                },
+                }
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        // 3-box stat row
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            ServiceStatBox(
+                modifier = Modifier.weight(1f),
+                label = "₹ BASE PRICE",
+                value = if (service.price != null) "₹${service.price.toInt()}" else "—",
+            )
+            ServiceStatBox(
+                modifier = Modifier.weight(1f),
+                label = "DURATION",
+                value = if (service.duration != null) "${service.duration} min" else "—",
+            )
+            ServiceStatBox(
+                modifier = Modifier.weight(1f),
+                label = "STATUS",
+                value = if (service.isActive) "Active" else "Inactive",
             )
         }
 
-        if (service.description != null) {
-            Spacer(modifier = Modifier.height(12.dp))
+        // Description
+        if (!service.description.isNullOrBlank()) {
+            Spacer(Modifier.height(16.dp))
+            Text(
+                text = "DESCRIPTION",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Medium,
+                letterSpacing = 1.sp,
+            )
+            Spacer(Modifier.height(4.dp))
             Text(
                 text = service.description,
                 style = MaterialTheme.typography.bodyMedium,
@@ -329,61 +358,64 @@ private fun ServiceDetailSheet(
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-        HorizontalDivider()
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(Modifier.height(20.dp))
 
-        Row(
+        // Book service button
+        Button(
+            onClick = onBook,
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
+            shape = MaterialTheme.shapes.extraLarge,
         ) {
-            Column {
-                if (service.discountedPrice != null) {
-                    Text(
-                        text = "₹${service.discountedPrice.toInt()}",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    Text(
-                        text = "₹${service.price?.toInt() ?: ""}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                } else if (service.price != null) {
-                    Text(
-                        text = "₹${service.price.toInt()}",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                } else {
-                    Text(
-                        text = "Price on consultation",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-
-                if (service.duration != null) {
-                    Text(
-                        text = "${service.duration} min session",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-
-            Button(
-                onClick = onBook,
-                shape = MaterialTheme.shapes.extraLarge,
-            ) {
-                Text("Book this service")
-            }
+            Text("📅  Book service")
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(Modifier.height(10.dp))
+
+        // Footer
+        Text(
+            text = "Service ID: ${service.id}",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        Spacer(Modifier.height(12.dp))
+
+        // Got it / close
+        OutlinedButton(
+            onClick = onDismiss,
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.extraLarge,
+        ) {
+            Text("Got it")
+        }
+    }
+}
+
+@Composable
+private fun ServiceStatBox(label: String, value: String, modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                letterSpacing = 0.5.sp,
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+            )
+        }
     }
 }
 
@@ -406,7 +438,6 @@ private fun ServiceCategoriesContent(
         modifier = Modifier.fillMaxSize(),
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Search field
             OutlinedTextField(
                 value = state.searchQuery,
                 onValueChange = { onEvent(CatalogUiEvent.UpdateSearch(it)) },
@@ -424,10 +455,7 @@ private fun ServiceCategoriesContent(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center,
                 ) {
-                    ErrorState(
-                        message = state.error,
-                        onRetry = { onEvent(CatalogUiEvent.LoadCategories) },
-                    )
+                    ErrorState(message = state.error, onRetry = { onEvent(CatalogUiEvent.LoadCategories) })
                 }
 
                 filteredCategories.isEmpty() && !state.isLoading -> Box(
@@ -455,10 +483,7 @@ private fun ServiceCategoriesContent(
 }
 
 @Composable
-private fun CategoryCard(
-    category: ServiceCategory,
-    onClick: () -> Unit = {},
-) {
+private fun CategoryCard(category: ServiceCategory, onClick: () -> Unit = {}) {
     WellnessCard(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
         Row(
             modifier = Modifier
