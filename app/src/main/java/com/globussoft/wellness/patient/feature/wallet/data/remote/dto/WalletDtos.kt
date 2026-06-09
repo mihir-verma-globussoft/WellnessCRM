@@ -66,12 +66,6 @@ data class GiftCardConfirmResponseDto(
     val transaction: WalletTransactionDto,
 )
 
-@JsonClass(generateAdapter = true)
-data class FcmTokenDto(
-    val token: String,
-    val platform: String,
-)
-
 // GET /api/wellness/patients/{patientId}/wallet — CUSTOMER JWT (verifyToken).
 // Dedicated wallet view: balance + wallet-only transactions.
 // Real shape confirmed against staging 2026-06-04.

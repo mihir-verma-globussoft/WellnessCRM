@@ -130,10 +130,12 @@ dependencies {
     implementation(libs.datastore.preferences)
     implementation(libs.security.crypto)
 
-    // Firebase
+    // Firebase (analytics only — no FCM)
     implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.messaging)
     implementation(libs.firebase.analytics)
+
+    // Socket.IO (real-time notification delivery when app is open)
+    implementation(libs.socket.io.client)
 
     // Sentry
     implementation(libs.sentry.android)

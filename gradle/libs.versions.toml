@@ -16,6 +16,7 @@ room = "2.6.1"
 datastore = "1.1.1"
 securityCrypto = "1.1.0-alpha06"
 firebaseBom = "33.7.0"
+socketIo = "2.1.0"
 sentry = "7.20.0"
 razorpay = "1.6.40"
 coil = "2.7.0"
@@ -75,10 +76,12 @@ room-testing = { group = "androidx.room", name = "room-testing", version.ref = "
 datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
 security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }
 
-# Firebase
+# Firebase (analytics only)
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
-firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging-ktx" }
 firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics-ktx" }
+
+# Socket.IO
+socket-io-client = { group = "io.socket", name = "socket.io-client", version.ref = "socketIo" }
 
 # Sentry
 sentry-android = { group = "io.sentry", name = "sentry-android", version.ref = "sentry" }

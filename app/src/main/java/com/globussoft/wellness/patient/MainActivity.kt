@@ -21,10 +21,14 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.globussoft.wellness.patient.core.navigation.WellnessNavGraph
 import com.globussoft.wellness.patient.core.theme.WellnessTheme
+import com.globussoft.wellness.patient.core.websocket.WellnessSocketManager
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject lateinit var socketManager: WellnessSocketManager
 
     private val mainVm: MainViewModel by viewModels()
 

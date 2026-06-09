@@ -31,7 +31,7 @@ import com.globussoft.wellness.patient.feature.profile.data.remote.dto.DsarExpor
 import com.globussoft.wellness.patient.feature.profile.data.remote.dto.ProfileDto
 import com.globussoft.wellness.patient.feature.profile.data.remote.dto.UpdateAuthProfileDto
 import com.globussoft.wellness.patient.feature.notifications.data.remote.dto.PortalNotificationsResponseDto
-import com.globussoft.wellness.patient.feature.wallet.data.remote.dto.FcmTokenDto
+
 import com.globussoft.wellness.patient.feature.finance.data.remote.dto.PaymentConfigDto
 import com.globussoft.wellness.patient.feature.finance.data.remote.dto.PaymentDto
 import com.globussoft.wellness.patient.feature.wallet.data.remote.dto.GiftCardConfirmDto
@@ -108,15 +108,6 @@ interface WellnessApiService {
 
     @POST("portal/export")
     suspend fun requestDsarExport(): Response<DsarExportResponseDto>
-
-    // ── FCM Token ─────────────────────────────────────────────────────────────
-    @POST("portal/me/fcm-token")
-    suspend fun registerFcmToken(
-        @Body body: FcmTokenDto,
-    ): Response<Unit>
-
-    @DELETE("portal/me/fcm-token")
-    suspend fun deregisterFcmToken(): Response<Unit>
 
     // ── Portal Notifications ──────────────────────────────────────────────────
     @GET("portal/me/notifications")

@@ -14,7 +14,6 @@ class EncryptedPrefsManager @Inject constructor(
         private const val KEY_USER_NAME = "user_name"
         private const val KEY_USER_EMAIL = "user_email"
         private const val KEY_PATIENT_ID = "patient_id"
-        private const val KEY_FCM_TOKEN = "fcm_token"
     }
 
     fun saveUserInfo(userId: Int, name: String, email: String) {
@@ -38,12 +37,6 @@ class EncryptedPrefsManager @Inject constructor(
     // patientId is fetched from GET /portal/me after login and cached here.
     // Required for loyalty/{patientId}, patients/{patientId}/wallet, etc.
     fun getPatientId(): Int? = prefs.getInt(KEY_PATIENT_ID, -1).takeIf { it != -1 }
-
-    fun saveFcmToken(token: String) {
-        prefs.edit().putString(KEY_FCM_TOKEN, token).apply()
-    }
-
-    fun getFcmToken(): String? = prefs.getString(KEY_FCM_TOKEN, null)
 
     fun clear() {
         prefs.edit().clear().apply()
