@@ -30,7 +30,9 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun login(email: String, password: String): Patient {
-        val response = api.login(LoginRequestDto(email = email, password = password, loginTenantId = BuildConfig.TENANT_ID as Int?))
+        val response = api.login(LoginRequestDto(email = email, password = password,
+//            loginTenantId = BuildConfig.TENANT_ID as Int?
+        ))
         if (!response.isSuccessful) throw HttpException(response)
         val body = response.body()!!
         dataStore.saveToken(body.token)

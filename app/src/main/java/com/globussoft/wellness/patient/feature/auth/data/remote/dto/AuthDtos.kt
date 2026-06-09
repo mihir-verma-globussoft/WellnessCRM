@@ -6,7 +6,7 @@ import com.squareup.moshi.JsonClass
 data class LoginRequestDto(
     val email: String,
     val password: String,
-    val loginTenantId: Int?,
+//    val loginTenantId: Int?,
 )
 
 @JsonClass(generateAdapter = true)
