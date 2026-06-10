@@ -24,7 +24,8 @@ import androidx.compose.ui.unit.dp
 import com.globus.crm.R
 import com.globus.crm.feature.auth.presentation.state.SplashUiState
 
-private val LogoBgColor = Color(0xFF133F3E)
+private val SplashBgColor = Color(0xFFF4F6FB)
+private val SplashAccentColor = Color(0xFF133F3E)
 
 @Composable
 fun SplashScreen(
@@ -33,7 +34,7 @@ fun SplashScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(LogoBgColor),
+            .background(SplashBgColor),
         contentAlignment = Alignment.Center,
     ) {
         Column(
@@ -43,7 +44,7 @@ fun SplashScreen(
                 painter = painterResource(R.drawable.globus_crm_logo),
                 contentDescription = "App logo",
                 modifier = Modifier
-                    .fillMaxWidth(0.70f)
+                    .fillMaxWidth()
                     .aspectRatio(1f),
                 contentScale = ContentScale.Fit,
             )
@@ -51,7 +52,7 @@ fun SplashScreen(
             Spacer(modifier = Modifier.height(40.dp))
 
             if (state.isLoading) {
-                CircularProgressIndicator(color = Color.White)
+                CircularProgressIndicator(color = SplashAccentColor)
             }
 
             if (state.error != null) {
@@ -59,7 +60,7 @@ fun SplashScreen(
                 Text(
                     text = state.error,
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.85f),
+                    color = SplashAccentColor.copy(alpha = 0.85f),
                     textAlign = TextAlign.Center,
                 )
             }
