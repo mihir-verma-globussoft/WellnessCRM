@@ -2,6 +2,7 @@ package com.globussoft.wellness.patient.feature.catalog.presentation.screen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -495,11 +496,13 @@ private fun CategoryCard(category: ServiceCategory, onClick: () -> Unit = {}) {
                 .height(80.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Image on the left
+            // Image on the left — padded + rounded
             Box(
                 modifier = Modifier
-                    .width(100.dp)
-                    .fillMaxHeight(),
+                    .padding(10.dp)
+                    .width(90.dp)
+                    .fillMaxHeight()
+                    .clip(RoundedCornerShape(10.dp)),
                 contentAlignment = Alignment.Center,
             ) {
                 if (!category.imageUrl.isNullOrBlank()) {
