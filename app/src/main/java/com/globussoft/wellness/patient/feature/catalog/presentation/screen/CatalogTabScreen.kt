@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -488,12 +489,17 @@ private fun ServiceCategoriesContent(
 @Composable
 private fun CategoryCard(category: ServiceCategory, onClick: () -> Unit = {}) {
     WellnessCard(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
-        Column {
-            // Image header — full width, fixed height
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(80.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // Image on the left
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(130.dp),
+                    .width(100.dp)
+                    .fillMaxHeight(),
                 contentAlignment = Alignment.Center,
             ) {
                 if (!category.imageUrl.isNullOrBlank()) {
@@ -515,7 +521,7 @@ private fun CategoryCard(category: ServiceCategory, onClick: () -> Unit = {}) {
                     ) {
                         Text(
                             text = category.name.take(1).uppercase(),
-                            style = MaterialTheme.typography.headlineLarge,
+                            style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary,
                         )
@@ -523,11 +529,11 @@ private fun CategoryCard(category: ServiceCategory, onClick: () -> Unit = {}) {
                 }
             }
 
-            // Name + count row below image
+            // Name + count to the right
             Row(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                    .weight(1f)
+                    .padding(horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
