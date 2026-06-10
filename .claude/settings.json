@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//home/glb-blr-214/StudioProjects/globussoft-crm/backend/lib/**)",
+      "Read(//home/glb-blr-214/StudioProjects/globussoft-crm/backend/services/**)",
+      "Read(//home/glb-blr-214/StudioProjects/globussoft-crm/backend/**)",
+      "Read(//home/glb-blr-214/StudioProjects/globussoft-crm/backend/middleware/**)",
+      "Read(//home/glb-blr-214/StudioProjects/globussoft-crm/frontend/src/pages/wellness/**)",
+      "Read(//home/glb-blr-214/StudioProjects/globussoft-crm/backend/cron/**)",
+      "Bash(ls /home/glb-blr-214/StudioProjects/ 2>/dev/null || echo \"Directory not found\")",
+      "Read(//home/glb-blr-214/StudioProjects/**)",
+      "Bash(find /home/glb-blr-214/StudioProjects/globussoft-crm/frontend/src/components -name \"Sidebar*\" 2>/dev/null)",
+      "Read(//home/glb-blr-214/StudioProjects/globussoft-crm/frontend/src/components/**)",
+      "Bash(find /home/glb-blr-214/StudioProjects/globussoft-crm/frontend/src/theme -name \"wellness*\" 2>/dev/null)",
+      "Read(//home/glb-blr-214/StudioProjects/globussoft-crm/frontend/src/theme/**)",
+      "Bash(xargs ls)"
+    ]
+  }
+}

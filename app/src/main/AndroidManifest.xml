@@ -32,13 +32,13 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- Deep link: wellnesspatient://screen/{screenName}?id={entityId} -->
+            <!-- Deep link: globuscrm://screen/{screenName}?id={entityId} -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
-                    android:scheme="wellnesspatient"
+                    android:scheme="globuscrm"
                     android:host="screen" />
             </intent-filter>
         </activity>
