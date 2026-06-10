@@ -24,7 +24,6 @@ import androidx.compose.ui.unit.dp
 import com.globus.crm.R
 import com.globus.crm.feature.auth.presentation.state.SplashUiState
 
-// Logo background color — matches app_logo.jpg exactly so the image blends into the screen.
 private val LogoBgColor = Color(0xFF133F3E)
 
 @Composable
@@ -41,7 +40,7 @@ fun SplashScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Image(
-                painter = painterResource(R.drawable.app_logo),
+                painter = painterResource(R.drawable.globus_crm_logo),
                 contentDescription = "App logo",
                 modifier = Modifier
                     .fillMaxWidth(0.70f)
