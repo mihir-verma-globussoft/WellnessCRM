@@ -125,8 +125,6 @@ private fun DashboardContent(
             )
         }
 
-        TodayAtAGlance()
-
         PortalMenu(onEvent = onEvent)
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -330,28 +328,6 @@ private fun StatChip(
             Text(
                 text = label,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
-
-@Composable
-private fun TodayAtAGlance() {
-    WellnessCard(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            Text(
-                text = "Today at a glance",
-                style = MaterialTheme.typography.titleMedium,
-            )
-            Text(
-                text = "Your personalised shortcuts will appear here",
-                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }

@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -486,29 +488,66 @@ private fun ServiceCategoriesContent(
 @Composable
 private fun CategoryCard(category: ServiceCategory, onClick: () -> Unit = {}) {
     WellnessCard(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Text(
-                text = category.name,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.weight(1f),
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            SuggestionChip(
-                onClick = {},
-                label = {
-                    Text(
-                        text = "${category.servicesCount} services",
-                        style = MaterialTheme.typography.labelSmall,
+        Column {
+            // Image header — full width, fixed height
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(130.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (!category.imageUrl.isNullOrBlank()) {
+                    AsyncImage(
+                        model = category.imageUrl,
+                        contentDescription = category.name,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
                     )
-                },
-            )
+                } else {
+                    val bgColor = category.color?.let {
+                        runCatching { Color(android.graphics.Color.parseColor(it)) }.getOrNull()
+                    } ?: MaterialTheme.colorScheme.primaryContainer
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(bgColor),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = category.name.take(1).uppercase(),
+                            style = MaterialTheme.typography.headlineLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
+            }
+
+            // Name + count row below image
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    text = category.name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.weight(1f),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                SuggestionChip(
+                    onClick = {},
+                    label = {
+                        Text(
+                            text = "${category.servicesCount} services",
+                            style = MaterialTheme.typography.labelSmall,
+                        )
+                    },
+                )
+            }
         }
     }
 }
