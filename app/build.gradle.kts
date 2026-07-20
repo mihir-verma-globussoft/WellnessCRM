@@ -6,8 +6,6 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
-    alias(libs.plugins.google.services)
-    alias(libs.plugins.sentry)
     alias(libs.plugins.junit5.plugin)
 }
 
@@ -21,13 +19,13 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.globus.crm"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.globus.crm"
         minSdk = 26
-        targetSdk = 35
-        versionCode = 1
+        targetSdk = 36
+        versionCode = 2
         versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -130,15 +128,8 @@ dependencies {
     implementation(libs.datastore.preferences)
     implementation(libs.security.crypto)
 
-    // Firebase (analytics only — no FCM)
-    implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.analytics)
-
     // Socket.IO (real-time notification delivery when app is open)
     implementation(libs.socket.io.client)
-
-    // Sentry
-    implementation(libs.sentry.android)
 
     // Razorpay
     implementation(libs.razorpay)
@@ -167,11 +158,4 @@ dependencies {
 
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
-}
-
-sentry {
-    org = "globussoft"
-    projectName = "wellness-patient-android"
-    authToken = System.getenv("SENTRY_AUTH_TOKEN") ?: ""
-    includeSourceContext = true
 }
