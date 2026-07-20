@@ -46,7 +46,7 @@ class SplashViewModel @Inject constructor(
             if (brandingResult is Result.Success) {
                 val branding = brandingResult.data
                 dataStore.saveTenantBranding(
-                    brandColor = branding.brandColor ?: "#265855",
+                    brandColor = branding.brandColor ?: "#8A6D23",
                     clinicName = branding.name,
                     logoUrl = branding.logoUrl,
                 )

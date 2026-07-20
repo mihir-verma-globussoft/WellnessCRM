@@ -161,6 +161,6 @@ data class AddWaitlistDto(
 data class DoctorAvailabilityDto(
     val id: Int,
     val name: String,
-    val specialization: String?,
+    @Json(name = "specialty") val specialization: String? = null,
     val available: Boolean = true,
 )

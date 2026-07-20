@@ -42,12 +42,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import com.crm.enhance_wellness.core.theme.WellnessPrimary
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.crm.enhance_wellness.core.ui.ErrorState
 import com.crm.enhance_wellness.core.ui.StatusChip
+import androidx.compose.ui.draw.clip
 import com.crm.enhance_wellness.core.ui.WellnessCard
+import com.crm.enhance_wellness.core.ui.brandGradient
 import com.crm.enhance_wellness.core.ui.WellnessProgressBar
 import com.crm.enhance_wellness.core.util.CurrencyUtil
 import com.crm.enhance_wellness.core.util.DateUtil
@@ -273,7 +276,7 @@ private fun planCardColor(planName: String): Color = when {
     planName.contains("diamond", ignoreCase = true) -> Color(0xFF1B2E4B)
     planName.contains("gold", ignoreCase = true) -> Color(0xFF7B5B0D)
     planName.contains("platinum", ignoreCase = true) -> Color(0xFF4A3470)
-    else -> Color(0xFF265855)
+    else -> WellnessPrimary // brand gold (was teal #265855)
 }
 
 private val PLAN_PERKS = listOf(
@@ -293,10 +296,11 @@ private fun ProfessionalPlanCard(
     val bgColor = planCardColor(plan.name)
     val contentColor = Color.White
 
-    Surface(
-        shape = MaterialTheme.shapes.large,
-        color = bgColor,
-        modifier = Modifier.fillMaxWidth(),
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.large)
+            .background(brandGradient(bgColor)),
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
             // Watermark

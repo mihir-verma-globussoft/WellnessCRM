@@ -22,10 +22,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.crm.enhance_wellness.R
+import com.crm.enhance_wellness.core.theme.WellnessBackground
 import com.crm.enhance_wellness.core.theme.WellnessPrimary
 import com.crm.enhance_wellness.feature.auth.presentation.state.SplashUiState
 
-private val SplashBgColor = Color(0xFFF8F8F8)
+private val SplashBgColor = WellnessBackground
 private val SplashAccentColor = WellnessPrimary
 
 @Composable

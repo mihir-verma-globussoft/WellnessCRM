@@ -17,7 +17,7 @@ fun CachedNotification.toDomain() = Notification(
 )
 
 fun PortalNotificationDto.toDomain() = Notification(
-    id = id,
+    id = id.toString(),
     type = type,
     title = title,
     body = body ?: "",

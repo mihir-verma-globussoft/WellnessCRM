@@ -28,6 +28,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
@@ -42,7 +44,16 @@ val SpacingLg = 24.dp  // between cards / major sections
 val SpacingXl = 32.dp  // screen-level top/bottom breathing room
 
 /**
- * Standard card: white fill + 2dp shadow elevation.
+ * Vertical gradient from a base brand colour to a darker shade of itself.
+ * Used for solid-colour product tiles (gift cards, membership plans) so they
+ * read with subtle depth instead of a flat fill.
+ */
+fun brandGradient(base: Color): Brush = Brush.verticalGradient(
+    colors = listOf(base, lerp(base, Color.Black, 0.28f)),
+)
+
+/**
+ * Standard card: subtle top-to-bottom cream gradient + 2dp shadow elevation.
  * Soft 16dp radius from the shape system gives a modern fluid look.
  */
 @Composable
@@ -52,15 +63,19 @@ fun WellnessCard(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val cardModifier = if (onClick != null) modifier.clickable(onClick = onClick) else modifier
-    Card(
+    val fill = Brush.verticalGradient(
+        colors = listOf(
+            MaterialTheme.colorScheme.surfaceContainerLowest,
+            MaterialTheme.colorScheme.surfaceContainerLow,
+        ),
+    )
+    Surface(
         modifier = cardModifier,
         shape = MaterialTheme.shapes.medium,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLowest,
+        shadowElevation = 2.dp,
     ) {
-        Column(content = content)
+        Column(modifier = Modifier.background(fill), content = content)
     }
 }
 

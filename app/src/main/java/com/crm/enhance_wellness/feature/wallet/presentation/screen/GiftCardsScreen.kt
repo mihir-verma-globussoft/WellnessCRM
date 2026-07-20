@@ -23,7 +23,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import androidx.compose.ui.draw.clip
+import com.crm.enhance_wellness.core.ui.brandGradient
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -45,12 +46,14 @@ import com.crm.enhance_wellness.feature.wallet.domain.model.GiftCard
 import com.crm.enhance_wellness.feature.wallet.presentation.state.GiftCardsUiEvent
 import com.crm.enhance_wellness.feature.wallet.presentation.state.GiftCardsUiState
 
+// Fallback jewel-tone palette for gift-card art when the backend omits `color`.
+// Brand-aligned: onyx/gold/navy/plum/maroon — no teal.
 private val CARD_COLORS = listOf(
-    Color(0xFF265855),
-    Color(0xFF7B5B0D),
-    Color(0xFF1B2E4B),
-    Color(0xFF4A3470),
-    Color(0xFF8B1A2C),
+    Color(0xFF3A362E), // onyx (WellnessTertiary)
+    Color(0xFF7B5B0D), // deep gold
+    Color(0xFF1B2E4B), // navy
+    Color(0xFF4A3470), // plum
+    Color(0xFF8B1A2C), // maroon
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -132,10 +135,11 @@ fun GiftCardsScreen(
 
 @Composable
 private fun GiftCardTile(card: GiftCard, color: Color, onBuy: () -> Unit) {
-    Surface(
-        shape = MaterialTheme.shapes.large,
-        color = color,
-        modifier = Modifier.fillMaxWidth(),
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.large)
+            .background(brandGradient(color)),
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -200,10 +204,6 @@ private fun GiftCardTile(card: GiftCard, color: Color, onBuy: () -> Unit) {
     }
 }
 
-private fun cardColor(card: GiftCard): Color {
-    if (!card.color.isNullOrBlank()) {
-        runCatching { Color(android.graphics.Color.parseColor(card.color)) }.getOrNull()
-            ?.let { return it }
-    }
-    return CARD_COLORS[card.id % CARD_COLORS.size]
-}
+// Always use the brand jewel-tone palette (ignore the backend-supplied `color`,
+// which can be off-brand e.g. teal). Deterministic per card id.
+private fun cardColor(card: GiftCard): Color = CARD_COLORS[card.id % CARD_COLORS.size]
