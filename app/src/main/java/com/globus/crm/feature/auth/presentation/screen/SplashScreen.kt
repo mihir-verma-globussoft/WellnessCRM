@@ -22,10 +22,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.globus.crm.R
+import com.globus.crm.core.theme.WellnessPrimary
 import com.globus.crm.feature.auth.presentation.state.SplashUiState
 
-private val SplashBgColor = Color(0xFFF4F6FB)
-private val SplashAccentColor = Color(0xFF133F3E)
+private val SplashBgColor = Color(0xFFF8F8F8)
+private val SplashAccentColor = WellnessPrimary
 
 @Composable
 fun SplashScreen(
@@ -41,7 +42,7 @@ fun SplashScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Image(
-                painter = painterResource(R.drawable.globus_crm_logo),
+                painter = painterResource(R.drawable.wellness_crm_logo),
                 contentDescription = "App logo",
                 modifier = Modifier
                     .fillMaxWidth()
