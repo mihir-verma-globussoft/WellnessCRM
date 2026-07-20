@@ -89,4 +89,4 @@
 -keep class androidx.security.crypto.** { *; }
 
 # ── BuildConfig ───────────────────────────────────────────────────────────────
--keep class com.globus.crm.BuildConfig { *; }
+-keep class com.crm.enhance_wellness.BuildConfig { *; }

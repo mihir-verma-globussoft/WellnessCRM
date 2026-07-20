@@ -18,11 +18,11 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.globus.crm"
+    namespace = "com.crm.enhance_wellness"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.globus.crm"
+        applicationId = "com.crm.enhance_wellness"
         minSdk = 26
         targetSdk = 36
         versionCode = 2
