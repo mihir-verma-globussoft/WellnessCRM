@@ -26,7 +26,7 @@ import com.crm.enhance_wellness.core.theme.WellnessBackground
 import com.crm.enhance_wellness.core.theme.WellnessPrimary
 import com.crm.enhance_wellness.feature.auth.presentation.state.SplashUiState
 
-private val SplashBgColor = WellnessBackground
+private val SplashBgColor = Color(0xFFF8F8F8)
 private val SplashAccentColor = WellnessPrimary
 
 @Composable
