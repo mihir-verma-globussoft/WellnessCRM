@@ -6,6 +6,8 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 
     <application
         android:name=".WellnessPatientApp"
@@ -56,6 +58,20 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/wellness_file_paths" />
         </provider>
+
+        <receiver
+            android:name=".feature.health.reminder.MedicationReminderReceiver"
+            android:exported="false" />
+
+        <receiver
+            android:name=".feature.health.reminder.MedicationReminderRescheduleReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+            </intent-filter>
+        </receiver>
 
     </application>
 

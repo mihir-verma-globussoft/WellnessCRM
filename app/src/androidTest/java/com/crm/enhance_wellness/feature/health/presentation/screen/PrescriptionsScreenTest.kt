@@ -27,6 +27,8 @@ class PrescriptionsScreenTest {
         id = 1,
         visitId = 10,
         visitDate = "2026-05-01",
+        createdAt = "2026-05-01T00:00:00.000Z",
+        instructions = null,
         doctorName = "Dr. Smith",
         serviceName = "Consultation",
         drugs = emptyList(),

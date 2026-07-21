@@ -4,6 +4,8 @@ data class Prescription(
     val id: Int,
     val visitId: Int?,
     val visitDate: String?,
+    val createdAt: String?,
+    val instructions: String?,
     val doctorName: String?,
     val serviceName: String?,
     val drugs: List<Drug>,

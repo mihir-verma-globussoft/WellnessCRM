@@ -8,6 +8,7 @@ import com.crm.enhance_wellness.feature.auth.domain.usecase.GetPatientPermission
 import com.crm.enhance_wellness.feature.health.domain.usecase.GetPrescriptionsUseCase
 import com.crm.enhance_wellness.feature.health.presentation.state.PrescriptionsUiEvent
 import com.crm.enhance_wellness.feature.health.presentation.state.PrescriptionsUiState
+import com.crm.enhance_wellness.feature.health.reminder.PrescriptionReminderRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,6 +27,7 @@ sealed class PrescriptionsNavEvent {
 class PrescriptionsViewModel @Inject constructor(
     private val getPrescriptions: GetPrescriptionsUseCase,
     private val getPermissions: GetPatientPermissionsUseCase,
+    private val reminderRepository: PrescriptionReminderRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PrescriptionsUiState())
@@ -35,6 +37,7 @@ class PrescriptionsViewModel @Inject constructor(
     val navEvent = _navEvent.receiveAsFlow()
 
     init {
+        observeReminderState()
         load()
     }
 
@@ -51,7 +54,21 @@ class PrescriptionsViewModel @Inject constructor(
             PrescriptionsUiEvent.DismissPdfConfirm ->
                 _uiState.value = _uiState.value.copy(showPdfConfirm = false, prescriptionToOpen = null)
             is PrescriptionsUiEvent.ViewPdf -> viewModelScope.launch { _navEvent.send(PrescriptionsNavEvent.ToPdf(event.prescriptionId)) }
+            is PrescriptionsUiEvent.ToggleReminder -> toggleReminder(event.prescription, event.enabled)
+            PrescriptionsUiEvent.DismissReminderMessage ->
+                _uiState.value = _uiState.value.copy(reminderMessage = null)
+            PrescriptionsUiEvent.ExactAlarmPermissionPromptShown ->
+                _uiState.value = _uiState.value.copy(exactAlarmPermissionPromptNeeded = false)
             PrescriptionsUiEvent.NavigateBack -> viewModelScope.launch { _navEvent.send(PrescriptionsNavEvent.Back) }
+        }
+    }
+
+    private fun observeReminderState() {
+        viewModelScope.launch {
+            reminderRepository.cleanupExpired()
+            reminderRepository.enabledReminderIds().collect { enabledIds ->
+                _uiState.value = _uiState.value.copy(reminderEnabledIds = enabledIds)
+            }
         }
     }
 
@@ -60,14 +77,40 @@ class PrescriptionsViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(isLoading = true, error = null, permissionBlocked = false)
             val permResult = getPermissions()
             if (permResult is Result.Success && !permResult.data.has(PatientPermissions.PRESCRIPTIONS_READ)) {
-                _uiState.value = PrescriptionsUiState(isLoading = false, permissionBlocked = true)
+                _uiState.value = _uiState.value.copy(isLoading = false, permissionBlocked = true)
                 return@launch
             }
             when (val result = getPrescriptions()) {
-                is Result.Success -> _uiState.value = PrescriptionsUiState(isLoading = false, prescriptions = result.data)
-                is Result.Error -> _uiState.value = PrescriptionsUiState(isLoading = false, error = result.message)
+                is Result.Success -> _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    prescriptions = result.data,
+                    error = null,
+                )
+                is Result.Error -> _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    error = result.message,
+                )
                 Result.Loading -> Unit
             }
+        }
+    }
+
+    private fun toggleReminder(prescription: com.crm.enhance_wellness.feature.health.domain.model.Prescription, enabled: Boolean) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                reminderActionInProgressId = prescription.id,
+                reminderMessage = null,
+            )
+            val result = if (enabled) {
+                reminderRepository.enable(prescription)
+            } else {
+                reminderRepository.disable(prescription.id)
+            }
+            _uiState.value = _uiState.value.copy(
+                reminderActionInProgressId = null,
+                reminderMessage = result.message,
+                exactAlarmPermissionPromptNeeded = result.exactAlarmPermissionRequired,
+            )
         }
     }
 }

@@ -8,6 +8,10 @@ data class PrescriptionsUiState(
     val isLoading: Boolean = true,
     val error: String? = null,
     val prescriptions: List<Prescription> = emptyList(),
+    val reminderEnabledIds: Set<Int> = emptySet(),
+    val reminderActionInProgressId: Int? = null,
+    val reminderMessage: String? = null,
+    val exactAlarmPermissionPromptNeeded: Boolean = false,
     val permissionBlocked: Boolean = false,
     val showPdfConfirm: Boolean = false,
     val prescriptionToOpen: Int? = null,
@@ -19,6 +23,9 @@ sealed class PrescriptionsUiEvent {
     object ConfirmViewPdf : PrescriptionsUiEvent()
     object DismissPdfConfirm : PrescriptionsUiEvent()
     data class ViewPdf(val prescriptionId: Int) : PrescriptionsUiEvent()
+    data class ToggleReminder(val prescription: Prescription, val enabled: Boolean) : PrescriptionsUiEvent()
+    object DismissReminderMessage : PrescriptionsUiEvent()
+    object ExactAlarmPermissionPromptShown : PrescriptionsUiEvent()
     object NavigateBack : PrescriptionsUiEvent()
 }
 

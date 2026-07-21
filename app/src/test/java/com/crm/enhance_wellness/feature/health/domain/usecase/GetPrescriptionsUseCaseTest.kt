@@ -25,6 +25,8 @@ class GetPrescriptionsUseCaseTest {
         id = 1,
         visitId = 10,
         visitDate = "2026-05-01",
+        createdAt = "2026-05-01T00:00:00.000Z",
+        instructions = null,
         doctorName = "Dr. Patel",
         serviceName = "Consultation",
         drugs = listOf(Drug("Amoxicillin", "500mg", "3x/day", "7 days", null)),

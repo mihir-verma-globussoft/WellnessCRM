@@ -22,6 +22,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.crm.enhance_wellness.core.navigation.WellnessNavGraph
 import com.crm.enhance_wellness.core.theme.WellnessTheme
 import com.crm.enhance_wellness.core.websocket.WellnessSocketManager
+import com.crm.enhance_wellness.feature.health.reminder.MedicationReminderReceiver
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -80,6 +81,14 @@ class MainActivity : ComponentActivity() {
 
         manager.createNotificationChannels(
             listOf(
+                NotificationChannel(
+                    MedicationReminderReceiver.CHANNEL_ID_MEDICATION_REMINDERS,
+                    MedicationReminderReceiver.CHANNEL_NAME_MEDICATION_REMINDERS,
+                    NotificationManager.IMPORTANCE_HIGH,
+                ).apply {
+                    description = "Medication dosage reminder notifications"
+                    enableVibration(true)
+                },
                 NotificationChannel(
                     "wellness_reminders",
                     "Appointment Reminders",
