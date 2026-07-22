@@ -40,6 +40,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        notificationIntent = intent
         createNotificationChannels()
         requestPostNotificationsPermissionIfNeeded()
         enableEdgeToEdge()

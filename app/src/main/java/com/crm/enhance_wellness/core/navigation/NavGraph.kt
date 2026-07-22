@@ -355,7 +355,11 @@ fun WellnessNavGraph(
                 WaitlistScreen(state = state, onEvent = vm::onEvent)
             }
 
-            composable(route = Screen.PrescriptionPdf.route) {
+            composable(
+                route = Screen.PrescriptionPdf.route,
+                arguments = listOf(navArgument("id") { type = NavType.IntType }),
+                deepLinks = listOf(navDeepLink { uriPattern = "globuscrm://screen/prescription_pdf?id={id}" }),
+            ) {
                 val vm: PrescriptionPdfViewModel = hiltViewModel()
                 val state by vm.uiState.collectAsStateWithLifecycle()
                 LaunchedEffect(Unit) {

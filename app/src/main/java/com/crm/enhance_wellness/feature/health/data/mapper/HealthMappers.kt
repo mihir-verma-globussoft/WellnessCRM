@@ -10,6 +10,8 @@ import com.crm.enhance_wellness.feature.health.domain.model.ConsentForm
 import com.crm.enhance_wellness.feature.health.domain.model.Drug
 import com.crm.enhance_wellness.feature.health.domain.model.Prescription
 import com.crm.enhance_wellness.feature.health.domain.model.TreatmentPlan
+import org.json.JSONArray
+import org.json.JSONObject
 
 fun PrescriptionDto.toDomain() = Prescription(
     id = id,
@@ -22,21 +24,78 @@ fun PrescriptionDto.toDomain() = Prescription(
     drugs = parseDrugsJson(drugs),
 )
 
-private fun parseDrugsJson(json: String): List<Drug> = try {
-    val arr = org.json.JSONArray(json)
-    (0 until arr.length()).map { i ->
-        val obj = arr.getJSONObject(i)
-        Drug(
-            name = obj.optString("name"),
-            dosage = obj.optString("dosage").ifEmpty { null },
-            frequency = obj.optString("frequency").ifEmpty { null },
-            duration = obj.optString("duration").ifEmpty { null },
-            instructions = obj.optString("instructions").ifEmpty { null },
-        )
+internal fun parseDrugsJson(json: String): List<Drug> = runCatching {
+    val trimmed = json.trim()
+    when {
+        trimmed.startsWith("[") -> JSONArray(trimmed).toDrugList()
+        trimmed.startsWith("{") -> JSONObject(trimmed).toDrugList()
+        else -> emptyList()
     }
-} catch (_: Exception) {
-    emptyList()
+}.getOrDefault(emptyList())
+
+private fun JSONObject.toDrugList(): List<Drug> {
+    val wrappedArray = optJSONArray("drugs")
+        ?: optJSONArray("medications")
+        ?: optJSONArray("items")
+        ?: optJSONArray("data")
+    return wrappedArray?.toDrugList() ?: listOfNotNull(toDrugOrNull())
 }
+
+private fun JSONArray.toDrugList(): List<Drug> =
+    (0 until length()).mapNotNull { index ->
+        optJSONObject(index)?.toDrugOrNull()
+    }
+
+private fun JSONObject.toDrugOrNull(): Drug? {
+    val nestedDrug = optJSONObject("drug")
+        ?: optJSONObject("medicine")
+        ?: optJSONObject("medication")
+        ?: optJSONObject("product")
+    val name = firstString(
+        "name",
+        "drugName",
+        "medicineName",
+        "medicationName",
+        "title",
+        "label",
+    ) ?: nestedDrug?.firstString("name", "drugName", "medicineName", "title")
+
+    val frequency = firstString(
+        "frequency",
+        "frequencyPerDay",
+        "dailyFrequency",
+        "timesPerDay",
+        "times",
+        "perDay",
+        "noOfTimes",
+        "numberOfTimes",
+    )
+    val duration = firstString(
+        "duration",
+        "durationDays",
+        "days",
+        "noOfDays",
+        "numberOfDays",
+        "courseDuration",
+    )
+
+    if (name.isNullOrBlank()) return null
+    return Drug(
+        name = name,
+        dosage = firstString("dosage", "dose", "dosageValue", "quantity", "strength"),
+        frequency = frequency,
+        duration = duration,
+        instructions = firstString("instructions", "instruction", "notes", "remarks"),
+    )
+}
+
+private fun JSONObject.firstString(vararg keys: String): String? =
+    keys.firstNotNullOfOrNull { key ->
+        if (!has(key) || isNull(key)) return@firstNotNullOfOrNull null
+        opt(key)?.toString()?.trim()?.takeUnless { value ->
+            value.isBlank() || value.equals("null", ignoreCase = true)
+        }
+    }
 
 fun CachedPrescription.toDomain() = Prescription(
     id = id,

@@ -4,6 +4,7 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import com.crm.enhance_wellness.BuildConfig
 import com.crm.enhance_wellness.feature.health.data.local.entity.PrescriptionReminderEntity
@@ -23,6 +24,7 @@ class MedicationReminderScheduler @Inject constructor(
 
     fun schedule(reminder: PrescriptionReminderEntity): Boolean {
         val exactAllowed = canScheduleExactAlarms()
+        val usesAlarmClock = Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP
         cancel(reminder)
 
         val drugs = parseReminderDrugs(reminder.drugsJson)
@@ -43,6 +45,7 @@ class MedicationReminderScheduler @Inject constructor(
                             drug = drug,
                             endAt = reminder.endAt,
                         ),
+                        prescriptionId = reminder.prescriptionId,
                         exactAllowed = exactAllowed,
                     )
                 }
@@ -60,11 +63,12 @@ class MedicationReminderScheduler @Inject constructor(
                     drug = drugs.first(),
                     endAt = reminder.endAt,
                 ),
+                prescriptionId = reminder.prescriptionId,
                 exactAllowed = exactAllowed,
             )
         }
 
-        return exactAllowed
+        return usesAlarmClock || exactAllowed
     }
 
     fun cancel(reminder: PrescriptionReminderEntity) {
@@ -106,9 +110,18 @@ class MedicationReminderScheduler @Inject constructor(
     private fun scheduleAlarm(
         triggerAt: Long,
         pendingIntent: PendingIntent,
+        prescriptionId: Int,
         exactAllowed: Boolean,
     ) {
         when {
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP ->
+                alarmManager.setAlarmClock(
+                    AlarmManager.AlarmClockInfo(
+                        triggerAt,
+                        prescriptionPdfPendingIntent(prescriptionId),
+                    ),
+                    pendingIntent,
+                )
             exactAllowed && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ->
                 alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent)
             exactAllowed ->
@@ -136,6 +149,24 @@ class MedicationReminderScheduler @Inject constructor(
         return PendingIntent.getBroadcast(
             context,
             requestCodeFor(prescriptionId, drugIndex, sequence),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+    }
+
+    private fun prescriptionPdfPendingIntent(prescriptionId: Int): PendingIntent {
+        val intent = Intent(
+            Intent.ACTION_VIEW,
+            Uri.parse("globuscrm://screen/prescription_pdf?id=$prescriptionId"),
+        ).apply {
+            setPackage(context.packageName)
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+        return PendingIntent.getActivity(
+            context,
+            "alarm-clock-prescription-pdf-$prescriptionId".hashCode(),
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
