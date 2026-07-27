@@ -1,5 +1,6 @@
 package com.crm.enhance_wellness.feature.wallet.data.mapper
 
+import com.crm.enhance_wellness.core.util.BackendImageUrlResolver
 import com.crm.enhance_wellness.feature.wallet.data.remote.dto.GiftCardDto
 import com.crm.enhance_wellness.feature.wallet.data.remote.dto.GiftCardOrderResponseDto
 import com.crm.enhance_wellness.feature.wallet.data.remote.dto.MyTransactionsResponseDto
@@ -58,6 +59,15 @@ fun GiftCardDto.toDomain() = GiftCard(
     amount = amount,
     price = price,
     color = color,
+    imageUrl = BackendImageUrlResolver.resolveFirst(
+        imageUrl,
+        imageUrls,
+        image,
+        images,
+        thumbnailUrl,
+        thumbnail,
+        photoUrl,
+    ),
     validityDays = validityDays,
     currency = currency,
     expiresAt = expiresAt,

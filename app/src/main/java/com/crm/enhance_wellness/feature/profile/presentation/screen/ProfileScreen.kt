@@ -60,7 +60,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
+import com.crm.enhance_wellness.core.ui.BackendImage
 import com.crm.enhance_wellness.core.ui.ErrorState
 import com.crm.enhance_wellness.core.ui.SectionLabel
 import com.crm.enhance_wellness.core.ui.WellnessCard
@@ -134,30 +134,14 @@ private fun ViewProfileContent(state: ProfileUiState, onEvent: (ProfileUiEvent) 
                 // Avatar + camera overlay — always centered because Column is fillMaxWidth
                 Box(contentAlignment = Alignment.BottomEnd) {
                     val photoModel: Any? = localPhotoUri ?: profile.profilePictureUrl
-                    if (photoModel != null) {
-                        AsyncImage(
-                            model = photoModel,
-                            contentDescription = "Profile photo",
-                            modifier = Modifier
-                                .size(72.dp)
-                                .clip(CircleShape),
-                            contentScale = ContentScale.Crop,
-                        )
-                    } else {
-                        Box(
-                            modifier = Modifier
-                                .size(72.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Person,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(40.dp),
-                            )
-                        }
+                    BackendImage(
+                        model = photoModel,
+                        contentDescription = "Profile photo",
+                        modifier = Modifier.size(72.dp),
+                        shape = CircleShape,
+                        contentScale = ContentScale.Crop,
+                    ) {
+                        ProfilePhotoFallback()
                     }
                     Box(
                         modifier = Modifier
@@ -360,6 +344,23 @@ private fun ViewProfileContent(state: ProfileUiState, onEvent: (ProfileUiEvent) 
             errorMessage = state.deleteAccountError,
             onConfirm = { onEvent(ProfileUiEvent.ConfirmDeleteAccount) },
             onDismiss = { onEvent(ProfileUiEvent.DismissDeleteAccountDialog) },
+        )
+    }
+}
+
+@Composable
+private fun ProfilePhotoFallback() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = Icons.Default.Person,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(40.dp),
         )
     }
 }

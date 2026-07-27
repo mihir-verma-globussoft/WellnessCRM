@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.MedicalServices
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
@@ -45,8 +46,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.crm.enhance_wellness.core.ui.BackendImage
 import com.crm.enhance_wellness.core.ui.ErrorState
 import com.crm.enhance_wellness.core.ui.WellnessCard
 import com.crm.enhance_wellness.core.util.CurrencyUtil
@@ -183,7 +186,23 @@ private fun ProductCard(product: Product, isSelected: Boolean, onClick: () -> Un
 
 @Composable
 private fun ProductCardContent(product: Product, isSelected: Boolean) {
-    Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        BackendImage(
+            imageUrl = product.imageUrl,
+            contentDescription = product.name,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(96.dp),
+            shape = RoundedCornerShape(10.dp),
+            contentScale = ContentScale.Crop,
+        ) {
+            ProductImageFallback(product = product, isSelected = isSelected)
+        }
         Text(
             text = product.name,
             style = MaterialTheme.typography.titleSmall,
@@ -205,6 +224,37 @@ private fun ProductCardContent(product: Product, isSelected: Boolean) {
                 fontWeight = FontWeight.SemiBold,
                 color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
                         else MaterialTheme.colorScheme.primary,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ProductImageFallback(product: Product, isSelected: Boolean) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
+                else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f),
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (product.categoryName.isNullOrBlank()) {
+            Icon(
+                imageVector = Icons.Default.MedicalServices,
+                contentDescription = null,
+                tint = if (isSelected) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.size(34.dp),
+            )
+        } else {
+            Text(
+                text = product.categoryName.take(1).uppercase(),
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = if (isSelected) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.onPrimaryContainer,
             )
         }
     }

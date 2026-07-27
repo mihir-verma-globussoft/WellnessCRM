@@ -112,7 +112,10 @@ fun WellnessNavGraph(
     unreadNotificationCount: Int = 0,
 ) {
     LaunchedEffect(notificationIntent) {
-        notificationIntent?.let { navController.handleDeepLink(it) }
+        val intent = notificationIntent
+        if (intent?.action == Intent.ACTION_VIEW && intent.data != null) {
+            navController.handleDeepLink(intent)
+        }
     }
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()

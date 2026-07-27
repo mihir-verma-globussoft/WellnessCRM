@@ -1,5 +1,6 @@
 package com.crm.enhance_wellness.feature.booking.data.mapper
 
+import com.crm.enhance_wellness.core.util.BackendImageUrlResolver
 import com.crm.enhance_wellness.core.util.DateUtil
 import com.crm.enhance_wellness.feature.booking.data.local.entity.CachedVisit
 import com.crm.enhance_wellness.feature.booking.data.remote.dto.AppointmentDto
@@ -70,14 +71,22 @@ fun ProductDto.toDomain() = Product(
     description = description,
     price = price,
     discountedPrice = discountedPrice,
-    imageUrl = imageUrl,
+    imageUrl = BackendImageUrlResolver.resolveFirst(
+        imageUrl,
+        imageUrls,
+        image,
+        thumbnailUrl,
+        thumbnail,
+        photoUrl,
+        pictureUrl,
+    ),
     categoryName = categoryName,
 )
 
 fun ProductCategoryDto.toDomain() = ProductCategory(
     id = id,
     name = name,
-    imageUrl = imageUrl,
+    imageUrl = BackendImageUrlResolver.resolveFirst(imageUrl, image, thumbnailUrl, thumbnail, iconUrl),
     color = color,
 )
 

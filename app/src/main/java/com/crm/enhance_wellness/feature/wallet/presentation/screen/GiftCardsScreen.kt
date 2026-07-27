@@ -36,9 +36,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.crm.enhance_wellness.core.ui.BackendImage
 import com.crm.enhance_wellness.core.ui.EmptyState
 import com.crm.enhance_wellness.core.ui.ErrorState
 import com.crm.enhance_wellness.core.util.CurrencyUtil
@@ -74,7 +76,7 @@ fun GiftCardsScreen(
         Column(modifier = Modifier.fillMaxSize()) {
             Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
                 Text(
-                    text = "Dr. Haror's Wellness Gift Cards",
+                    text = "Dr. Enhance Wellness Gift Cards",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                 )
@@ -138,9 +140,28 @@ private fun GiftCardTile(card: GiftCard, color: Color, onBuy: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(MaterialTheme.shapes.large)
-            .background(brandGradient(color)),
+            .height(196.dp)
+            .clip(MaterialTheme.shapes.large),
     ) {
+        if (!card.imageUrl.isNullOrBlank()) {
+            BackendImage(
+                imageUrl = card.imageUrl,
+                contentDescription = card.name,
+                modifier = Modifier.fillMaxSize(),
+                shape = MaterialTheme.shapes.large,
+                contentScale = ContentScale.Crop,
+            ) {
+                GiftCardBackground(color = color)
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.34f)),
+            )
+        } else {
+            GiftCardBackground(color = color)
+        }
+
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -202,6 +223,15 @@ private fun GiftCardTile(card: GiftCard, color: Color, onBuy: () -> Unit) {
             }
         }
     }
+}
+
+@Composable
+private fun GiftCardBackground(color: Color) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(brandGradient(color)),
+    )
 }
 
 // Always use the brand jewel-tone palette (ignore the backend-supplied `color`,

@@ -27,6 +27,7 @@ data class GiftCard(
     val amount: Long,
     val price: Long,
     val color: String?,
+    val imageUrl: String?,
     val validityDays: Int,
     val currency: String,
     val expiresAt: String?,

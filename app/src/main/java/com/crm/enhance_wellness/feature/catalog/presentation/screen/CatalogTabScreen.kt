@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.ui.layout.ContentScale
-import coil.compose.AsyncImage
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -26,7 +25,9 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.MedicalServices
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -53,6 +54,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.crm.enhance_wellness.core.ui.BackendImage
 import com.crm.enhance_wellness.core.ui.EmptyState
 import com.crm.enhance_wellness.core.ui.ErrorState
 import com.crm.enhance_wellness.core.ui.WellnessCard
@@ -200,7 +202,19 @@ private fun ServiceCatalogContent(
 @Composable
 private fun ServiceCard(service: Service, onClick: () -> Unit) {
     WellnessCard(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
-        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            BackendImage(
+                imageUrl = service.imageUrl,
+                contentDescription = service.name,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(108.dp),
+                shape = RoundedCornerShape(10.dp),
+                contentScale = ContentScale.Crop,
+            ) {
+                ServiceImageFallback(service = service)
+            }
+
             Text(
                 text = service.name,
                 style = MaterialTheme.typography.titleSmall,
@@ -257,6 +271,19 @@ private fun ServiceDetailSheet(service: Service, onBook: () -> Unit, onDismiss: 
             .padding(horizontal = 20.dp)
             .padding(top = 8.dp, bottom = 28.dp),
     ) {
+        BackendImage(
+            imageUrl = service.imageUrl,
+            contentDescription = service.name,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(180.dp),
+            shape = RoundedCornerShape(12.dp),
+            contentScale = ContentScale.Crop,
+        ) {
+            ServiceImageFallback(service = service)
+        }
+        Spacer(Modifier.height(16.dp))
+
         // Category label
         if (service.categoryName != null) {
             Text(
@@ -467,29 +494,16 @@ private fun CategoryCard(category: ServiceCategory, onClick: () -> Unit = {}) {
                 contentAlignment = Alignment.Center,
             ) {
                 if (!category.imageUrl.isNullOrBlank()) {
-                    AsyncImage(
-                        model = category.imageUrl,
+                    BackendImage(
+                        imageUrl = category.imageUrl,
                         contentDescription = category.name,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize(),
-                    )
-                } else {
-                    val bgColor = category.color?.let {
-                        runCatching { Color(android.graphics.Color.parseColor(it)) }.getOrNull()
-                    } ?: MaterialTheme.colorScheme.primaryContainer
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(bgColor),
-                        contentAlignment = Alignment.Center,
                     ) {
-                        Text(
-                            text = category.name.take(1).uppercase(),
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
+                        CategoryImageFallback(category = category)
                     }
+                } else {
+                    CategoryImageFallback(category = category)
                 }
             }
 
@@ -518,6 +532,61 @@ private fun CategoryCard(category: ServiceCategory, onClick: () -> Unit = {}) {
                     },
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun ServiceImageFallback(service: Service) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f)),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (service.categoryName.isNullOrBlank()) {
+            Icon(
+                imageVector = Icons.Default.MedicalServices,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.size(38.dp),
+            )
+        } else {
+            Text(
+                text = service.categoryName.take(1).uppercase(),
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+            )
+        }
+    }
+}
+
+@Composable
+private fun CategoryImageFallback(category: ServiceCategory) {
+    val bgColor = category.color?.let {
+        runCatching { Color(android.graphics.Color.parseColor(it)) }.getOrNull()
+    } ?: MaterialTheme.colorScheme.primaryContainer
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(bgColor),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (category.name.isBlank()) {
+            Icon(
+                imageVector = Icons.Default.Category,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(32.dp),
+            )
+        } else {
+            Text(
+                text = category.name.take(1).uppercase(),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+            )
         }
     }
 }
