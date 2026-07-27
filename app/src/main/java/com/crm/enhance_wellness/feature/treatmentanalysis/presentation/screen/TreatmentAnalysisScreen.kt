@@ -3,6 +3,7 @@ package com.crm.enhance_wellness.feature.treatmentanalysis.presentation.screen
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -31,13 +32,17 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.FlipCameraAndroid
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -48,6 +53,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -267,54 +273,83 @@ private fun CameraCapturePanel(
     val imageCapture = remember { ImageCapture.Builder().setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY).build() }
     var cameraSelector by remember { mutableStateOf(CameraSelector.DEFAULT_BACK_CAMERA) }
 
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent(),
+    ) { uri: Uri? ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        val file = copyGalleryImageToCache(context, uri, prescriptionId, stage)
+        if (file != null) {
+            onCaptured(file)
+        } else {
+            onError("Unable to load selected image. Please try another photo.")
+        }
+    }
+
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        CameraPreview(
-            imageCapture = imageCapture,
-            cameraSelector = cameraSelector,
-            onBindError = { message ->
-                // Revert to back camera if the selected lens is unavailable.
-                cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-                onError(message)
-            },
-        )
-        Row(
+        Box(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            contentAlignment = Alignment.TopEnd,
         ) {
-            OutlinedButton(
-                onClick = {
-                    cameraSelector = if (cameraSelector == CameraSelector.DEFAULT_BACK_CAMERA) {
-                        CameraSelector.DEFAULT_FRONT_CAMERA
-                    } else {
-                        CameraSelector.DEFAULT_BACK_CAMERA
-                    }
+            CameraPreview(
+                imageCapture = imageCapture,
+                cameraSelector = cameraSelector,
+                onBindError = { message ->
+                    cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+                    onError(message)
                 },
-                enabled = enabled,
-                modifier = Modifier.weight(1f),
+            )
+            Surface(
+                shape = MaterialTheme.shapes.small,
+                color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.75f),
+                modifier = Modifier.padding(8.dp),
             ) {
-                Icon(Icons.Default.FlipCameraAndroid, contentDescription = null)
-                Spacer(Modifier.width(8.dp))
-                Text("Switch camera")
-            }
-            Button(
-                onClick = {
-                    captureImage(
-                        context = context,
-                        prescriptionId = prescriptionId,
-                        stage = stage,
-                        imageCapture = imageCapture,
-                        executor = executor,
-                        onCaptured = onCaptured,
-                        onError = onError,
+                IconButton(
+                    onClick = {
+                        cameraSelector = if (cameraSelector == CameraSelector.DEFAULT_BACK_CAMERA) {
+                            CameraSelector.DEFAULT_FRONT_CAMERA
+                        } else {
+                            CameraSelector.DEFAULT_BACK_CAMERA
+                        }
+                    },
+                    enabled = enabled,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.FlipCameraAndroid,
+                        contentDescription = "Switch camera",
+                        tint = MaterialTheme.colorScheme.onSurface,
                     )
-                },
-                enabled = enabled,
-                modifier = Modifier.weight(1f),
-            ) {
-                Icon(Icons.Default.CameraAlt, contentDescription = null)
-                Spacer(Modifier.width(8.dp))
-                Text(if (stage == CaptureStage.BEFORE) "Capture before photo" else "Capture after photo")
+                }
             }
+        }
+
+        Button(
+            onClick = {
+                captureImage(
+                    context = context,
+                    prescriptionId = prescriptionId,
+                    stage = stage,
+                    imageCapture = imageCapture,
+                    executor = executor,
+                    onCaptured = onCaptured,
+                    onError = onError,
+                )
+            },
+            enabled = enabled,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Icon(Icons.Default.CameraAlt, contentDescription = null)
+            Spacer(Modifier.width(8.dp))
+            Text(if (stage == CaptureStage.BEFORE) "Capture before photo" else "Capture after photo")
+        }
+
+        OutlinedButton(
+            onClick = { galleryLauncher.launch("image/*") },
+            enabled = enabled,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Icon(Icons.Default.PhotoLibrary, contentDescription = null)
+            Spacer(Modifier.width(8.dp))
+            Text("Choose from gallery")
         }
     }
 }
@@ -330,7 +365,7 @@ private fun CameraPreview(
     val previewView = remember {
         PreviewView(context).apply {
             scaleType = PreviewView.ScaleType.FIT_CENTER
-            implementationMode = PreviewView.ImplementationMode.PERFORMANCE
+            implementationMode = PreviewView.ImplementationMode.COMPATIBLE
         }
     }
 
@@ -365,12 +400,18 @@ private fun CameraPreview(
         }
     }
 
-    AndroidView(
-        factory = { previewView },
-        modifier = Modifier
-            .fillMaxWidth()
-            .aspectRatio(3f / 4f),
-    )
+    Card(
+        shape = MaterialTheme.shapes.medium,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        AndroidView(
+            factory = { previewView },
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(3f / 4f)
+                .clipToBounds(),
+        )
+    }
 }
 
 private fun captureImage(
@@ -404,6 +445,21 @@ private fun createCaptureFile(context: Context, prescriptionId: Int, stage: Capt
     val stageName = stage.name.lowercase()
     return File(dir, "prescription_${prescriptionId}_${stageName}_${System.currentTimeMillis()}.jpg")
 }
+
+private fun copyGalleryImageToCache(
+    context: Context,
+    uri: Uri,
+    prescriptionId: Int,
+    stage: CaptureStage,
+): File? = runCatching {
+    val file = createCaptureFile(context, prescriptionId, stage)
+    context.contentResolver.openInputStream(uri)?.use { input ->
+        file.outputStream().use { output ->
+            input.copyTo(output)
+        }
+    }
+    file.takeIf { it.length() > 0L }
+}.getOrNull()
 
 @Composable
 private fun ReviewPendingPanel() {
