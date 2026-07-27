@@ -20,6 +20,7 @@ import javax.inject.Inject
 
 sealed class PrescriptionsNavEvent {
     data class ToPdf(val prescriptionId: Int) : PrescriptionsNavEvent()
+    data class ToAnalysis(val prescriptionId: Int, val visitId: Int?) : PrescriptionsNavEvent()
     object Back : PrescriptionsNavEvent()
 }
 
@@ -54,6 +55,7 @@ class PrescriptionsViewModel @Inject constructor(
             PrescriptionsUiEvent.DismissPdfConfirm ->
                 _uiState.value = _uiState.value.copy(showPdfConfirm = false, prescriptionToOpen = null)
             is PrescriptionsUiEvent.ViewPdf -> viewModelScope.launch { _navEvent.send(PrescriptionsNavEvent.ToPdf(event.prescriptionId)) }
+            is PrescriptionsUiEvent.StartTreatmentAnalysis -> openTreatmentAnalysis(event.prescriptionId)
             is PrescriptionsUiEvent.ToggleReminder -> toggleReminder(event.prescription, event.enabled)
             PrescriptionsUiEvent.DismissReminderMessage ->
                 _uiState.value = _uiState.value.copy(reminderMessage = null)
@@ -111,6 +113,13 @@ class PrescriptionsViewModel @Inject constructor(
                 reminderMessage = result.message,
                 exactAlarmPermissionPromptNeeded = result.exactAlarmPermissionRequired,
             )
+        }
+    }
+
+    private fun openTreatmentAnalysis(prescriptionId: Int) {
+        val visitId = _uiState.value.prescriptions.firstOrNull { it.id == prescriptionId }?.visitId
+        viewModelScope.launch {
+            _navEvent.send(PrescriptionsNavEvent.ToAnalysis(prescriptionId, visitId))
         }
     }
 }

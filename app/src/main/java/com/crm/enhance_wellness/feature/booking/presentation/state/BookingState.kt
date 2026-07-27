@@ -58,6 +58,7 @@ data class BookAppointmentUiState(
     val selectedDoctorId: Int? = null,
     val selectedDate: Long? = null,
     val selectedTime: String? = null,
+    val availableTimeSlots: List<String> = emptyList(),
     val reason: String = "",
     val membershipId: Int? = null,
     val isBooking: Boolean = false,

@@ -24,51 +24,54 @@ class MedicationReminderScheduler @Inject constructor(
 
     fun schedule(reminder: PrescriptionReminderEntity): Boolean {
         val exactAllowed = canScheduleExactAlarms()
-        val usesAlarmClock = Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP
         cancel(reminder)
 
-        val drugs = parseReminderDrugs(reminder.drugsJson)
-        drugs.forEachIndexed { drugIndex, drug ->
-            val intervalMs = HOURS_IN_DAY_MS / drug.frequencyPerDay
-            val drugEndAt = reminder.startAt + drug.durationDays * HOURS_IN_DAY_MS
-            var triggerAt = reminder.startAt
-            var sequence = 0
+        return try {
+            val drugs = parseReminderDrugs(reminder.drugsJson)
+            drugs.forEachIndexed { drugIndex, drug ->
+                val intervalMs = HOURS_IN_DAY_MS / drug.frequencyPerDay
+                val drugEndAt = reminder.startAt + drug.durationDays * HOURS_IN_DAY_MS
+                var triggerAt = reminder.startAt
+                var sequence = 0
 
-            while (triggerAt < drugEndAt && triggerAt < reminder.endAt) {
-                if (triggerAt > System.currentTimeMillis()) {
-                    scheduleAlarm(
-                        triggerAt = triggerAt,
-                        pendingIntent = pendingIntentFor(
+                while (triggerAt < drugEndAt && triggerAt < reminder.endAt) {
+                    if (triggerAt > System.currentTimeMillis()) {
+                        scheduleAlarm(
+                            triggerAt = triggerAt,
+                            pendingIntent = pendingIntentFor(
+                                prescriptionId = reminder.prescriptionId,
+                                drugIndex = drugIndex,
+                                sequence = sequence,
+                                drug = drug,
+                                endAt = reminder.endAt,
+                            ),
                             prescriptionId = reminder.prescriptionId,
-                            drugIndex = drugIndex,
-                            sequence = sequence,
-                            drug = drug,
-                            endAt = reminder.endAt,
-                        ),
-                        prescriptionId = reminder.prescriptionId,
-                        exactAllowed = exactAllowed,
-                    )
+                            exactAllowed = exactAllowed,
+                        )
+                    }
+                    sequence += 1
+                    triggerAt += intervalMs
                 }
-                sequence += 1
-                triggerAt += intervalMs
             }
-        }
-        if (BuildConfig.DEBUG && drugs.isNotEmpty() && reminder.endAt > System.currentTimeMillis()) {
-            scheduleAlarm(
-                triggerAt = System.currentTimeMillis() + DEBUG_TEST_REMINDER_DELAY_MS,
-                pendingIntent = pendingIntentFor(
+            if (BuildConfig.DEBUG && drugs.isNotEmpty() && reminder.endAt > System.currentTimeMillis()) {
+                scheduleAlarm(
+                    triggerAt = System.currentTimeMillis() + DEBUG_TEST_REMINDER_DELAY_MS,
+                    pendingIntent = pendingIntentFor(
+                        prescriptionId = reminder.prescriptionId,
+                        drugIndex = DEBUG_TEST_DRUG_INDEX,
+                        sequence = DEBUG_TEST_SEQUENCE,
+                        drug = drugs.first(),
+                        endAt = reminder.endAt,
+                    ),
                     prescriptionId = reminder.prescriptionId,
-                    drugIndex = DEBUG_TEST_DRUG_INDEX,
-                    sequence = DEBUG_TEST_SEQUENCE,
-                    drug = drugs.first(),
-                    endAt = reminder.endAt,
-                ),
-                prescriptionId = reminder.prescriptionId,
-                exactAllowed = exactAllowed,
-            )
-        }
+                    exactAllowed = exactAllowed,
+                )
+            }
 
-        return usesAlarmClock || exactAllowed
+            exactAllowed
+        } catch (e: SecurityException) {
+            false
+        }
     }
 
     fun cancel(reminder: PrescriptionReminderEntity) {
@@ -114,6 +117,8 @@ class MedicationReminderScheduler @Inject constructor(
         exactAllowed: Boolean,
     ) {
         when {
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !exactAllowed ->
+                alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent)
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP ->
                 alarmManager.setAlarmClock(
                     AlarmManager.AlarmClockInfo(

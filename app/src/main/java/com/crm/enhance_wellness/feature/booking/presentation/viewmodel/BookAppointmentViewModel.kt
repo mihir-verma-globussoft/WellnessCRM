@@ -51,8 +51,34 @@ class BookAppointmentViewModel @Inject constructor(
             is BookAppointmentUiEvent.UpdateServiceSearch -> _uiState.value = _uiState.value.copy(serviceSearchQuery = event.query)
             is BookAppointmentUiEvent.SelectProduct -> _uiState.value = _uiState.value.copy(selectedProduct = event.product, error = null)
             is BookAppointmentUiEvent.SelectDoctor -> _uiState.value = _uiState.value.copy(selectedDoctorId = event.doctorId, error = null)
-            is BookAppointmentUiEvent.SelectDate -> _uiState.value = _uiState.value.copy(selectedDate = event.epochMs)
-            is BookAppointmentUiEvent.SelectTime -> _uiState.value = _uiState.value.copy(selectedTime = event.time)
+            is BookAppointmentUiEvent.SelectDate -> {
+                val normalizedDate = DateUtil.datePickerMillisToLocalMidnight(event.epochMs)
+                val slots = DateUtil.generateTimeSlots(
+                    normalizedDate,
+                    startHour = BUSINESS_HOURS_START,
+                    endHour = BUSINESS_HOURS_END,
+                    intervalMinutes = SLOT_INTERVAL_MINUTES,
+                )
+                _uiState.value = _uiState.value.copy(
+                    selectedDate = normalizedDate,
+                    availableTimeSlots = slots,
+                    selectedTime = null,
+                    error = null,
+                )
+            }
+            is BookAppointmentUiEvent.SelectTime -> {
+                val time = event.time
+                if (time in _uiState.value.availableTimeSlots &&
+                    DateUtil.isFutureDateTime(_uiState.value.selectedDate ?: 0L, time)
+                ) {
+                    _uiState.value = _uiState.value.copy(selectedTime = time, error = null)
+                } else {
+                    _uiState.value = _uiState.value.copy(
+                        selectedTime = null,
+                        error = "Selected time slot is no longer available",
+                    )
+                }
+            }
             is BookAppointmentUiEvent.EnterReason -> _uiState.value = _uiState.value.copy(reason = event.reason)
             is BookAppointmentUiEvent.SelectMembership -> _uiState.value = _uiState.value.copy(membershipId = event.membershipId)
             BookAppointmentUiEvent.NextStep -> nextStep()
@@ -115,10 +141,14 @@ class BookAppointmentViewModel @Inject constructor(
             }
             2 -> _uiState.value = s.copy(step = 3, error = null)
             3 -> {
-                if (s.selectedDate != null && s.selectedTime != null) {
-                    _uiState.value = s.copy(step = 4, error = null)
-                } else {
-                    _uiState.value = s.copy(error = "Please select a date and time")
+                val date = s.selectedDate
+                val time = s.selectedTime
+                when {
+                    date == null || time == null -> _uiState.value = s.copy(error = "Please select a date and time")
+                    date < DateUtil.startOfTodayUtcMillis() -> _uiState.value = s.copy(error = "Please select a future date")
+                    !DateUtil.isFutureDateTime(date, time) -> _uiState.value = s.copy(error = "Please select a future time slot")
+                    time !in s.availableTimeSlots -> _uiState.value = s.copy(error = "Selected time slot is no longer available")
+                    else -> _uiState.value = s.copy(step = 4, error = null)
                 }
             }
             else -> Unit
@@ -139,6 +169,20 @@ class BookAppointmentViewModel @Inject constructor(
         }
         val dateMs = s.selectedDate ?: return
         val time = s.selectedTime ?: return
+        when {
+            dateMs < DateUtil.startOfTodayUtcMillis() -> {
+                _uiState.value = s.copy(error = "Please select a future date")
+                return
+            }
+            !DateUtil.isFutureDateTime(dateMs, time) -> {
+                _uiState.value = s.copy(error = "Please select a future time slot")
+                return
+            }
+            time !in s.availableTimeSlots -> {
+                _uiState.value = s.copy(error = "Selected time slot is no longer available")
+                return
+            }
+        }
         viewModelScope.launch {
             _uiState.value = s.copy(isBooking = true, error = null)
             val result = bookAppointment(
@@ -158,5 +202,11 @@ class BookAppointmentViewModel @Inject constructor(
                 Result.Loading -> Unit
             }
         }
+    }
+
+    companion object {
+        const val BUSINESS_HOURS_START = 9
+        const val BUSINESS_HOURS_END = 18
+        const val SLOT_INTERVAL_MINUTES = 30
     }
 }

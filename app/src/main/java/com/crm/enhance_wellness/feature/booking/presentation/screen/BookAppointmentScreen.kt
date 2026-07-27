@@ -37,9 +37,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberDatePickerState
-import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -281,15 +279,13 @@ private fun Step2DoctorSelection(state: BookAppointmentUiState, onEvent: (BookAp
 @Composable
 private fun Step3DateTime(state: BookAppointmentUiState, onEvent: (BookAppointmentUiEvent) -> Unit) {
     var showDatePicker by remember { mutableStateOf(false) }
-    var showTimePicker by remember { mutableStateOf(false) }
 
     val datePickerState = rememberDatePickerState(
         initialSelectedDateMillis = state.selectedDate ?: System.currentTimeMillis(),
         selectableDates = object : androidx.compose.material3.SelectableDates {
-            override fun isSelectableDate(utcTimeMillis: Long) = utcTimeMillis >= System.currentTimeMillis() - 86_400_000L
+            override fun isSelectableDate(utcTimeMillis: Long) = DateUtil.isTodayOrFutureDate(utcTimeMillis)
         },
     )
-    val timePickerState = rememberTimePickerState(initialHour = 9, initialMinute = 0, is24Hour = true)
 
     Column(
         modifier = Modifier
@@ -313,18 +309,42 @@ private fun Step3DateTime(state: BookAppointmentUiState, onEvent: (BookAppointme
             )
         }
 
-        // Time picker button
-        OutlinedButton(
-            onClick = { showTimePicker = true },
-            modifier = Modifier.fillMaxWidth(),
-            shape = MaterialTheme.shapes.medium,
-        ) {
-            Icon(Icons.Default.Schedule, contentDescription = null, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.width(8.dp))
-            Text(
-                text = state.selectedTime ?: "Select appointment time",
-                style = MaterialTheme.typography.bodyMedium,
-            )
+        // Available time slots
+        if (state.selectedDate != null) {
+            Text("Available slots", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+            if (state.availableTimeSlots.isEmpty()) {
+                Text(
+                    "No slots available for this date. Please select another date.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(minSize = 86.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    items(state.availableTimeSlots) { slot ->
+                        val selected = state.selectedTime == slot
+                        OutlinedButton(
+                            onClick = { onEvent(BookAppointmentUiEvent.SelectTime(slot)) },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = MaterialTheme.shapes.medium,
+                            colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                                containerColor = if (selected) MaterialTheme.colorScheme.primaryContainer
+                                else MaterialTheme.colorScheme.surface,
+                            ),
+                        ) {
+                            Text(
+                                slot,
+                                color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer
+                                else MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
+                    }
+                }
+            }
         }
 
         if (state.error != null) {
@@ -356,29 +376,6 @@ private fun Step3DateTime(state: BookAppointmentUiState, onEvent: (BookAppointme
         ) {
             DatePicker(state = datePickerState, showModeToggle = false)
         }
-    }
-
-    if (showTimePicker) {
-        AlertDialog(
-            onDismissRequest = { showTimePicker = false },
-            title = { Text("Select time", style = MaterialTheme.typography.titleMedium) },
-            text = {
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth()) {
-                    TimePicker(state = timePickerState)
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    val h = timePickerState.hour.toString().padStart(2, '0')
-                    val m = timePickerState.minute.toString().padStart(2, '0')
-                    onEvent(BookAppointmentUiEvent.SelectTime("$h:$m"))
-                    showTimePicker = false
-                }) { Text("OK") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showTimePicker = false }) { Text("Cancel") }
-            },
-        )
     }
 }
 

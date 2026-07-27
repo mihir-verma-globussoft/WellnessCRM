@@ -48,11 +48,13 @@ class MainActivity : ComponentActivity() {
             val isDarkTheme by mainVm.isDarkTheme.collectAsStateWithLifecycle()
             val clinicName by mainVm.clinicName.collectAsStateWithLifecycle()
             val unreadCount by mainVm.unreadNotificationCount.collectAsStateWithLifecycle()
+            val isAuthenticated by mainVm.isAuthenticated.collectAsStateWithLifecycle()
 
             WellnessTheme(darkTheme = isDarkTheme) {
                 WellnessNavGraph(
                     modifier = Modifier.fillMaxSize(),
                     notificationIntent = notificationIntent,
+                    isAuthenticated = isAuthenticated,
                     isDarkTheme = isDarkTheme,
                     onToggleDarkTheme = mainVm::toggleDarkTheme,
                     clinicName = clinicName,

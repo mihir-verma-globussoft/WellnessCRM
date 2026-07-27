@@ -51,4 +51,19 @@ class MedicationReminderModelsTest {
         assertEquals(2, medication?.frequencyPerDay)
         assertEquals(10, medication?.durationDays)
     }
+
+    @Test
+    fun `toScheduledMedication defaults missing frequency and duration to schedule reminders`() {
+        val medication = Drug(
+            name = "Levocetirizine 5mg",
+            dosage = "1",
+            frequency = null,
+            duration = "7",
+            instructions = null,
+        ).toScheduledMedication()
+
+        assertNotNull(medication)
+        assertEquals(1, medication?.frequencyPerDay)
+        assertEquals(7, medication?.durationDays)
+    }
 }

@@ -33,7 +33,6 @@ import com.crm.enhance_wellness.feature.profile.data.remote.dto.DsarExportRespon
 import com.crm.enhance_wellness.feature.profile.data.remote.dto.ProfileDto
 import com.crm.enhance_wellness.feature.profile.data.remote.dto.UpdateAuthProfileDto
 import com.crm.enhance_wellness.feature.notifications.data.remote.dto.PortalNotificationsResponseDto
-
 import com.crm.enhance_wellness.feature.finance.data.remote.dto.PaymentConfigDto
 import com.crm.enhance_wellness.feature.finance.data.remote.dto.PaymentDto
 import com.crm.enhance_wellness.feature.wallet.data.remote.dto.GiftCardConfirmDto
@@ -44,6 +43,7 @@ import com.crm.enhance_wellness.feature.wallet.data.remote.dto.GiftCardStorefron
 import com.crm.enhance_wellness.feature.wallet.data.remote.dto.MyTransactionsResponseDto
 import com.crm.enhance_wellness.feature.wallet.data.remote.dto.PatientWalletResponseDto
 import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.Body
@@ -189,6 +189,14 @@ interface WellnessApiService {
         @Path("id") prescriptionId: Int,
     ): Response<ResponseBody>
 
+    @Multipart
+    @POST("visits/{visitId}/photos")
+    suspend fun uploadVisitTreatmentPhoto(
+        @Path("visitId") visitId: Int,
+        @Part photos: MultipartBody.Part,
+        @Part("kind") kind: RequestBody,
+    ): Response<ResponseBody>
+
     // ── Treatment Plans (Phase 2 UI, data layer ready) ───────────────────────
     // Uses patient-row ID from EncryptedPrefsManager.getPatientId().
     @GET("patients/{patientId}/treatment-plans")
@@ -268,8 +276,4 @@ interface WellnessApiService {
     @GET("/api/payments/config")
     suspend fun getPaymentConfig(): Response<PaymentConfigDto>
 
-    @POST("/api/payments/{id}/refund")
-    suspend fun refundPayment(
-        @Path("id") paymentId: String,
-    ): Response<PaymentDto>
 }

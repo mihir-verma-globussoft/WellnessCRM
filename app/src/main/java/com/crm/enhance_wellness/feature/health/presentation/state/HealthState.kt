@@ -23,6 +23,7 @@ sealed class PrescriptionsUiEvent {
     object ConfirmViewPdf : PrescriptionsUiEvent()
     object DismissPdfConfirm : PrescriptionsUiEvent()
     data class ViewPdf(val prescriptionId: Int) : PrescriptionsUiEvent()
+    data class StartTreatmentAnalysis(val prescriptionId: Int) : PrescriptionsUiEvent()
     data class ToggleReminder(val prescription: Prescription, val enabled: Boolean) : PrescriptionsUiEvent()
     object DismissReminderMessage : PrescriptionsUiEvent()
     object ExactAlarmPermissionPromptShown : PrescriptionsUiEvent()

@@ -115,6 +115,18 @@ class PrescriptionsViewModelTest {
     }
 
     @Test
+    fun `StartTreatmentAnalysis event emits ToAnalysis nav event with prescription and visit id`() = runTest {
+        coEvery { getPrescriptionsUseCase() } returns Result.Success(listOf(fakePrescription))
+        vm = PrescriptionsViewModel(getPrescriptionsUseCase, getPermissionsUseCase, reminderRepository)
+
+        vm.navEvent.test {
+            vm.onEvent(PrescriptionsUiEvent.StartTreatmentAnalysis(prescriptionId = 1))
+            assertEquals(PrescriptionsNavEvent.ToAnalysis(prescriptionId = 1, visitId = 10), awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
     fun `NavigateBack event emits Back nav event`() = runTest {
         coEvery { getPrescriptionsUseCase() } returns Result.Success(emptyList())
         vm = PrescriptionsViewModel(getPrescriptionsUseCase, getPermissionsUseCase, reminderRepository)

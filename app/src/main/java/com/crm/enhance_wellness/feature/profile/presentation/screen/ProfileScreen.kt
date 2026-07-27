@@ -46,6 +46,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -262,7 +263,7 @@ private fun ViewProfileContent(state: ProfileUiState, onEvent: (ProfileUiEvent) 
         }
 
         // ── Change password card ────────────────────────────────────────────
-        ChangePasswordCard()
+        ChangePasswordCard(state = state, onEvent = onEvent)
 
         // ── Notification settings ───────────────────────────────────────────
         WellnessCard(
@@ -440,15 +441,27 @@ private fun DeleteAccountDialog(
 }
 
 @Composable
-private fun ChangePasswordCard() {
+private fun ChangePasswordCard(
+    state: ProfileUiState,
+    onEvent: (ProfileUiEvent) -> Unit,
+) {
     val context = LocalContext.current
-    var currentPw by remember { mutableStateOf("") }
-    var newPw by remember { mutableStateOf("") }
-    var confirmPw by remember { mutableStateOf("") }
     var showCurrent by remember { mutableStateOf(false) }
     var showNew by remember { mutableStateOf(false) }
     var showConfirm by remember { mutableStateOf(false) }
-    var error by remember { mutableStateOf<String?>(null) }
+    var localError by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(state.saveSuccess) {
+        if (state.saveSuccess) {
+            localError = null
+            Toast.makeText(context, "Password updated successfully", Toast.LENGTH_SHORT).show()
+            onEvent(ProfileUiEvent.SaveSuccessAcknowledged)
+        }
+    }
+
+    LaunchedEffect(state.saveError) {
+        state.saveError?.let { Toast.makeText(context, it, Toast.LENGTH_LONG).show() }
+    }
 
     WellnessCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -456,8 +469,8 @@ private fun ChangePasswordCard() {
             HorizontalDivider()
 
             OutlinedTextField(
-                value = currentPw,
-                onValueChange = { currentPw = it; error = null },
+                value = state.currentPassword,
+                onValueChange = { onEvent(ProfileUiEvent.EditCurrentPassword(it)); localError = null },
                 label = { Text("Current Password") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
@@ -473,8 +486,8 @@ private fun ChangePasswordCard() {
             )
 
             OutlinedTextField(
-                value = newPw,
-                onValueChange = { newPw = it; error = null },
+                value = state.newPassword,
+                onValueChange = { onEvent(ProfileUiEvent.EditNewPassword(it)); localError = null },
                 label = { Text("New Password") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
@@ -490,8 +503,8 @@ private fun ChangePasswordCard() {
             )
 
             OutlinedTextField(
-                value = confirmPw,
-                onValueChange = { confirmPw = it; error = null },
+                value = state.confirmPassword,
+                onValueChange = { onEvent(ProfileUiEvent.EditConfirmPassword(it)); localError = null },
                 label = { Text("Confirm New Password") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
@@ -506,9 +519,10 @@ private fun ChangePasswordCard() {
                 },
             )
 
+            val error = localError ?: state.saveError
             if (error != null) {
                 Text(
-                    text = error!!,
+                    text = error,
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall,
                 )
@@ -516,20 +530,23 @@ private fun ChangePasswordCard() {
 
             Button(
                 onClick = {
-                    when {
-                        currentPw.isBlank() -> error = "Enter your current password"
-                        newPw.length < 6 -> error = "New password must be at least 6 characters"
-                        newPw != confirmPw -> error = "Passwords do not match"
-                        else -> {
-                            currentPw = ""; newPw = ""; confirmPw = ""; error = null
-                            Toast.makeText(context, "Password updated successfully", Toast.LENGTH_SHORT).show()
-                        }
+                    localError = when {
+                        state.currentPassword.isBlank() -> "Enter your current password"
+                        state.newPassword.length < 6 -> "New password must be at least 6 characters"
+                        state.newPassword != state.confirmPassword -> "Passwords do not match"
+                        else -> null
                     }
+                    if (localError == null) onEvent(ProfileUiEvent.SaveChanges)
                 },
+                enabled = !state.isSaving,
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.extraLarge,
             ) {
-                Text("🔑  Change Password")
+                if (state.isSaving) {
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                } else {
+                    Text("🔑  Change Password")
+                }
             }
         }
     }
@@ -587,6 +604,14 @@ private fun EditProfileContent(state: ProfileUiState, onEvent: (ProfileUiEvent) 
             value = state.newPassword,
             onValueChange = { onEvent(ProfileUiEvent.EditNewPassword(it)) },
             label = { Text("New password") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            visualTransformation = PasswordVisualTransformation(),
+        )
+        OutlinedTextField(
+            value = state.confirmPassword,
+            onValueChange = { onEvent(ProfileUiEvent.EditConfirmPassword(it)) },
+            label = { Text("Confirm new password") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             visualTransformation = PasswordVisualTransformation(),

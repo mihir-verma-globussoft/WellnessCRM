@@ -2,12 +2,10 @@ package com.crm.enhance_wellness.core.navigation
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.NotificationsNone
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -29,8 +27,6 @@ fun WellnessTopAppBar(
     onToggleDarkTheme: () -> Unit,
     onNotificationsClick: () -> Unit,
     onBack: (() -> Unit)? = null,
-    onSearchClick: (() -> Unit)? = null,
-    isSearchActive: Boolean = false,
 ) {
     TopAppBar(
         title = {
@@ -51,14 +47,6 @@ fun WellnessTopAppBar(
             }
         },
         actions = {
-            if (onSearchClick != null) {
-                IconButton(onClick = onSearchClick) {
-                    Icon(
-                        imageVector = if (isSearchActive) Icons.Default.Close else Icons.Default.Search,
-                        contentDescription = if (isSearchActive) "Close search" else "Search",
-                    )
-                }
-            }
             IconButton(onClick = onToggleDarkTheme) {
                 Icon(
                     imageVector = if (isDarkTheme) Icons.Filled.LightMode else Icons.Filled.DarkMode,

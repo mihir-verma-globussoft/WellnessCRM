@@ -14,18 +14,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -161,37 +157,6 @@ private fun PaymentsContent(
         PaymentActionSheet(
             payment = payment,
             onDismiss = { onEvent(FinanceUiEvent.DismissPaymentSheet) },
-            onRefund = { onEvent(FinanceUiEvent.RequestRefund(payment)) },
-        )
-    }
-
-    state.showRefundConfirmFor?.let { payment ->
-        AlertDialog(
-            onDismissRequest = { onEvent(FinanceUiEvent.DismissRefundConfirm) },
-            title = { Text("Confirm Refund") },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("Refund ${CurrencyUtil.formatPaise(payment.amount, payment.currency)}?")
-                    Text("This action cannot be undone.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    if (state.refundError != null) {
-                        Text(state.refundError, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
-                    }
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = { onEvent(FinanceUiEvent.ConfirmRefund) },
-                    enabled = !state.isRefunding,
-                ) {
-                    if (state.isRefunding) CircularProgressIndicator(modifier = Modifier.width(20.dp).height(20.dp), strokeWidth = 2.dp)
-                    else Text("Refund")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { onEvent(FinanceUiEvent.DismissRefundConfirm) }) {
-                    Text("Cancel")
-                }
-            },
         )
     }
 }
@@ -201,7 +166,6 @@ private fun PaymentsContent(
 private fun PaymentActionSheet(
     payment: Payment,
     onDismiss: () -> Unit,
-    onRefund: () -> Unit,
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
@@ -224,16 +188,6 @@ private fun PaymentActionSheet(
             DetailRow("Date", DateUtil.toDisplayDate(payment.createdAt))
             if (!payment.gateway.isNullOrBlank()) DetailRow("Gateway", payment.gateway)
             DetailRow("ID", payment.id.toString())
-            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
-            if (!payment.status.equals("refunded", ignoreCase = true)) {
-                OutlinedButton(
-                    onClick = onRefund,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.extraLarge,
-                ) {
-                    Text("Request Refund", color = MaterialTheme.colorScheme.error)
-                }
-            }
         }
     }
 }

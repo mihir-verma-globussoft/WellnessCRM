@@ -27,7 +27,6 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -36,7 +35,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.SuggestionChip
@@ -131,14 +129,10 @@ private fun ServiceCatalogContent(
     state: CatalogUiState,
     onEvent: (CatalogUiEvent) -> Unit,
 ) {
-    val filteredServices = remember(state.services, state.searchQuery, state.selectedCategoryId) {
+    val filteredServices = remember(state.services, state.selectedCategoryId) {
         state.services.filter { service ->
-            val matchesSearch = state.searchQuery.isBlank() ||
-                service.name.contains(state.searchQuery, ignoreCase = true) ||
-                service.description?.contains(state.searchQuery, ignoreCase = true) == true
-            val matchesCategory = state.selectedCategoryId == null ||
+            state.selectedCategoryId == null ||
                 state.categories.find { it.id == state.selectedCategoryId }?.name == service.categoryName
-            matchesSearch && matchesCategory
         }
     }
 
@@ -148,18 +142,6 @@ private fun ServiceCatalogContent(
         modifier = Modifier.fillMaxSize(),
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            OutlinedTextField(
-                value = state.searchQuery,
-                onValueChange = { onEvent(CatalogUiEvent.UpdateSearch(it)) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                placeholder = { Text("Search services…") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                singleLine = true,
-                shape = RoundedCornerShape(12.dp),
-            )
-
             if (state.selectedCategoryId != null) {
                 val activeName = state.categories.find { it.id == state.selectedCategoryId }?.name
                 if (activeName != null) {
@@ -430,57 +412,36 @@ private fun ServiceCategoriesContent(
     state: CatalogUiState,
     onEvent: (CatalogUiEvent) -> Unit,
 ) {
-    val filteredCategories = remember(state.categories, state.searchQuery) {
-        state.categories.filter { category ->
-            state.searchQuery.isBlank() ||
-                category.name.contains(state.searchQuery, ignoreCase = true)
-        }
-    }
-
     PullToRefreshBox(
         isRefreshing = state.isLoading,
         onRefresh = { onEvent(CatalogUiEvent.LoadCategories) },
         modifier = Modifier.fillMaxSize(),
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            OutlinedTextField(
-                value = state.searchQuery,
-                onValueChange = { onEvent(CatalogUiEvent.UpdateSearch(it)) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                placeholder = { Text("Search categories…") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                singleLine = true,
-                shape = RoundedCornerShape(12.dp),
-            )
+        when {
+            state.error != null -> Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                ErrorState(message = state.error, onRetry = { onEvent(CatalogUiEvent.LoadCategories) })
+            }
 
-            when {
-                state.error != null -> Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    ErrorState(message = state.error, onRetry = { onEvent(CatalogUiEvent.LoadCategories) })
-                }
+            state.categories.isEmpty() && !state.isLoading -> Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                EmptyState(message = "No categories found.")
+            }
 
-                filteredCategories.isEmpty() && !state.isLoading -> Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    EmptyState(message = "No categories found.")
-                }
-
-                else -> LazyColumn(
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                    modifier = Modifier.fillMaxSize(),
-                ) {
-                    items(filteredCategories) { category ->
-                        CategoryCard(
-                            category = category,
-                            onClick = { onEvent(CatalogUiEvent.SelectCategory(category.id)) },
-                        )
-                    }
+            else -> LazyColumn(
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                items(state.categories) { category ->
+                    CategoryCard(
+                        category = category,
+                        onClick = { onEvent(CatalogUiEvent.SelectCategory(category.id)) },
+                    )
                 }
             }
         }

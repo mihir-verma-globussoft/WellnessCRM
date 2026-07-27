@@ -3,6 +3,7 @@ package com.crm.enhance_wellness.feature.booking.domain.usecase
 import com.crm.enhance_wellness.core.util.Result
 import com.crm.enhance_wellness.feature.booking.domain.model.Appointment
 import com.crm.enhance_wellness.feature.booking.domain.repository.AppointmentRepository
+import org.json.JSONObject
 import retrofit2.HttpException
 import java.io.IOException
 import javax.inject.Inject
@@ -31,17 +32,18 @@ class BookAppointmentUseCase @Inject constructor(
             )
         )
     } catch (e: HttpException) {
+        val rawBody = runCatching { e.response()?.errorBody()?.string() }.getOrNull() ?: ""
+        val backendMessage = runCatching { JSONObject(rawBody).getString("error") }.getOrNull()
         when (e.code()) {
             400 -> {
-                val body = runCatching { e.response()?.errorBody()?.string() }.getOrNull() ?: ""
-                val msg = when {
-                    "INVALID_DATE" in body -> "Invalid appointment date. Please try again."
+                val msg = backendMessage ?: when {
+                    "INVALID_DATE" in rawBody -> "Invalid appointment date. Please try again."
                     else -> "Please fill in all required fields"
                 }
                 Result.Error("MISSING_FIELDS", msg, 400)
             }
-            409 -> Result.Error("DOCTOR_UNAVAILABLE", "This slot is no longer available", 409)
-            else -> Result.Error("HTTP_${e.code()}", e.message() ?: "Server error", e.code())
+            409 -> Result.Error("DOCTOR_UNAVAILABLE", backendMessage ?: "This slot is no longer available", 409)
+            else -> Result.Error("HTTP_${e.code()}", backendMessage ?: e.message() ?: "Server error", e.code())
         }
     } catch (e: IOException) {
         Result.Error("NETWORK_ERROR", "No internet connection. Please try again.")

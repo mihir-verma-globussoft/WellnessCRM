@@ -13,8 +13,8 @@ data class ScheduledMedication(
 )
 
 fun Drug.toScheduledMedication(): ScheduledMedication? {
-    val frequency = frequency?.toFrequencyPerDay() ?: return null
-    val duration = duration?.toDurationDays() ?: return null
+    val frequency = frequency?.toFrequencyPerDay() ?: 1
+    val duration = duration?.toDurationDays() ?: 7
     if (name.isBlank() || frequency <= 0 || duration <= 0) return null
     return ScheduledMedication(
         name = name,

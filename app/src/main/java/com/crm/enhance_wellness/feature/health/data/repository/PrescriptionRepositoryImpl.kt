@@ -1,6 +1,7 @@
 package com.crm.enhance_wellness.feature.health.data.repository
 
 import com.crm.enhance_wellness.core.network.WellnessApiService
+import com.crm.enhance_wellness.feature.health.data.local.entity.CachedPrescription
 import com.crm.enhance_wellness.feature.health.data.local.dao.PrescriptionDao
 import com.crm.enhance_wellness.feature.health.data.mapper.toDomain
 import com.crm.enhance_wellness.feature.health.data.mapper.toEntity
@@ -19,7 +20,8 @@ class PrescriptionRepositoryImpl @Inject constructor(
     override suspend fun getPrescriptions(): List<Prescription> {
         val response = api.getPrescriptions()
         if (!response.isSuccessful) throw HttpException(response)
-        val prescriptions = response.body()!!.map { it.toDomain() }
+        val body = response.body() ?: throw HttpException(response)
+        val prescriptions = body.map { it.toDomain() }
         dao.insertAll(prescriptions.map { it.toEntity() })
         return prescriptions
     }
@@ -30,13 +32,27 @@ class PrescriptionRepositoryImpl @Inject constructor(
     override suspend fun getPrescriptionPdf(prescriptionId: Int): ByteArray {
         val response = api.getPrescriptionPdf(prescriptionId)
         if (!response.isSuccessful) throw HttpException(response)
-        return response.body()!!.bytes()
+        return response.body()?.bytes() ?: throw HttpException(response)
     }
 
     override suspend fun savePdfToCache(prescriptionId: Int, pdfBytes: ByteArray) {
         val existing = dao.getById(prescriptionId)
         if (existing != null) {
             dao.insert(existing.copy(pdfBytes = pdfBytes, pdfCachedAt = System.currentTimeMillis()))
+        } else {
+            dao.insert(
+                CachedPrescription(
+                    id = prescriptionId,
+                    visitId = null,
+                    visitDate = 0L,
+                    doctorName = null,
+                    serviceName = null,
+                    drugCount = 0,
+                    pdfBytes = pdfBytes,
+                    pdfCachedAt = System.currentTimeMillis(),
+                    cachedAt = System.currentTimeMillis(),
+                )
+            )
         }
     }
 

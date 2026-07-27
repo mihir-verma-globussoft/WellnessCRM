@@ -24,8 +24,9 @@ fun PrescriptionDto.toDomain() = Prescription(
     drugs = parseDrugsJson(drugs),
 )
 
-internal fun parseDrugsJson(json: String): List<Drug> = runCatching {
-    val trimmed = json.trim()
+internal fun parseDrugsJson(json: String?): List<Drug> = runCatching {
+    val trimmed = json?.trim().orEmpty()
+    if (trimmed.isBlank() || trimmed.equals("null", ignoreCase = true)) return@runCatching emptyList()
     when {
         trimmed.startsWith("[") -> JSONArray(trimmed).toDrugList()
         trimmed.startsWith("{") -> JSONObject(trimmed).toDrugList()
@@ -69,6 +70,12 @@ private fun JSONObject.toDrugOrNull(): Drug? {
         "perDay",
         "noOfTimes",
         "numberOfTimes",
+    ) ?: nestedDrug?.firstString(
+        "frequency",
+        "frequencyPerDay",
+        "dailyFrequency",
+        "timesPerDay",
+        "times",
     )
     val duration = firstString(
         "duration",
@@ -77,16 +84,30 @@ private fun JSONObject.toDrugOrNull(): Drug? {
         "noOfDays",
         "numberOfDays",
         "courseDuration",
-    )
+    ) ?: nestedDrug?.firstString("duration", "durationDays", "days", "noOfDays")
 
     if (name.isNullOrBlank()) return null
     return Drug(
         name = name,
-        dosage = firstString("dosage", "dose", "dosageValue", "quantity", "strength"),
+        dosage = firstString(
+            "dosage",
+            "dose",
+            "dosageValue",
+            "quantity",
+            "strength",
+        ) ?: nestedDrug?.firstString("dosage", "dose", "dosageValue", "quantity", "strength")
+            ?: strengthString(this) ?: nestedDrug?.let(::strengthString),
         frequency = frequency,
         duration = duration,
-        instructions = firstString("instructions", "instruction", "notes", "remarks"),
+        instructions = firstString("instructions", "instruction", "notes", "remarks")
+            ?: nestedDrug?.firstString("instructions", "instruction", "notes", "remarks"),
     )
+}
+
+private fun strengthString(obj: JSONObject): String? {
+    val value = obj.firstString("strengthValue", "strength", "strengthAmount") ?: return null
+    val unit = obj.firstString("strengthUnit", "unit") ?: return value
+    return "$value $unit"
 }
 
 private fun JSONObject.firstString(vararg keys: String): String? =

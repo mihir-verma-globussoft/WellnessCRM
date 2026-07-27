@@ -50,6 +50,7 @@ class ProfileRepositoryImpl @Inject constructor(
                 email = email,
                 currentPassword = currentPassword,
                 newPassword = newPassword,
+                password = newPassword,
             )
         )
         if (!response.isSuccessful) throw HttpException(response)

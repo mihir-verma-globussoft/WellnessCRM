@@ -24,6 +24,8 @@ import com.crm.enhance_wellness.feature.notifications.data.repository.Notificati
 import com.crm.enhance_wellness.feature.notifications.domain.repository.NotificationRepository
 import com.crm.enhance_wellness.feature.profile.data.repository.ProfileRepositoryImpl
 import com.crm.enhance_wellness.feature.profile.domain.repository.ProfileRepository
+import com.crm.enhance_wellness.feature.treatmentanalysis.data.repository.TreatmentAnalysisRepositoryImpl
+import com.crm.enhance_wellness.feature.treatmentanalysis.domain.repository.TreatmentAnalysisRepository
 import com.crm.enhance_wellness.feature.wallet.data.repository.GiftCardRepositoryImpl
 import com.crm.enhance_wellness.feature.wallet.data.repository.WalletRepositoryImpl
 import com.crm.enhance_wellness.feature.wallet.domain.repository.GiftCardRepository
@@ -79,4 +81,9 @@ abstract class RepositoryModule {
 
     @Binds @Singleton
     abstract fun bindFinanceRepository(impl: FinanceRepositoryImpl): FinanceRepository
+
+    @Binds @Singleton
+    abstract fun bindTreatmentAnalysisRepository(
+        impl: TreatmentAnalysisRepositoryImpl,
+    ): TreatmentAnalysisRepository
 }

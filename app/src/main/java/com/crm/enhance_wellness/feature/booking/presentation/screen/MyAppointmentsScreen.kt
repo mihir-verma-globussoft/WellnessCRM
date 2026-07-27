@@ -18,6 +18,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarToday
@@ -38,7 +41,6 @@ import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.rememberTimePickerState
@@ -249,15 +251,20 @@ fun MyAppointmentsScreen(
         var selectedDate by remember { mutableStateOf<String?>(null) }
         var selectedTime by remember { mutableStateOf<String?>(null) }
         var showDatePicker by remember { mutableStateOf(false) }
-        var showTimePicker by remember { mutableStateOf(false) }
+        var localError by remember { mutableStateOf<String?>(null) }
 
         val datePickerState = rememberDatePickerState(
             initialSelectedDateMillis = System.currentTimeMillis(),
             selectableDates = object : androidx.compose.material3.SelectableDates {
-                override fun isSelectableDate(utcTimeMillis: Long) = utcTimeMillis >= System.currentTimeMillis() - 86_400_000L
+                override fun isSelectableDate(utcTimeMillis: Long) = DateUtil.isTodayOrFutureDate(utcTimeMillis)
             },
         )
-        val timePickerState = rememberTimePickerState(initialHour = 9, initialMinute = 0, is24Hour = true)
+
+        val availableSlots = remember(selectedDate) {
+            selectedDate?.let { DateUtil.apiDateToEpochMs(it) }?.let { epochMs ->
+                DateUtil.generateTimeSlots(DateUtil.datePickerMillisToLocalMidnight(epochMs))
+            } ?: emptyList()
+        }
 
         ModalBottomSheet(
             onDismissRequest = { onEvent(MyAppointmentsUiEvent.DismissRescheduleSheet) },
@@ -282,19 +289,47 @@ fun MyAppointmentsScreen(
                     Text(selectedDate ?: "Select date", style = MaterialTheme.typography.bodyMedium)
                 }
 
-                OutlinedButton(
-                    onClick = { showTimePicker = true },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.medium,
-                ) {
-                    Icon(Icons.Default.Schedule, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text(selectedTime ?: "Select time", style = MaterialTheme.typography.bodyMedium)
+                if (selectedDate != null) {
+                    Text("Available slots", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+                    if (availableSlots.isEmpty()) {
+                        Text(
+                            "No slots available for this date. Please select another date.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    } else {
+                        LazyVerticalGrid(
+                            columns = GridCells.Adaptive(minSize = 86.dp),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            items(availableSlots) { slot ->
+                                val selected = selectedTime == slot
+                                OutlinedButton(
+                                    onClick = { selectedTime = slot; localError = null },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = MaterialTheme.shapes.medium,
+                                    colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                                        containerColor = if (selected) MaterialTheme.colorScheme.primaryContainer
+                                        else MaterialTheme.colorScheme.surface,
+                                    ),
+                                ) {
+                                    Text(
+                                        slot,
+                                        color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer
+                                        else MaterialTheme.colorScheme.onSurface,
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
 
-                if (state.rescheduleError != null) {
+                val error = localError ?: state.rescheduleError
+                if (error != null) {
                     Text(
-                        text = state.rescheduleError,
+                        text = error,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error,
                     )
@@ -304,7 +339,16 @@ fun MyAppointmentsScreen(
                     onClick = {
                         val d = selectedDate ?: return@Button
                         val t = selectedTime ?: return@Button
-                        onEvent(MyAppointmentsUiEvent.ConfirmReschedule(d, t))
+                        val epochMs = DateUtil.datePickerMillisToLocalMidnight(DateUtil.apiDateToEpochMs(d))
+                        localError = when {
+                            epochMs < DateUtil.startOfTodayUtcMillis() -> "Please select a future date"
+                            !DateUtil.isFutureDateTime(epochMs, t) -> "Please select a future time slot"
+                            t !in availableSlots -> "Selected time slot is no longer available"
+                            else -> null
+                        }
+                        if (localError == null) {
+                            onEvent(MyAppointmentsUiEvent.ConfirmReschedule(d, t))
+                        }
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -329,9 +373,9 @@ fun MyAppointmentsScreen(
                 confirmButton = {
                     TextButton(onClick = {
                         datePickerState.selectedDateMillis?.let { ms ->
-                            val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
-                            selectedDate = sdf.format(java.util.Date(ms))
+                            selectedDate = DateUtil.toApiDate(DateUtil.datePickerMillisToLocalMidnight(ms))
                             selectedTime = null
+                            localError = null
                         }
                         showDatePicker = false
                     }) { Text("OK") }
@@ -342,29 +386,6 @@ fun MyAppointmentsScreen(
             ) {
                 DatePicker(state = datePickerState, showModeToggle = false)
             }
-        }
-
-        if (showTimePicker) {
-            AlertDialog(
-                onDismissRequest = { showTimePicker = false },
-                title = { Text("Select time", style = MaterialTheme.typography.titleMedium) },
-                text = {
-                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth()) {
-                        TimePicker(state = timePickerState)
-                    }
-                },
-                confirmButton = {
-                    TextButton(onClick = {
-                        val h = timePickerState.hour.toString().padStart(2, '0')
-                        val m = timePickerState.minute.toString().padStart(2, '0')
-                        selectedTime = "$h:$m"
-                        showTimePicker = false
-                    }) { Text("OK") }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showTimePicker = false }) { Text("Cancel") }
-                },
-            )
         }
     }
 

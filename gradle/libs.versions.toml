@@ -19,6 +19,7 @@ socketIo = "2.1.0"
 sentry = "7.20.0"
 razorpay = "1.6.40"
 coil = "2.7.0"
+camerax = "1.4.1"
 coroutines = "1.8.1"
 turbine = "1.2.0"
 junit = "4.13.2"
@@ -86,6 +87,12 @@ razorpay = { group = "com.razorpay", name = "checkout", version.ref = "razorpay"
 
 # Coil Image Loading
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
+
+# CameraX
+androidx-camera-core = { group = "androidx.camera", name = "camera-core", version.ref = "camerax" }
+androidx-camera-camera2 = { group = "androidx.camera", name = "camera-camera2", version.ref = "camerax" }
+androidx-camera-lifecycle = { group = "androidx.camera", name = "camera-lifecycle", version.ref = "camerax" }
+androidx-camera-view = { group = "androidx.camera", name = "camera-view", version.ref = "camerax" }
 
 # Coroutines
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }

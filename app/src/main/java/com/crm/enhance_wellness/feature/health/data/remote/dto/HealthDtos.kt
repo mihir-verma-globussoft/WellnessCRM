@@ -2,13 +2,14 @@ package com.crm.enhance_wellness.feature.health.data.remote.dto
 
 import com.squareup.moshi.JsonClass
 
-// GET /portal/prescriptions — backend stores drugs as a JSON-encoded string, not an array.
+// GET /portal/prescriptions — `drugs` may be a JSON-encoded string or a real JSON array
+// depending on the backend environment. @FlexibleDrugs normalises both to a JSON string.
 // visit/doctor are nested objects returned by the API.
 @JsonClass(generateAdapter = true)
 data class PrescriptionDto(
     val id: Int,
     val visitId: Int?,
-    val drugs: String,
+    @field:FlexibleDrugs val drugs: String?,
     val instructions: String?,
     val pdfUrl: String?,
     val visit: PrescriptionVisitDto?,

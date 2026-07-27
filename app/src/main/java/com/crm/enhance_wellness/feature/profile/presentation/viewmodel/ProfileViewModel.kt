@@ -65,9 +65,11 @@ class ProfileViewModel @Inject constructor(
             ProfileUiEvent.CancelEdit -> _uiState.value = _uiState.value.copy(isEditing = false, saveError = null)
             is ProfileUiEvent.EditName -> _uiState.value = _uiState.value.copy(editName = event.name)
             is ProfileUiEvent.EditEmail -> _uiState.value = _uiState.value.copy(editEmail = event.email)
-            is ProfileUiEvent.EditCurrentPassword -> _uiState.value = _uiState.value.copy(currentPassword = event.password)
-            is ProfileUiEvent.EditNewPassword -> _uiState.value = _uiState.value.copy(newPassword = event.password)
+            is ProfileUiEvent.EditCurrentPassword -> _uiState.value = _uiState.value.copy(currentPassword = event.password, saveError = null)
+            is ProfileUiEvent.EditNewPassword -> _uiState.value = _uiState.value.copy(newPassword = event.password, saveError = null)
+            is ProfileUiEvent.EditConfirmPassword -> _uiState.value = _uiState.value.copy(confirmPassword = event.password, saveError = null)
             ProfileUiEvent.SaveChanges -> save()
+            ProfileUiEvent.SaveSuccessAcknowledged -> _uiState.value = _uiState.value.copy(saveSuccess = false)
             is ProfileUiEvent.PhotoPicked -> uploadPhoto(event.bytes, event.mimeType)
             ProfileUiEvent.RemovePhoto -> doRemovePhoto()
             ProfileUiEvent.RequestDsarExport -> requestExport()
@@ -97,6 +99,19 @@ class ProfileViewModel @Inject constructor(
 
     private fun save() {
         val s = _uiState.value
+        val isChangingPassword = s.currentPassword.isNotBlank() || s.newPassword.isNotBlank()
+        if (isChangingPassword) {
+            val error = when {
+                s.currentPassword.isBlank() -> "Enter your current password"
+                s.newPassword.length < 6 -> "New password must be at least 6 characters"
+                s.newPassword != s.confirmPassword -> "Passwords do not match"
+                else -> null
+            }
+            if (error != null) {
+                _uiState.value = s.copy(saveError = error)
+                return
+            }
+        }
         viewModelScope.launch {
             _uiState.value = s.copy(isSaving = true, saveError = null)
             val result = updateProfile(
@@ -107,7 +122,13 @@ class ProfileViewModel @Inject constructor(
             )
             when (result) {
                 is Result.Success -> _uiState.value = _uiState.value.copy(
-                    isSaving = false, isEditing = false, saveSuccess = true, profile = result.data,
+                    isSaving = false,
+                    isEditing = false,
+                    saveSuccess = true,
+                    profile = result.data,
+                    currentPassword = "",
+                    newPassword = "",
+                    confirmPassword = "",
                 )
                 is Result.Error -> _uiState.value = _uiState.value.copy(isSaving = false, saveError = result.message)
                 Result.Loading -> Unit

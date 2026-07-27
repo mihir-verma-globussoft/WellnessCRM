@@ -2,7 +2,6 @@ package com.crm.enhance_wellness.feature.finance.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.crm.enhance_wellness.core.network.WellnessApiService
 import com.crm.enhance_wellness.core.util.Result
 import com.crm.enhance_wellness.feature.finance.domain.usecase.GetPaymentsUseCase
 import com.crm.enhance_wellness.feature.finance.presentation.state.FinanceUiEvent
@@ -24,7 +23,6 @@ sealed class FinanceNavEvent {
 @HiltViewModel
 class FinanceViewModel @Inject constructor(
     private val getPaymentsUseCase: GetPaymentsUseCase,
-    private val apiService: WellnessApiService,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(FinanceUiState())
@@ -47,12 +45,7 @@ class FinanceViewModel @Inject constructor(
             is FinanceUiEvent.SelectPayment ->
                 _uiState.value = _uiState.value.copy(selectedPayment = event.payment)
             FinanceUiEvent.DismissPaymentSheet ->
-                _uiState.value = _uiState.value.copy(selectedPayment = null, refundError = null)
-            is FinanceUiEvent.RequestRefund ->
-                _uiState.value = _uiState.value.copy(showRefundConfirmFor = event.payment, selectedPayment = null)
-            FinanceUiEvent.DismissRefundConfirm ->
-                _uiState.value = _uiState.value.copy(showRefundConfirmFor = null, refundError = null)
-            FinanceUiEvent.ConfirmRefund -> confirmRefund()
+                _uiState.value = _uiState.value.copy(selectedPayment = null)
         }
     }
 
@@ -73,32 +66,4 @@ class FinanceViewModel @Inject constructor(
         }
     }
 
-    private fun confirmRefund() {
-        val payment = _uiState.value.showRefundConfirmFor ?: return
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isRefunding = true, refundError = null)
-            try {
-                val response = apiService.refundPayment(payment.id.toString())
-                if (response.isSuccessful) {
-                    _uiState.value = _uiState.value.copy(
-                        isRefunding = false,
-                        showRefundConfirmFor = null,
-                    )
-                    loadPayments()
-                } else {
-                    val msg = when (response.code()) {
-                        403 -> "You don't have permission to refund this payment"
-                        404 -> "Payment not found"
-                        else -> "Refund failed. Please try again."
-                    }
-                    _uiState.value = _uiState.value.copy(isRefunding = false, refundError = msg)
-                }
-            } catch (_: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isRefunding = false,
-                    refundError = "Network error. Please try again.",
-                )
-            }
-        }
-    }
 }

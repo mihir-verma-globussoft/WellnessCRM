@@ -1,25 +1,15 @@
 package com.crm.enhance_wellness.core.navigation
 
 import android.content.Intent
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
@@ -69,6 +59,9 @@ import com.crm.enhance_wellness.feature.health.presentation.viewmodel.Prescripti
 import com.crm.enhance_wellness.feature.health.presentation.viewmodel.PrescriptionsViewModel
 import com.crm.enhance_wellness.feature.health.presentation.viewmodel.TreatmentPlansNavEvent
 import com.crm.enhance_wellness.feature.health.presentation.viewmodel.TreatmentPlansViewModel
+import com.crm.enhance_wellness.feature.treatmentanalysis.presentation.screen.TreatmentAnalysisScreen
+import com.crm.enhance_wellness.feature.treatmentanalysis.presentation.viewmodel.TreatmentAnalysisNavEvent
+import com.crm.enhance_wellness.feature.treatmentanalysis.presentation.viewmodel.TreatmentAnalysisViewModel
 import com.crm.enhance_wellness.feature.catalog.presentation.screen.CatalogTabScreen
 import com.crm.enhance_wellness.feature.finance.presentation.screen.FinanceTabScreen
 import com.crm.enhance_wellness.feature.finance.presentation.viewmodel.FinanceNavEvent
@@ -112,6 +105,7 @@ fun WellnessNavGraph(
     navController: NavHostController = rememberNavController(),
     startDestination: String = Screen.Splash.route,
     notificationIntent: Intent? = null,
+    isAuthenticated: Boolean? = null,
     isDarkTheme: Boolean = false,
     onToggleDarkTheme: () -> Unit = {},
     clinicName: String = "",
@@ -125,9 +119,15 @@ fun WellnessNavGraph(
     val currentRoute = navBackStackEntry?.destination?.route
     val showChrome = currentRoute != null && currentRoute !in AUTH_ROUTES
     val canNavigateBack = currentRoute !in TAB_ROOT_ROUTES && navController.previousBackStackEntry != null
-    val onDashboard = currentRoute == Screen.Dashboard.route
-    var isSearchOpen by remember { mutableStateOf(false) }
-    var searchQuery by remember { mutableStateOf("") }
+
+    LaunchedEffect(isAuthenticated, currentRoute) {
+        if (isAuthenticated == false && currentRoute != null && currentRoute !in AUTH_ROUTES) {
+            navController.navigate(Screen.Login.route) {
+                popUpTo(0) { inclusive = true }
+                launchSingleTop = true
+            }
+        }
+    }
 
     Scaffold(
         modifier = modifier,
@@ -145,24 +145,7 @@ fun WellnessNavGraph(
                             }
                         },
                         onBack = if (canNavigateBack) { { navController.popBackStack() } } else null,
-                        onSearchClick = if (onDashboard) {
-                            { isSearchOpen = !isSearchOpen; if (!isSearchOpen) searchQuery = "" }
-                        } else null,
-                        isSearchActive = isSearchOpen,
                     )
-                    AnimatedVisibility(visible = onDashboard && isSearchOpen) {
-                        OutlinedTextField(
-                            value = searchQuery,
-                            onValueChange = { searchQuery = it },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 6.dp),
-                            placeholder = { androidx.compose.material3.Text("Search…") },
-                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                            singleLine = true,
-                            shape = RoundedCornerShape(12.dp),
-                        )
-                    }
                 }
             }
         },
@@ -332,11 +315,42 @@ fun WellnessNavGraph(
                             is PrescriptionsNavEvent.ToPdf -> navController.navigate(
                                 Screen.PrescriptionPdf.createRoute(event.prescriptionId)
                             )
+                            is PrescriptionsNavEvent.ToAnalysis -> navController.navigate(
+                                Screen.PrescriptionAnalysis.createRoute(event.prescriptionId, event.visitId)
+                            )
                             PrescriptionsNavEvent.Back -> navController.popBackStack()
                         }
                     }
                 }
                 PrescriptionsScreen(state = state, onEvent = vm::onEvent)
+            }
+
+            composable(
+                route = Screen.PrescriptionAnalysis.route,
+                arguments = listOf(
+                    navArgument("prescriptionId") { type = NavType.IntType },
+                    navArgument("visitId") {
+                        type = NavType.IntType
+                        defaultValue = -1
+                    },
+                ),
+                deepLinks = listOf(
+                    navDeepLink { uriPattern = "globuscrm://screen/prescription_analysis?id={prescriptionId}" },
+                    navDeepLink {
+                        uriPattern = "globuscrm://screen/prescription_analysis?id={prescriptionId}&visitId={visitId}"
+                    },
+                ),
+            ) {
+                val vm: TreatmentAnalysisViewModel = hiltViewModel()
+                val state by vm.uiState.collectAsStateWithLifecycle()
+                LaunchedEffect(Unit) {
+                    vm.navEvent.collect { event ->
+                        when (event) {
+                            TreatmentAnalysisNavEvent.Back -> navController.popBackStack()
+                        }
+                    }
+                }
+                TreatmentAnalysisScreen(state = state, onEvent = vm::onEvent)
             }
 
             composable(

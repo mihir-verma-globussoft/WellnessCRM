@@ -28,12 +28,14 @@ data class DsarExportResponseDto(
 
 // PUT /api/auth/me — CUSTOMER JWT (verifyToken). Updates name, email, or password.
 // dob/gender/phone are patient-layer fields on GET /portal/me and cannot be updated via this endpoint.
+// Send both `newPassword` and `password` so the backend can pick whichever field it expects.
 @JsonClass(generateAdapter = true)
 data class UpdateAuthProfileDto(
     val name: String? = null,
     val email: String? = null,
     val currentPassword: String? = null,
     val newPassword: String? = null,
+    val password: String? = null,
 )
 
 @JsonClass(generateAdapter = true)

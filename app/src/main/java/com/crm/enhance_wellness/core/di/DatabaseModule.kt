@@ -10,6 +10,7 @@ import com.crm.enhance_wellness.feature.health.data.local.dao.PrescriptionDao
 import com.crm.enhance_wellness.feature.health.data.local.dao.PrescriptionReminderDao
 import com.crm.enhance_wellness.feature.membership.data.local.dao.MembershipDao
 import com.crm.enhance_wellness.feature.notifications.data.local.dao.NotificationDao
+import com.crm.enhance_wellness.feature.treatmentanalysis.data.local.dao.TreatmentAnalysisDraftDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -25,7 +26,7 @@ object DatabaseModule {
     @Singleton
     fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase =
         Room.databaseBuilder(context, AppDatabase::class.java, "wellness_db")
-            .addMigrations(MIGRATION_1_2)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
             .build()
 
     @Provides
@@ -44,6 +45,10 @@ object DatabaseModule {
     @Provides
     fun provideNotificationDao(db: AppDatabase): NotificationDao = db.notificationDao()
 
+    @Provides
+    fun provideTreatmentAnalysisDraftDao(db: AppDatabase): TreatmentAnalysisDraftDao =
+        db.treatmentAnalysisDraftDao()
+
     private val MIGRATION_1_2 = object : Migration(1, 2) {
         override fun migrate(db: SupportSQLiteDatabase) {
             db.execSQL(
@@ -55,6 +60,28 @@ object DatabaseModule {
                     endAt INTEGER NOT NULL,
                     prescriptionLabel TEXT,
                     drugsJson TEXT NOT NULL,
+                    PRIMARY KEY(prescriptionId)
+                )
+                """.trimIndent()
+            )
+        }
+    }
+
+    private val MIGRATION_2_3 = object : Migration(2, 3) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS treatment_analysis_drafts (
+                    prescriptionId INTEGER NOT NULL,
+                    analysisId INTEGER,
+                    beforeLocalPath TEXT,
+                    beforeRemoteUrl TEXT,
+                    beforeCapturedAt INTEGER,
+                    afterLocalPath TEXT,
+                    afterRemoteUrl TEXT,
+                    afterCapturedAt INTEGER,
+                    status TEXT NOT NULL,
+                    updatedAt INTEGER NOT NULL,
                     PRIMARY KEY(prescriptionId)
                 )
                 """.trimIndent()

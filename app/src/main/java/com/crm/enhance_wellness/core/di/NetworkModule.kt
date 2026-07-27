@@ -3,6 +3,7 @@ package com.crm.enhance_wellness.core.di
 import com.crm.enhance_wellness.BuildConfig
 import com.crm.enhance_wellness.core.network.AuthInterceptor
 import com.crm.enhance_wellness.core.network.WellnessApiService
+import com.crm.enhance_wellness.feature.health.data.remote.dto.FlexibleDrugsAdapterFactory
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import dagger.Module
@@ -23,6 +24,7 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideMoshi(): Moshi = Moshi.Builder()
+        .add(FlexibleDrugsAdapterFactory())
         .addLast(KotlinJsonAdapterFactory())
         .build()
 

@@ -51,4 +51,11 @@ class HealthMappersTest {
         assertEquals("1-0-1", drug.frequency)
         assertEquals("1 week", drug.duration)
     }
+
+    @Test
+    fun `parseDrugsJson returns empty list for null or blank input`() {
+        assertEquals(emptyList<Any>(), parseDrugsJson(null))
+        assertEquals(emptyList<Any>(), parseDrugsJson(""))
+        assertEquals(emptyList<Any>(), parseDrugsJson("null"))
+    }
 }

@@ -99,7 +99,7 @@ private fun PdfViewer(pdfBytes: ByteArray, filePrefix: String) {
                 val ok = savePdfToDownloads(context, pdfBytes, "${filePrefix}_${System.currentTimeMillis()}.pdf")
                 Toast.makeText(
                     context,
-                    if (ok) "Saved to Downloads" else "Download failed",
+                    if (ok) "Saved to Downloads" else "Download failed — storage permission may be required",
                     Toast.LENGTH_SHORT,
                 ).show()
             },
@@ -115,23 +115,36 @@ private fun PdfViewer(pdfBytes: ByteArray, filePrefix: String) {
     }
 }
 
-private fun savePdfToDownloads(context: android.content.Context, bytes: ByteArray, fileName: String): Boolean = try {
-    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-        val cv = android.content.ContentValues().apply {
-            put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, fileName)
-            put(android.provider.MediaStore.MediaColumns.MIME_TYPE, "application/pdf")
-            put(android.provider.MediaStore.MediaColumns.RELATIVE_PATH, android.os.Environment.DIRECTORY_DOWNLOADS)
-        }
-        val uri = context.contentResolver.insert(android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, cv)
-        if (uri != null) {
-            context.contentResolver.openOutputStream(uri)?.use { it.write(bytes) }
+private fun savePdfToDownloads(context: android.content.Context, bytes: ByteArray, fileName: String): Boolean {
+    return try {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            val cv = android.content.ContentValues().apply {
+                put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+                put(android.provider.MediaStore.MediaColumns.MIME_TYPE, "application/pdf")
+                put(android.provider.MediaStore.MediaColumns.RELATIVE_PATH, android.os.Environment.DIRECTORY_DOWNLOADS)
+            }
+            val uri = context.contentResolver.insert(android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, cv)
+            if (uri != null) {
+                context.contentResolver.openOutputStream(uri)?.use { it.write(bytes) }
+                true
+            } else {
+                false
+            }
+        } else {
+            if (androidx.core.content.ContextCompat.checkSelfPermission(
+                    context,
+                    android.Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+            ) {
+                return false
+            }
+            @Suppress("DEPRECATION")
+            val dir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS)
+            dir.mkdirs()
+            java.io.File(dir, fileName).writeBytes(bytes)
             true
-        } else false
-    } else {
-        @Suppress("DEPRECATION")
-        val dir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS)
-        dir.mkdirs()
-        java.io.File(dir, fileName).writeBytes(bytes)
-        true
+        }
+    } catch (e: Exception) {
+        false
     }
-} catch (e: Exception) { false }
+}

@@ -2,6 +2,7 @@ package com.crm.enhance_wellness.feature.booking.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.crm.enhance_wellness.core.util.DateUtil
 import com.crm.enhance_wellness.core.util.Result
 import com.crm.enhance_wellness.feature.booking.domain.usecase.CancelAppointmentUseCase
 import com.crm.enhance_wellness.feature.booking.domain.usecase.GetMyAppointmentsUseCase
@@ -118,6 +119,17 @@ class MyAppointmentsViewModel @Inject constructor(
 
     private fun reschedule(newDate: String, newTime: String) {
         val appointmentId = _uiState.value.rescheduleSheetAppointmentId ?: return
+        val epochMs = DateUtil.apiDateToEpochMs(newDate)
+        when {
+            epochMs < DateUtil.startOfTodayUtcMillis() -> {
+                _uiState.value = _uiState.value.copy(rescheduleError = "Please select a future date")
+                return
+            }
+            !DateUtil.isFutureDateTime(epochMs, newTime) -> {
+                _uiState.value = _uiState.value.copy(rescheduleError = "Please select a future time slot")
+                return
+            }
+        }
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isRescheduling = true, rescheduleError = null)
             when (val result = rescheduleAppointment(appointmentId, newDate, newTime)) {

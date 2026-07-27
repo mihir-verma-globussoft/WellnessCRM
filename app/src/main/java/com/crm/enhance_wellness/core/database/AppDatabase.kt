@@ -12,6 +12,8 @@ import com.crm.enhance_wellness.feature.membership.data.local.dao.MembershipDao
 import com.crm.enhance_wellness.feature.membership.data.local.entity.CachedMembership
 import com.crm.enhance_wellness.feature.notifications.data.local.dao.NotificationDao
 import com.crm.enhance_wellness.feature.notifications.data.local.entity.CachedNotification
+import com.crm.enhance_wellness.feature.treatmentanalysis.data.local.dao.TreatmentAnalysisDraftDao
+import com.crm.enhance_wellness.feature.treatmentanalysis.data.local.entity.TreatmentAnalysisDraftEntity
 
 @Database(
     entities = [
@@ -20,8 +22,9 @@ import com.crm.enhance_wellness.feature.notifications.data.local.entity.CachedNo
         PrescriptionReminderEntity::class,
         CachedMembership::class,
         CachedNotification::class,
+        TreatmentAnalysisDraftEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -30,4 +33,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun prescriptionReminderDao(): PrescriptionReminderDao
     abstract fun membershipDao(): MembershipDao
     abstract fun notificationDao(): NotificationDao
+    abstract fun treatmentAnalysisDraftDao(): TreatmentAnalysisDraftDao
 }

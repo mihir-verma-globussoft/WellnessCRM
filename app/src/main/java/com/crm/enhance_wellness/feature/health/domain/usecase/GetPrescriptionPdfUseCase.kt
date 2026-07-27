@@ -2,6 +2,7 @@ package com.crm.enhance_wellness.feature.health.domain.usecase
 
 import com.crm.enhance_wellness.core.util.Result
 import com.crm.enhance_wellness.feature.health.domain.repository.PrescriptionRepository
+import org.json.JSONObject
 import retrofit2.HttpException
 import java.io.IOException
 import javax.inject.Inject
@@ -19,7 +20,9 @@ class GetPrescriptionPdfUseCase @Inject constructor(
             Result.Success(pdfBytes)
         }
     } catch (e: HttpException) {
-        Result.Error("HTTP_${e.code()}", e.message() ?: "Server error", e.code())
+        val rawBody = runCatching { e.response()?.errorBody()?.string() }.getOrNull() ?: ""
+        val backendMessage = runCatching { JSONObject(rawBody).getString("error") }.getOrNull()
+        Result.Error("HTTP_${e.code()}", backendMessage ?: e.message() ?: "Server error", e.code())
     } catch (e: IOException) {
         Result.Error("NETWORK_ERROR", "No internet connection. Please try again.")
     } catch (e: Exception) {
