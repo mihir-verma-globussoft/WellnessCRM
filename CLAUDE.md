@@ -20,17 +20,17 @@ This app is a **separate Android repo** consuming the WellnessCRM backend (`/api
 
 | Field | Value |
 |-------|-------|
-| Package name | `com.globussoft.wellness.patient` |
+| Package name | `com.crm.enhance_wellness` |
 | Language | Kotlin |
 | UI | Jetpack Compose + Material 3 |
-| Min SDK | 26 (Android 8.0) |
+| Min SDK | 26 (Android 8.0) · compileSdk/targetSdk 36 |
 | Architecture | Feature-based Clean Architecture (MVVM per feature) |
 | DI | Hilt |
 | HTTP | Retrofit 2 + OkHttp 4 |
 | Local DB | Room |
-| Auth | Phone OTP → 30-day Portal JWT |
+| Auth | Email + password → 7-day JWT (`POST /api/auth/login`) |
 | Payments | Razorpay Android SDK |
-| Push | Firebase Cloud Messaging (FCM) |
+| Push | Socket.IO (foreground only) — **not yet functional, see Real-time Notifications** |
 
 ---
 
@@ -45,23 +45,29 @@ This app is a **separate Android repo** consuming the WellnessCRM backend (`/api
 **Auth header:** `Authorization: Bearer <portal_jwt>`
 **All error responses:** `{ "error": "message", "code": "OPTIONAL_CODE" }`
 
-### Demo credentials (against local CRM backend)
+### Auth is email + password, not phone OTP
 
-The CRM backend needs these in its `.env` to enable OTP bypass for testing:
-```
-WELLNESS_DEMO_OTP=1234
-WELLNESS_DEMO_OTP_PHONES=9876500001
-NODE_ENV=development
-```
+The phone-OTP flow described in older revisions of this file was replaced in session 4.
+`PhoneEntry` and `OtpVerify` no longer exist; `LoginScreen` is the single entry point.
 
-Test flow:
 ```
-POST /portal/login/request-otp  { "phone": "9876500001" }  →  { "ok": true }
-POST /portal/login/verify-otp   { "phone": "9876500001", "otp": "1234" }  →  { "token": "...", "patient": { "id": 1, "name": "..." } }
+POST /api/auth/login   { "email": "...", "password": "..." }
+  → { "token": "<jwt>", "user": { id, email, name, userType }, "tenant": { id, name, slug, brandColor, logoUrl } }
 ```
 
-> **OTP is 4 digits.** Backend returns `{"error":"OTP must be 4 digits"}` for any other length.
-> OTP resend cooldown is **30 seconds** (web portal source-verified).
+Two things about this response matter:
+
+- **`userType` must be `CUSTOMER`.** The whole `portal/*` surface sits behind
+  `verifyPatientToken`, which resolves a Patient row from the user. A STAFF or ADMIN login
+  returns `403 NO_PATIENT_PROFILE` on every portal call and looks like "forbidden
+  everywhere". Non-portal endpoints still return 200, which makes the symptom confusing.
+- **`tenant` is authoritative.** It is the clinic the account belongs to, which is often
+  *not* the clinic `BuildConfig.TENANT_SLUG` names. `AuthRepositoryImpl` writes it to
+  DataStore on login, and Splash deliberately does not overwrite it for a signed-in user.
+
+The JWT carries `{ userId, tenantId, userType, role }` and lasts **7 days**. `patientId`
+(the Patient row id, ≠ `userId`) comes from `GET /portal/me` right after login and is
+cached in `EncryptedPrefsManager` — several endpoints are keyed on it.
 
 ---
 
@@ -81,7 +87,7 @@ POST /portal/login/verify-otp   { "phone": "9876500001", "otp": "1234" }  →  {
 ## Package Structure
 
 ```
-com.globussoft.wellness.patient/
+com.crm.enhance_wellness/
 ├── app/                            ← Application class (Hilt), MainActivity
 ├── core/
 │   ├── network/                    ← WellnessApiService, AuthInterceptor, TokenManager
@@ -89,7 +95,8 @@ com.globussoft.wellness.patient/
 │   ├── navigation/                 ← Screen sealed class, NavGraph, DeepLinkHandler
 │   ├── theme/                      ← WellnessTheme, Color, Typography, Shape
 │   ├── util/                       ← Result<T>, DateUtil, CurrencyUtil, PhoneUtil
-│   ├── fcm/                        ← WellnessFcmService, FcmHelper
+│   ├── websocket/                  ← WellnessSocketManager (see Real-time Notifications)
+│   ├── ui/                         ← WellnessCard, BackendImage, shared components
 │   └── di/                         ← AppModule, NetworkModule, DatabaseModule, RepositoryModule
 └── feature/
     ├── auth/                       ← Splash, PhoneEntry, OtpVerify, Register
@@ -99,10 +106,14 @@ com.globussoft.wellness.patient/
     ├── membership/                 ← MyMemberships, plan browse
     ├── wallet/                     ← Wallet, GiftCards (Razorpay)
     ├── loyalty/                    ← Loyalty & Referrals*
-    ├── profile/                    ← Profile, DSAR export
-    └── notifications/              ← Notification Inbox
+    ├── profile/                    ← Profile, avatar upload, DSAR export, delete account
+    ├── notifications/              ← Notification Inbox + device notification preferences
+    ├── catalog/                    ← Services / Categories / Memberships browse tab
+    ├── finance/                    ← Payments / Gift Cards / Transactions tab host
+    └── treatmentanalysis/          ← CameraX before/after capture tied to a prescription
 ```
-*Phase 2 — data/domain layer built in Phase 1, presentation deferred.
+All features listed above are implemented. `catalog`, `finance` and `treatmentanalysis`
+postdate the original 17-screen plan.
 
 ### Inside every feature
 
@@ -191,7 +202,12 @@ fun Feature.toEntity(): FeatureEntity = ...   // domain → cache
 
 ---
 
-## All Screens (17 total)
+## All Screens
+
+23 navigation routes are wired in `core/navigation/NavGraph.kt` — the original 17 plus
+Waitlist, Catalog, Finance, Notification Settings, Consent Form PDF, Treatment Analysis and
+Register. Every screen below is implemented and reachable from the dashboard hub; nothing is
+deep-link-only any more.
 
 | # | Screen | Feature package | Phase | Key API |
 |---|--------|----------------|-------|---------|
@@ -210,30 +226,34 @@ fun Feature.toEntity(): FeatureEntity = ...   // domain → cache
 | 13 | Gift Cards | wallet | 1 | `GET /giftcards/storefront`, `POST /giftcards/:id/purchase/order+confirm` |
 | 14 | Loyalty & Referrals | loyalty | 2★ | `GET /portal/me/loyalty` ★ |
 | 15 | Profile | profile | 1 | `GET /portal/me`, `PUT /portal/me` ★, `POST /portal/export` |
-| 16 | Notification Inbox | notifications | 1 | Room (FCM persisted locally) |
+| 16 | Notification Inbox | notifications | 1 | `GET /portal/me/notifications` + Room cache |
 | 17 | My Memberships | membership | 1 | `GET /portal/me/memberships` ★, `GET /membership-plans` |
 
-★ = New backend endpoint that must be built on the CRM backend first (see Backend Gap Endpoints below).
+★ marked new backend endpoints in the original plan. All are now live — see **Backend Gap Endpoints — resolved**.
 
 ---
 
-## Backend Gap Endpoints (must be built on CRM before app can use them)
+## Backend Gap Endpoints — resolved
 
-These endpoints do not exist yet. They are fully specified in `docs/PATIENT_APP_PRD.md §10` in the CRM repo.
+The gap list in earlier revisions is obsolete. Every endpoint on it was either built or
+replaced by an existing route, and all were verified returning 200 against a live CUSTOMER
+account on 2026-08-26. The app's real endpoint list is `core/network/WellnessApiService.kt`.
 
-| Endpoint | Method | Auth | Blocks |
-|----------|--------|------|--------|
-| `/portal/register` | POST | public | Screen 4 |
-| `/portal/me/dashboard` | GET | portal JWT | Screen 5 |
-| `/portal/slots` | GET | public | Screen 6 Step 3 |
-| `/portal/me/wallet` | GET | portal JWT | Screen 12 |
-| `/portal/me/memberships` | GET | portal JWT | Screen 17 |
-| `/portal/me` | PUT | portal JWT | Screen 15 edit |
-| `/portal/me/fcm-token` | POST / DELETE | portal JWT | Push notifications |
-| `/portal/me/treatment-plans` | GET | portal JWT | Screen 10 (Phase 2) |
-| `/portal/me/consents` | GET | portal JWT | Screen 11 (Phase 2) |
-| `/portal/me/consents/:id/pdf` | GET | portal JWT | Screen 11 (Phase 2) |
-| `/portal/me/loyalty` | GET | portal JWT | Screen 14 (Phase 2) |
+Two things that were once "gaps" resolved differently than planned:
+
+| Original gap | Reality |
+|--------------|---------|
+| `GET /portal/me/dashboard` | Never built. The dashboard composes visits + wallet + memberships + loyalty client-side in `DashboardRepositoryImpl`. |
+| `POST/DELETE /portal/me/fcm-token` | Never built, and no longer needed — FCM was dropped. See **Real-time Notifications**. |
+
+### Known backend issues
+
+| Issue | Detail |
+|-------|--------|
+| `GET /loyalty/{patientId}` not ownership-scoped | The backend does not verify the caller owns the id. Only ever call it with `EncryptedPrefsManager.getPatientId()`; never with user input. |
+| `products.read` denied to CUSTOMER | `portal/products` and `portal/product-categories` return `403 PORTAL_RBAC_DENIED`. Both were removed from the app; the public `services` / `service-categories` routes carry the same catalogue. |
+| No Socket.IO gateway | `/socket.io/` serves the SPA's HTML. See **Real-time Notifications**. |
+| No notification-preference endpoint | Preferences are device-local in DataStore. |
 
 ---
 
@@ -241,15 +261,20 @@ These endpoints do not exist yet. They are fully specified in `docs/PATIENT_APP_
 
 ### Auth
 ```
-POST /portal/login/request-otp
-Body:     { "phone": "9876512345" }
-Response: { "ok": true, "expiresAt": "ISO8601" }
-Errors:   400 { "error": "phone is required" } | 400 { "error": "Invalid phone" }
+POST /api/auth/login              (absolute path — not under /api/wellness/)
+Body:     { "email": "...", "password": "..." }
+Response: { "token": "jwt", "user": { "id", "email", "name", "userType" },
+            "tenant": { "id", "name", "slug", "brandColor", "logoUrl" } }
+Errors:   401 { "error": "Invalid credentials" }
 
-POST /portal/login/verify-otp
-Body:     { "phone": "9876512345", "otp": "1234" }
-Response: { "token": "jwt", "patient": { "id": 1, "name": "Priya" } }
-Errors:   400 { "error": "OTP must be 4 digits" } | 401 { "error": "Invalid or expired code" }
+POST /api/auth/customer/register
+Body:     { "email", "password", "name", "registrationTenantId" }
+Response: same shape as login
+Errors:   409 → ALREADY_REGISTERED | 400 → INVALID_INPUT | 422 → VALIDATION_ERROR
+Note:     backend may require email OTP (REQUIRE_EMAIL_OTP=1), which blocks API-only signup.
+
+GET /portal/me
+Response: { "id" (patientId), "name", "phone", "email", "dob", "gender" }
 ```
 
 ### Appointments
@@ -359,7 +384,7 @@ sealed class Screen(val route: String) {
     object Profile         : Screen("profile")
     object Notifications   : Screen("notifications")
 }
-// Deep-link scheme: wellnesspatient://screen/{screenName}?id={entityId}
+// Deep-link scheme: globuscrm://screen/{screenName}?id={entityId}
 ```
 
 ---
@@ -375,9 +400,33 @@ sealed class Screen(val route: String) {
 
 ---
 
-## Push Notifications (FCM)
+## Real-time Notifications
 
-### Channels (create in MainActivity.onCreate)
+> **Current state (2026-08-26): there is no working push channel.** FCM was never
+> integrated — there is no Firebase dependency and no `google-services.json`. The
+> replacement, Socket.IO, cannot connect either: `https://globuscrm.globussoft.com/socket.io/`
+> serves the web app's HTML rather than an Engine.IO handshake, so no gateway is reachable.
+>
+> Notifications therefore arrive **only** by REST: `GET /portal/me/notifications`, pulled on
+> sign-in (`MainViewModel`) and whenever the inbox opens. A patient with the app closed
+> receives nothing. Resolving this needs a backend decision — mount the Socket.IO gateway,
+> or add FCM — and is the single largest functional gap in the app.
+
+### Socket.IO client
+
+`core/websocket/WellnessSocketManager` connects when a token appears and disconnects on
+logout. It is configured by two BuildConfig fields:
+
+| Field | Default | Meaning |
+|-------|---------|---------|
+| `SOCKET_URL` | `""` (empty) | Gateway origin. **Empty disables the socket entirely.** |
+| `SOCKET_PATH` | `/socket.io/` | Engine.IO path on that origin. |
+
+Set `SOCKET_URL` in `build.gradle.kts` once a gateway exists. Connection successes and
+failures are logged under the `WellnessSocket` tag — previously failures were swallowed,
+which made an unreachable gateway indistinguishable from "no notifications yet".
+
+### Channels (created in MainActivity.onCreate)
 | Channel ID | Name | Importance |
 |-----------|------|-----------|
 | `wellness_reminders` | Appointment Reminders | HIGH + vibration |
@@ -385,20 +434,26 @@ sealed class Screen(val route: String) {
 | `wellness_wallet` | Wallet & Payments | DEFAULT |
 | `wellness_offers` | Offers & Surveys | LOW |
 
-### Notification type → deep-link mapping
-| `type` field in FCM data | Deep-link screen |
-|--------------------------|-----------------|
-| `APPOINTMENT_REMINDER_24H` / `APPOINTMENT_REMINDER_1H` | `appointments` |
-| `BOOKING_CONFIRMED` / `BOOKING_CANCELLED` | `appointments` |
-| `PRESCRIPTION_READY` | `prescriptions` |
-| `MEMBERSHIP_EXPIRY` | `memberships` |
-| `WALLET_CREDITED` | `wallet` |
-| `NPS_SURVEY` | external URL |
-| `NO_SHOW_REENGAGEMENT` | `book` |
+### Socket payload `entityType` → channel + preference category
+| `entityType` | Channel | Preference category |
+|--------------|---------|--------------------|
+| `Appointment` | `wellness_reminders` | `appointment_reminders` |
+| `Prescription` | `wellness_health` | `prescription_ready` |
+| `Wallet` / `Payment` / `Transaction` | `wellness_wallet` | `payment_receipts` |
+| `Membership` | `wellness_health` | `membership_updates` |
+| `GiftCard` | `wellness_health` | `gift_card_activity` |
 
-FCM token lifecycle:
-- Register: `POST /portal/me/fcm-token` `{ token, platform: "android" }` → on login + `onNewToken()`
-- Deregister: `DELETE /portal/me/fcm-token` → on logout
+### `link` → deep-link screen
+`/appointments` → `appointments` · `/prescriptions` → `prescriptions` · `/wallet` → `wallet`
+· `/memberships` → `memberships` · `/book` → `book`
+
+### Notification preferences
+
+Device-local, stored in DataStore via `NotificationPreferencesRepository` (there is no
+backend preference endpoint). `WellnessSocketManager` honours them before raising anything:
+a muted category is dropped entirely, the `in_app` channel gates Room persistence, `push`
+gates the system tray, and quiet hours suppress the tray alert only. Preferences survive
+logout — they belong to the device, not the patient.
 
 ---
 
@@ -406,27 +461,36 @@ FCM token lifecycle:
 
 | Token | Value |
 |-------|-------|
-| Primary color | `#265855` (deep teal) |
-| Accent color | `#CD9481` (warm blush) |
-| Background | `#FAF7F2` (cream) |
+| Primary color | `#8A6D23` (antique bronze-gold) |
+| Accent color | `#6E6656` (warm silver-taupe) |
+| Background | `#F5F1E8` (warm cream) |
 | Primary button text | White |
 | Body font | Roboto |
 | Heading font | Playfair Display |
 | Card radius | 12dp |
 | Button radius | 24dp |
 
-Apply clinic's `Tenant.brandColor` at runtime as the Material 3 seed color (fallback: `#265855`).
+Apply clinic's `Tenant.brandColor` at runtime as the Material 3 seed color (fallback: `#8A6D23`).
 
 ---
 
 ## Security Rules (enforce always)
 
-- JWT stored in `DataStore` (app-private, file-level encrypted) — not SharedPreferences
+- JWT stored in `DataStore` (app-private) — not SharedPreferences
 - Patient name and phone stored in `EncryptedSharedPreferences` (AES-256-GCM, Android Keystore)
 - Prescription PDFs in Room BLOB — served via `FileProvider`, never auto-saved to Downloads
 - **No PHI in Logcat, Sentry breadcrumbs, or Firebase Analytics params** — use `patientId` (int), never name/phone
-- `POST_NOTIFICATIONS` permission requested at runtime before FCM token registration
-- Cert pinning in `network_security_config.xml` for production domain
+- `POST_NOTIFICATIONS` permission requested at runtime before any notification is raised
+- Cert pinning in **both** `network_security_config.xml` and `NetworkModule.CERT_PINS` — keep
+  the two lists in sync. Pins target the **Google Trust Services intermediate + root**, not
+  the leaf: GTS rotates leaves ~every 90 days and a leaf pin would break the app on renewal.
+  Debug builds ship `src/debug/res/xml/network_security_config.xml` with no pin-set so a
+  proxy can be used; the OkHttp pinner is likewise release-only.
+- OkHttp logging is `HEADERS`, never `BODY` — response bodies carry PHI. `Authorization`,
+  `Cookie` and `Set-Cookie` are redacted.
+- The HTTP disk cache is restricted to a **non-PHI catalogue allowlist**
+  (`CatalogueCacheInterceptor`) and is evicted on logout. Never add a patient-scoped route
+  to it — OkHttp writes response bodies to disk in plaintext.
 - R8 minification enabled in release builds
 
 ---
@@ -434,7 +498,7 @@ Apply clinic's `Tenant.brandColor` at runtime as the Material 3 seed color (fall
 ## Implementation Phases
 
 ### Phase 0 — Bootstrap
-Android Studio project, `libs.versions.toml`, `build.gradle.kts` (`minSdk 26`, `compileSdk 35`), Firebase `google-services.json`, `network_security_config.xml`, `BuildConfig.BASE_URL` + `BuildConfig.TENANT_SLUG`.
+Android Studio project, `libs.versions.toml`, `build.gradle.kts` (`minSdk 26`, `compileSdk 36`), `network_security_config.xml`, `BuildConfig.BASE_URL` / `TENANT_SLUG` / `TENANT_ID` / `SOCKET_URL`.
 
 ### Phase 1 — Core module
 `core/network/` → `core/storage/` → `core/util/Result.kt` → `core/di/` (all 4 modules) → `core/theme/` → `core/navigation/Screen.kt` → `AppDatabase` with 4 entities.
@@ -460,8 +524,8 @@ Android Studio project, `libs.versions.toml`, `build.gradle.kts` (`minSdk 26`, `
 ### Phase 8 — Profile + Notifications
 `ProfileScreen`: view/edit name/email/DOB/gender, DSAR export (`POST /portal/export`), logout (clear all storage + FCM deregister). `NotificationInboxScreen`: Room-backed list, mark-read on tap, deep-link on tap, 90-day eviction.
 
-### Phase 9 — FCM push
-`WellnessFcmService`: `onNewToken()` registers token, `onMessageReceived()` persists to Room + shows system notification with correct channel. `MainActivity`: 4 channels created on `onCreate()`. `POST_NOTIFICATIONS` runtime permission request.
+### Phase 9 — Notification delivery
+`WellnessSocketManager` persists incoming events to Room and raises a system notification on the right channel, subject to the device notification preferences. `MainActivity` creates the 4 channels in `onCreate()` and requests `POST_NOTIFICATIONS` at runtime. **The socket gateway is not reachable — see Real-time Notifications.**
 
 ### Phase 10 — Testing
 UseCase unit tests (JUnit 5 + MockK), ViewModel tests (Turbine), Room DAO integration tests (in-memory), key UI tests (Compose + Hilt). Target: 100% UseCase coverage, ≥90% ViewModel coverage.
@@ -482,22 +546,27 @@ okhttp              = "4.12.0"
 moshi               = "1.15.1"
 room                = "2.6.1"
 datastore           = "1.1.1"
-firebase-bom        = "33.7.0"
-sentry              = "7.20.0"
 razorpay            = "1.6.40"
 coil                = "2.7.0"
+camerax             = "1.4.1"
+socket-io-client    = "2.1.0"
 turbine             = "1.2.0"
 compose-navigation  = "2.8.5"
 hilt-navigation     = "1.2.0"
 ```
 
-Full `libs.versions.toml` with all library coordinates is in `docs/PATIENT_APP_ARCHITECTURE.md §P` of the CRM repo.
+> No Firebase dependency and no `google-services.json` — FCM is not integrated. Sentry is
+> declared in `libs.versions.toml` but not applied; the manifest DSN is empty.
+
+The authoritative list is `gradle/libs.versions.toml` in this repo.
 
 ---
 
 ## status.md — Live Progress Tracker
 
-`status.md` lives at the **repo root** alongside `CLAUDE.md`. It is the single source of truth for what is done and what is left. Claude must read it at session start and update it after every completed task.
+`status.md` lives at the **repo root** alongside `CLAUDE.md`. (A duplicate `STATUS.md` was
+removed on 2026-08-26 — two files differing only in case break checkouts on macOS and
+Windows. Do not recreate it.) It is the single source of truth for what is done and what is left. Claude must read it at session start and update it after every completed task.
 
 ### Rules for status.md
 

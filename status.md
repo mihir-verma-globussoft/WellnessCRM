@@ -1,7 +1,83 @@
 # WellnessCRM Patient App — Implementation Status
 
-Last updated: 2026-06-04 (session 16 — display bug fixes, RBAC re-test)
-Current phase: All 17 screens implemented and live-tested ✅
+Last updated: 2026-08-26 (session 17 — full audit, live device re-test, defect fixes)
+Current phase: Feature-complete (23 routes). One functional gap: no working push channel.
+
+> **Reading note.** Sections below dated 2026-06-04 and earlier are kept as history per the
+> "never delete entries" rule, but they predate five commits (treatment analysis, CameraX,
+> medication reminders, backend image handling) and several of their claims are no longer
+> true — in particular anything about FCM, and the note that Treatment Plans / Consent Forms
+> are deep-link-only. **Session 17 below supersedes them.**
+
+---
+
+## Session 17 — Full audit + live re-test (2026-08-26)
+
+Device: Samsung SM-M176B (RZGL40S9CMK), Android 16 | Build: debug
+Account: `goutambarik@getairmail.com` — userType CUSTOMER, userId 254, **patientId 2967**,
+tenant **144 "Durga Wellness Clinic"** (US / USD, TRIAL plan, self-registered 2026-08-26).
+
+### Verified working (API + on-device)
+
+Login · splash/auth routing · dashboard · Bookings (all 4 buckets) · Catalog (3 sub-tabs) ·
+Finance (3 sub-tabs) · Prescriptions · Treatment Plans · Consent Forms · Wallet · Loyalty ·
+Memberships · Notification inbox · Waitlist · Profile view/edit · avatar upload + delete
+(S3) · DSAR export · dark mode · all 14 deep links.
+
+**Every one of the 69 HTTP calls the app made returned 200. No crashes.**
+
+### Not verifiable on this account 🔴
+
+Tenant 144 has an empty catalogue — `GET /public/tenant/durga-wellness-clinic` independently
+returns `services: []`, `locations: []`, `resources: []`. These flows render correct empty
+states but could not be exercised end-to-end:
+
+booking an appointment · waitlist add (needs a `serviceId`) · gift-card purchase + Razorpay ·
+prescription PDF viewer · treatment-plan / consent detail + PDF · membership purchase ·
+cancel / reschedule · medication reminders · treatment-analysis camera flow.
+
+**To close this out, a login on a tenant with catalogue data is needed** (or seed services
+onto tenant 144). This is a test-data gap, not an app defect.
+
+### Defects found and fixed this session
+
+| # | Defect | Fix | Verified |
+|---|--------|-----|----------|
+| 1 | Cert pins targeted `crm.globusdemos.com` while `BASE_URL` is `globuscrm.globussoft.com` — **pinning was inert**; pin-set also expired 2026-09-04 | Re-pinned to the live GTS **intermediate + root** (leaf rotates ~90d and would break the app). Added an independent OkHttp `CertificatePinner`; debug flavour ships a pin-free config so proxying still works | ✅ R8 release build passes |
+| 2 | Hardcoded `TENANT_SLUG` showed **"Dr. Enhanced Wellness"** to a patient of Durga Wellness Clinic; registration filed new users under tenant 1 | Login/register now persist the authoritative `tenant` block from the auth response; Splash no longer overwrites it for a signed-in user; registration uses the slug-resolved tenant id | ✅ shows "Durga Wellness Clinic" after login **and** after cold restart |
+| 3 | Notification Settings was a **mock** — `save()` was `delay(300)`; nothing persisted, no toggle had any effect | Real `NotificationPreferencesRepository` on DataStore + use cases; `WellnessSocketManager` now honours categories, channels and quiet hours | ✅ survives logout and cold restart; verified in `wellness_prefs.preferences_pb` |
+| 4 | 8 failing unit tests (stale assertions, not product bugs) | Fixed setup + rewrote assertions to the real contract; added quiet-hours wrap-around tests | ✅ **111 tests, 0 failures** (was 102 / 8 failing) |
+| 5 | Debug OkHttp logging at `BODY` wrote prescriptions and JWTs to Logcat | Dropped to `HEADERS`; `Authorization` / `Cookie` / `Set-Cookie` redacted | ✅ |
+| 6 | Dashboard greeting used `basicMarquee` — scrolled forever and clipped mid-glyph | Single line + `TextOverflow.Ellipsis` | ✅ |
+| 7 | Catalogue endpoints refetched on every tab switch (`services` ×8, `my-memberships` ×7 in one session) | `CatalogueCacheInterceptor` — 60s HTTP cache on a **non-PHI allowlist only**, evicted on logout | ✅ 134ms → 3–9ms on repeat; Catalog tab now works with **no network** |
+| 8 | Unread bell badge stale until the inbox was opened | `MainViewModel` syncs notifications on every sign-in | ✅ |
+| 9 | `notification_icon.png` (62 KB colour bitmap) used as a **small icon** — Android renders those as a white silhouette | Unified on the existing `ic_notification` vector | ✅ |
+| 10 | `wellness_crm_logo.png` 2.4 MB single-density; `globus_crm_logo.png` unreferenced | WebP @1080px (**2364 KB → 149 KB**, 0.26% mean pixel diff); unused asset deleted | ✅ splash renders correctly |
+| 11 | `FinanceTabScreen` imported 6 symbols from `feature/wallet/presentation` (rule 2) | Tabs passed as composable slots from NavGraph | ✅ 0 cross-feature presentation imports remain |
+| 12 | `NotificationSettingsScreen` took a ViewModel parameter (rule 6) | Stateless `state` + `onEvent`; VM resolved in NavGraph | ✅ |
+| 13 | `portal/product-categories` wired through the repository but never called; returns 403 | Removed the endpoint, repo method, DTO, domain model and unused `BookingState.categories` | ✅ |
+| 14 | Duplicate `STATUS.md` / `status.md`, byte-identical — breaks case-insensitive checkouts | `STATUS.md` deleted | ✅ |
+| 15 | 3 Room schema dirs from two prior package renames | Stale dirs removed | ✅ |
+| 16 | Dark mode + notification prefs wiped on logout | `DataStoreManager.clearAll()` preserves device-level preferences (no patient data) | ✅ |
+
+### 🔴 Open — needs a backend decision
+
+**There is no working push channel.** FCM was never integrated (no Firebase dependency, no
+`google-services.json`). Socket.IO cannot connect either: `/socket.io/` on the API origin
+serves the web app's HTML, not an Engine.IO handshake — probed `/socket.io/`,
+`/api/socket.io/`, `/ws/socket.io/`, `/wellness/socket.io/`, none is a gateway.
+
+Notifications now arrive **only** over REST, pulled on sign-in and on inbox open. A patient
+with the app closed receives nothing.
+
+Client-side groundwork is done: `SOCKET_URL` / `SOCKET_PATH` are BuildConfig fields
+(`SOCKET_URL` empty ⇒ socket disabled), reconnects are bounded at 10 attempts instead of
+`Int.MAX_VALUE`, and connect failures are logged under `WellnessSocket` rather than
+swallowed. **Set `SOCKET_URL` once a gateway is mounted, or integrate FCM.**
+
+Also still open: `GET /loyalty/{patientId}` is not ownership-scoped on the backend.
+
+---
 
 ## Session 15 — Live Device Test Results (2026-06-04)
 
