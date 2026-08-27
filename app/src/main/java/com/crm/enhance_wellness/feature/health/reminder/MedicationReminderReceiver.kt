@@ -62,7 +62,7 @@ class MedicationReminderReceiver : BroadcastReceiver() {
             append(" in PDF view.")
         }
         val notification = NotificationCompat.Builder(context, CHANNEL_ID_MEDICATION_REMINDERS)
-            .setSmallIcon(R.drawable.notification_icon)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle("Time for your medication")
             .setContentText(shortMessage)
             .setStyle(
