@@ -33,6 +33,11 @@ android {
         buildConfigField("String", "BASE_URL", "\"https://globuscrm.globussoft.com/api/wellness/\"")
         buildConfigField("String", "TENANT_SLUG", "\"default\"")
         buildConfigField("int", "TENANT_ID", "1")
+        // Socket.IO gateway for live notification push. Blank disables the socket
+        // entirely (the inbox still fills from REST on screen open). Set this once the
+        // gateway is actually mounted — see status.md "Real-time notifications".
+        buildConfigField("String", "SOCKET_URL", "\"\"")
+        buildConfigField("String", "SOCKET_PATH", "\"/socket.io/\"")
     }
 
     signingConfigs {

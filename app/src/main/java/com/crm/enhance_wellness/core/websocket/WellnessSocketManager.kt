@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.crm.enhance_wellness.BuildConfig
@@ -11,6 +12,8 @@ import com.crm.enhance_wellness.MainActivity
 import com.crm.enhance_wellness.R
 import com.crm.enhance_wellness.core.network.TokenManager
 import com.crm.enhance_wellness.feature.notifications.domain.model.Notification
+import com.crm.enhance_wellness.feature.notifications.domain.model.NotificationPreferences
+import com.crm.enhance_wellness.feature.notifications.domain.repository.NotificationPreferencesRepository
 import com.crm.enhance_wellness.feature.notifications.domain.repository.NotificationRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.socket.client.IO
@@ -29,6 +32,7 @@ import javax.inject.Singleton
 class WellnessSocketManager @Inject constructor(
     private val tokenManager: TokenManager,
     private val notificationRepository: NotificationRepository,
+    private val preferencesRepository: NotificationPreferencesRepository,
     @ApplicationContext private val context: Context,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -47,23 +51,51 @@ class WellnessSocketManager @Inject constructor(
 
     private fun connect(token: String) {
         if (socket?.connected() == true) return
+
+        // Empty SOCKET_URL means "no gateway configured" — skip rather than hammer a host
+        // that will never speak Socket.IO. Previously this derived the URL from BASE_URL
+        // and retried forever against an endpoint that serves the web app's HTML, so the
+        // socket could never connect and nothing said so.
+        val serverUrl = BuildConfig.SOCKET_URL
+        if (serverUrl.isBlank()) {
+            Log.i(TAG, "Socket disabled: no SOCKET_URL configured. Notifications sync over REST.")
+            return
+        }
+
         try {
-            val serverUrl = BuildConfig.BASE_URL.substringBefore("/api/")
             val options = IO.Options.builder()
                 .setAuth(mapOf("token" to token))
+                .setPath(BuildConfig.SOCKET_PATH)
                 .setReconnection(true)
-                .setReconnectionAttempts(Int.MAX_VALUE)
-                .setReconnectionDelay(3000)
+                .setReconnectionAttempts(MAX_RECONNECT_ATTEMPTS)
+                .setReconnectionDelay(RECONNECT_DELAY_MS)
                 .build()
             socket = IO.socket(serverUrl, options)
             socket?.on("notification_new") { args ->
                 val data = args.getOrNull(0) as? JSONObject ?: return@on
                 scope.launch { handleNotification(data) }
             }
+            socket?.on(Socket.EVENT_CONNECT) {
+                Log.i(TAG, "Socket connected to $serverUrl")
+            }
+            socket?.on(Socket.EVENT_CONNECT_ERROR) { args ->
+                // Surfaced rather than swallowed: a permanently unreachable gateway used to
+                // look identical to "no notifications have arrived yet".
+                Log.w(TAG, "Socket connect failed for $serverUrl: ${args.firstOrNull()}")
+            }
             socket?.connect()
-        } catch (_: Exception) {
-            // Connection failure is non-fatal; REST sync catches up on next open.
+        } catch (e: Exception) {
+            Log.w(TAG, "Socket setup failed; falling back to REST sync: ${e.message}")
         }
+    }
+
+    private companion object {
+        const val TAG = "WellnessSocket"
+
+        // Bounded, unlike the previous Int.MAX_VALUE: an unreachable gateway otherwise
+        // retries for the life of the process, holding a wakelock-ish loop for nothing.
+        const val MAX_RECONNECT_ATTEMPTS = 10
+        const val RECONNECT_DELAY_MS = 3000L
     }
 
     fun disconnect() {
@@ -84,12 +116,40 @@ class WellnessSocketManager @Inject constructor(
             isRead = false,
             receivedAt = parseDate(data.optString("createdAt", null)),
         )
-        notificationRepository.insert(notification)
+        val entityType = data.optString("entityType", null)
+        val prefs = preferencesRepository.get()
+        val category = categoryForEntityType(entityType)
+
+        // The in-app bell is the inbox itself, so it gates persistence; push gates the
+        // system tray notification. A muted category silences both.
+        if (!prefs.isCategoryEnabled(category)) return
+        if (prefs.isChannelEnabled(NotificationPreferences.CHANNEL_IN_APP)) {
+            notificationRepository.insert(notification)
+        }
+        if (!prefs.isChannelEnabled(NotificationPreferences.CHANNEL_PUSH)) return
+
+        // Quiet hours suppress the tray alert only — the message is already in the inbox.
+        val now = java.util.Calendar.getInstance()
+        val minuteOfDay = now.get(java.util.Calendar.HOUR_OF_DAY) * 60 +
+            now.get(java.util.Calendar.MINUTE)
+        if (prefs.isQuietAt(minuteOfDay)) return
+
         showSystemNotification(
             notification = notification,
-            entityType = data.optString("entityType", null),
+            entityType = entityType,
             priority = data.optString("priority", "normal"),
         )
+    }
+
+    private fun categoryForEntityType(entityType: String?): String = when (entityType) {
+        "Appointment" -> NotificationPreferences.CATEGORY_APPOINTMENTS
+        "Prescription" -> NotificationPreferences.CATEGORY_PRESCRIPTIONS
+        "Wallet", "Payment", "Transaction" -> NotificationPreferences.CATEGORY_PAYMENTS
+        "Membership" -> NotificationPreferences.CATEGORY_MEMBERSHIPS
+        "GiftCard" -> NotificationPreferences.CATEGORY_GIFT_CARDS
+        // Unknown types fall under appointments, the category patients are least likely
+        // to have muted — better a stray notification than a silently dropped one.
+        else -> NotificationPreferences.CATEGORY_APPOINTMENTS
     }
 
     @SuppressLint("MissingPermission")

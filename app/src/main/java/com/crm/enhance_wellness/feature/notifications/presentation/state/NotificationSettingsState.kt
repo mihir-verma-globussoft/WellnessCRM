@@ -18,8 +18,10 @@ data class NotificationSettingsUiState(
     ),
     val quietStart: String = "22:00",
     val quietEnd: String = "07:00",
+    val isLoading: Boolean = true,
     val isSaving: Boolean = false,
     val saveSuccess: Boolean = false,
+    val error: String? = null,
 )
 
 sealed class NotificationSettingsUiEvent {

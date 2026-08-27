@@ -67,6 +67,7 @@ import com.crm.enhance_wellness.feature.finance.presentation.screen.FinanceTabSc
 import com.crm.enhance_wellness.feature.finance.presentation.viewmodel.FinanceNavEvent
 import com.crm.enhance_wellness.feature.finance.presentation.viewmodel.FinanceViewModel
 import com.crm.enhance_wellness.feature.notifications.presentation.screen.NotificationSettingsScreen
+import com.crm.enhance_wellness.feature.notifications.presentation.viewmodel.NotificationSettingsViewModel
 import com.crm.enhance_wellness.feature.catalog.presentation.viewmodel.CatalogNavEvent
 import com.crm.enhance_wellness.feature.catalog.presentation.viewmodel.CatalogViewModel
 import com.crm.enhance_wellness.feature.loyalty.presentation.screen.LoyaltyScreen
@@ -539,7 +540,9 @@ fun WellnessNavGraph(
             }
 
             composable(route = Screen.NotificationSettings.route) {
-                NotificationSettingsScreen(onBack = { navController.popBackStack() })
+                val vm: NotificationSettingsViewModel = hiltViewModel()
+                val state by vm.uiState.collectAsStateWithLifecycle()
+                NotificationSettingsScreen(state = state, onEvent = vm::onEvent)
             }
 
             composable(

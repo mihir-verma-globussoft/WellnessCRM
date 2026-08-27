@@ -18,34 +18,20 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.crm.enhance_wellness.core.ui.SectionLabel
 import com.crm.enhance_wellness.feature.notifications.presentation.state.NotificationCategory
 import com.crm.enhance_wellness.feature.notifications.presentation.state.NotificationChannel
 import com.crm.enhance_wellness.feature.notifications.presentation.state.NotificationSettingsUiEvent
 import com.crm.enhance_wellness.feature.notifications.presentation.state.NotificationSettingsUiState
-import com.crm.enhance_wellness.feature.notifications.presentation.viewmodel.NotificationSettingsViewModel
 
+// Stateless per architecture rule 6: the screen takes UiState + onEvent and holds no
+// ViewModel reference. The ViewModel is resolved in NavGraph.
 @Composable
 fun NotificationSettingsScreen(
-    onBack: () -> Unit,
-    viewModel: NotificationSettingsViewModel = hiltViewModel(),
-) {
-    val state by viewModel.uiState.collectAsStateWithLifecycle()
-    NotificationSettingsContent(
-        state = state,
-        onEvent = viewModel::onEvent,
-    )
-}
-
-@Composable
-private fun NotificationSettingsContent(
     state: NotificationSettingsUiState,
     onEvent: (NotificationSettingsUiEvent) -> Unit,
 ) {
