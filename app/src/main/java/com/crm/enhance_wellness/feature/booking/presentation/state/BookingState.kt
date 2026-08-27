@@ -2,7 +2,6 @@ package com.crm.enhance_wellness.feature.booking.presentation.state
 
 import com.crm.enhance_wellness.feature.booking.domain.model.Appointment
 import com.crm.enhance_wellness.feature.booking.domain.model.Product
-import com.crm.enhance_wellness.feature.booking.domain.model.ProductCategory
 import com.crm.enhance_wellness.feature.booking.domain.model.Visit
 
 // ── My Appointments ───────────────────────────────────────────────────────────
@@ -51,7 +50,6 @@ data class BookAppointmentUiState(
     val isLoading: Boolean = true,
     val error: String? = null,
     val products: List<Product> = emptyList(),
-    val categories: List<ProductCategory> = emptyList(),
     val serviceSearchQuery: String = "",
     val selectedProduct: Product? = null,
     val doctors: List<DoctorOption> = emptyList(),

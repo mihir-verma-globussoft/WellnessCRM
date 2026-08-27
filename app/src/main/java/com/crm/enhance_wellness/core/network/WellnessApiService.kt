@@ -14,7 +14,6 @@ import com.crm.enhance_wellness.feature.booking.data.remote.dto.AppointmentListR
 import com.crm.enhance_wellness.feature.booking.data.remote.dto.BookAppointmentDto
 import com.crm.enhance_wellness.feature.booking.data.remote.dto.BookAppointmentResponseDto
 import com.crm.enhance_wellness.feature.booking.data.remote.dto.CancelAppointmentResponseDto
-import com.crm.enhance_wellness.feature.booking.data.remote.dto.ProductCategoryDto
 import com.crm.enhance_wellness.feature.booking.data.remote.dto.ProductDto
 import com.crm.enhance_wellness.feature.booking.data.remote.dto.RescheduleAppointmentDto
 import com.crm.enhance_wellness.feature.booking.data.remote.dto.RescheduleAppointmentResponseDto
@@ -166,12 +165,11 @@ interface WellnessApiService {
     suspend fun addToWaitlist(@Body body: AddWaitlistDto): Response<WaitlistEntryDto>
 
     // ── Products / Services (patient-facing catalogue) ────────────────────────
-    // portal/products requires products.read (CUSTOMER role denied). Use public services endpoint.
+    // portal/products and portal/product-categories both require products.read, which is
+    // not granted to the CUSTOMER role — they returned 403 for every patient. The public
+    // services endpoints below carry the same catalogue and are used instead.
     @GET("services")
     suspend fun getPortalProducts(@Query("public") public: Boolean = true): Response<List<ProductDto>>
-
-    @GET("portal/product-categories")
-    suspend fun getPortalProductCategories(): Response<List<ProductCategoryDto>>
 
     // ── Catalog (catalog feature — own DTOs, no cross-feature import from booking) ──
     @GET("services")

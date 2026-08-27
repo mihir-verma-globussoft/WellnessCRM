@@ -36,12 +36,6 @@ data class Product(
     val categoryName: String?,
 )
 
-data class ProductCategory(
-    val id: Int,
-    val name: String,
-    val imageUrl: String?,
-    val color: String?,
-)
 
 data class WaitlistEntry(
     val id: Int,

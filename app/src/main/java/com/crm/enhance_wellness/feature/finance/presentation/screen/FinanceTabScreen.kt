@@ -43,24 +43,24 @@ import com.crm.enhance_wellness.core.util.DateUtil
 import com.crm.enhance_wellness.feature.finance.domain.model.Payment
 import com.crm.enhance_wellness.feature.finance.presentation.state.FinanceUiEvent
 import com.crm.enhance_wellness.feature.finance.presentation.state.FinanceUiState
-import com.crm.enhance_wellness.feature.wallet.presentation.screen.GiftCardsScreen
-import com.crm.enhance_wellness.feature.wallet.presentation.screen.WalletScreen
-import com.crm.enhance_wellness.feature.wallet.presentation.state.GiftCardsUiEvent
-import com.crm.enhance_wellness.feature.wallet.presentation.state.GiftCardsUiState
-import com.crm.enhance_wellness.feature.wallet.presentation.state.WalletUiEvent
-import com.crm.enhance_wellness.feature.wallet.presentation.state.WalletUiState
 
 private val TAB_LABELS = listOf("Payments", "Gift Cards", "Transactions")
 
+/**
+ * Tab host for the Finance section.
+ *
+ * The Gift Cards and Transactions tabs are owned by the `wallet` feature. They arrive as
+ * composable slots rather than direct calls so this feature does not import from another
+ * feature (architecture rule 2) — NavGraph, which is allowed to see every feature, supplies
+ * them.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FinanceTabScreen(
     paymentsState: FinanceUiState,
-    giftState: GiftCardsUiState,
-    walletState: WalletUiState,
     onPaymentsEvent: (FinanceUiEvent) -> Unit,
-    onGiftEvent: (GiftCardsUiEvent) -> Unit,
-    onWalletEvent: (WalletUiEvent) -> Unit,
+    giftCardsTab: @Composable () -> Unit,
+    transactionsTab: @Composable () -> Unit,
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
 
@@ -84,8 +84,8 @@ fun FinanceTabScreen(
 
         when (selectedTab) {
             0 -> PaymentsContent(state = paymentsState, onEvent = onPaymentsEvent)
-            1 -> GiftCardsScreen(state = giftState, onEvent = onGiftEvent)
-            2 -> WalletScreen(state = walletState, onEvent = onWalletEvent)
+            1 -> giftCardsTab()
+            2 -> transactionsTab()
         }
     }
 }

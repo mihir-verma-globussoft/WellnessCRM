@@ -4,13 +4,11 @@ import com.crm.enhance_wellness.core.util.BackendImageUrlResolver
 import com.crm.enhance_wellness.core.util.DateUtil
 import com.crm.enhance_wellness.feature.booking.data.local.entity.CachedVisit
 import com.crm.enhance_wellness.feature.booking.data.remote.dto.AppointmentDto
-import com.crm.enhance_wellness.feature.booking.data.remote.dto.ProductCategoryDto
 import com.crm.enhance_wellness.feature.booking.data.remote.dto.ProductDto
 import com.crm.enhance_wellness.feature.booking.data.remote.dto.VisitDto
 import com.crm.enhance_wellness.feature.booking.data.remote.dto.WaitlistEntryDto
 import com.crm.enhance_wellness.feature.booking.domain.model.Appointment
 import com.crm.enhance_wellness.feature.booking.domain.model.Product
-import com.crm.enhance_wellness.feature.booking.domain.model.ProductCategory
 import com.crm.enhance_wellness.feature.booking.domain.model.Visit
 import com.crm.enhance_wellness.feature.booking.domain.model.WaitlistEntry
 
@@ -81,13 +79,6 @@ fun ProductDto.toDomain() = Product(
         pictureUrl,
     ),
     categoryName = categoryName,
-)
-
-fun ProductCategoryDto.toDomain() = ProductCategory(
-    id = id,
-    name = name,
-    imageUrl = BackendImageUrlResolver.resolveFirst(imageUrl, image, thumbnailUrl, thumbnail, iconUrl),
-    color = color,
 )
 
 fun WaitlistEntryDto.toDomain() = WaitlistEntry(

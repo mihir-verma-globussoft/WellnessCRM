@@ -137,18 +137,6 @@ data class ProductDto(
     @Json(name = "category") val categoryName: String?,
 )
 
-@JsonClass(generateAdapter = true)
-data class ProductCategoryDto(
-    val id: Int,
-    val name: String,
-    val parentId: Int?,
-    val imageUrl: Any?,
-    val image: Any? = null,
-    val thumbnailUrl: Any? = null,
-    val thumbnail: Any? = null,
-    val iconUrl: Any? = null,
-    val color: String?,
-)
 
 @JsonClass(generateAdapter = true)
 data class WaitlistEntryDto(

@@ -9,7 +9,6 @@ import com.crm.enhance_wellness.feature.booking.data.remote.dto.BookAppointmentD
 import com.crm.enhance_wellness.feature.booking.data.remote.dto.RescheduleAppointmentDto
 import com.crm.enhance_wellness.feature.booking.domain.model.Appointment
 import com.crm.enhance_wellness.feature.booking.domain.model.Product
-import com.crm.enhance_wellness.feature.booking.domain.model.ProductCategory
 import com.crm.enhance_wellness.feature.booking.domain.model.Visit
 import com.crm.enhance_wellness.feature.booking.domain.model.WaitlistEntry
 import com.crm.enhance_wellness.feature.booking.domain.repository.AppointmentRepository
@@ -78,11 +77,6 @@ class AppointmentRepositoryImpl @Inject constructor(
         return response.body()!!.map { it.toDomain() }
     }
 
-    override suspend fun getPortalProductCategories(): List<ProductCategory> {
-        val response = api.getPortalProductCategories()
-        if (!response.isSuccessful) throw HttpException(response)
-        return response.body()!!.map { it.toDomain() }
-    }
 
     override suspend fun getVisitHistory(upcomingOnly: Boolean): List<Visit> {
         val response = api.getVisits(upcoming = if (upcomingOnly) true else null)

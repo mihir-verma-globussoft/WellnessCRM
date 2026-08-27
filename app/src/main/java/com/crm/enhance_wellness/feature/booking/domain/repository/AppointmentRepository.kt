@@ -2,7 +2,6 @@ package com.crm.enhance_wellness.feature.booking.domain.repository
 
 import com.crm.enhance_wellness.feature.booking.domain.model.Appointment
 import com.crm.enhance_wellness.feature.booking.domain.model.Product
-import com.crm.enhance_wellness.feature.booking.domain.model.ProductCategory
 import com.crm.enhance_wellness.feature.booking.domain.model.Visit
 import com.crm.enhance_wellness.feature.booking.domain.model.WaitlistEntry
 
@@ -24,7 +23,6 @@ interface AppointmentRepository {
         appointmentTime: String,
     ): Appointment
     suspend fun getPortalProducts(): List<Product>
-    suspend fun getPortalProductCategories(): List<ProductCategory>
     suspend fun getVisitHistory(upcomingOnly: Boolean = false): List<Visit>
     suspend fun getCachedVisits(): List<Visit>
     suspend fun cacheVisits(visits: List<Visit>)

@@ -452,11 +452,9 @@ fun WellnessNavGraph(
                 }
                 FinanceTabScreen(
                     paymentsState = paymentsState,
-                    giftState = giftState,
-                    walletState = walletState,
                     onPaymentsEvent = financeVm::onEvent,
-                    onGiftEvent = giftVm::onEvent,
-                    onWalletEvent = walletVm::onEvent,
+                    giftCardsTab = { GiftCardsScreen(state = giftState, onEvent = giftVm::onEvent) },
+                    transactionsTab = { WalletScreen(state = walletState, onEvent = walletVm::onEvent) },
                 )
             }
 
