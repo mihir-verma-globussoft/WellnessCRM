@@ -1,19 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
 
-    <!-- Production: HTTPS only + certificate pinning (SPKI SHA-256, fetched 2026-06-09).
-         IMPORTANT: leaf cert expires 2026-09-05 — renew pins before 2026-09-04. -->
+    <!-- Production: HTTPS only + certificate pinning (SPKI SHA-256, fetched 2026-08-26).
+         Pins target the Google Trust Services CA chain, NOT the leaf: GTS rotates leaf
+         certificates every ~90 days, so a leaf pin would brick the app on each renewal.
+         Pinning the issuing intermediate + root survives leaf rotation.
+
+           WE1 intermediate  kIdp6NNE…  valid to 2029-02-20
+           GTS Root R4       mEflZT5e…  valid to 2028-01-28
+
+         Renew these pins before the expiration date below. To recompute:
+           openssl s_client -connect globuscrm.globussoft.com:443 \
+             -servername globuscrm.globussoft.com -showcerts </dev/null \
+             | openssl x509 -pubkey -noout \
+             | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | base64 -->
     <domain-config cleartextTrafficPermitted="false">
-        <domain includeSubdomains="true">crm.globusdemos.com</domain>
-        <pin-set expiration="2026-09-04">
-            <!-- Leaf cert SPKI -->
-            <pin digest="SHA-256">zSXIC6P2U1KV2fG8e5wZ9LqOeWPHu0+4qU+NZ1rW2ss=</pin>
-            <!-- Intermediate CA SPKI (backup pin) -->
+        <domain includeSubdomains="true">globussoft.com</domain>
+        <pin-set expiration="2027-12-31">
+            <!-- Google Trust Services WE1 — issuing intermediate -->
             <pin digest="SHA-256">kIdp6NNEd8wsugYyyIYFsi1ylMCED3hZbSR8ZFsa/A4=</pin>
+            <!-- GTS Root R4 — backup pin -->
+            <pin digest="SHA-256">mEflZT5enoR1FuXLgYYGqnVEoZvmf9c2bVBpiOjYQ0c=</pin>
         </pin-set>
     </domain-config>
 
-    <!-- Debug only: allow cleartext to local dev servers (AVD emulator + LAN device) -->
+    <!-- Debug only: allow cleartext to local dev servers (AVD emulator + LAN device).
+         Pinning above still applies to the production domain in debug builds. -->
     <debug-overrides>
         <trust-anchors>
             <certificates src="system" />
