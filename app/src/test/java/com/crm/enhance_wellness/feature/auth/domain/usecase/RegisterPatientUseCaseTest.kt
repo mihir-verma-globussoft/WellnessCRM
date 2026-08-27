@@ -50,14 +50,14 @@ class RegisterPatientUseCaseTest {
     }
 
     @Test
-    fun `returns HTTP_409 on 409 conflict`() = runTest {
+    fun `returns ALREADY_REGISTERED on 409 conflict`() = runTest {
         val response = Response.error<Patient>(409, "".toResponseBody())
         coEvery { repository.register(any(), any(), any()) } throws HttpException(response)
 
         val result = useCase("rahul@example.com", "pass1234", "Rahul")
 
         assertTrue(result is Result.Error)
-        assertEquals("HTTP_409", (result as Result.Error).code)
+        assertEquals("ALREADY_REGISTERED", (result as Result.Error).code)
     }
 
     @Test

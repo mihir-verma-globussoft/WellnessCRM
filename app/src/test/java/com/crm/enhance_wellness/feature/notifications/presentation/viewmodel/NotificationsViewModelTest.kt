@@ -6,6 +6,8 @@ import com.crm.enhance_wellness.feature.notifications.domain.usecase.GetNotifica
 import com.crm.enhance_wellness.feature.notifications.domain.usecase.MarkNotificationReadUseCase
 import com.crm.enhance_wellness.feature.notifications.domain.usecase.SyncPortalNotificationsUseCase
 import com.crm.enhance_wellness.feature.notifications.presentation.state.NotificationsUiEvent
+import com.crm.enhance_wellness.core.util.Result
+import io.mockk.coEvery
 import io.mockk.coJustRun
 import io.mockk.coVerify
 import io.mockk.every
@@ -50,6 +52,10 @@ class NotificationsViewModelTest {
         Dispatchers.setMain(testDispatcher)
         getNotifications = mockk()
         markRead = mockk()
+        // The ViewModel fires this from init{}; every test needs it stubbed or the
+        // constructor throws before the test body runs.
+        syncNotification = mockk()
+        coEvery { syncNotification() } returns Result.Success(0)
     }
 
     @AfterEach
@@ -71,7 +77,7 @@ class NotificationsViewModelTest {
     fun `MarkRead event calls markRead with correct id`() = runTest {
         every { getNotifications() } returns flowOf(emptyList())
         coJustRun { markRead(any()) }
-        vm = NotificationsViewModel(getNotifications, markRead,syncNotification)
+        vm = NotificationsViewModel(getNotifications, markRead, syncNotification)
 
         vm.onEvent(NotificationsUiEvent.MarkRead("n1"))
 
@@ -82,7 +88,7 @@ class NotificationsViewModelTest {
     fun `MarkAllRead event calls markAll`() = runTest {
         every { getNotifications() } returns flowOf(emptyList())
         coJustRun { markRead.markAll() }
-        vm = NotificationsViewModel(getNotifications, markRead,syncNotification)
+        vm = NotificationsViewModel(getNotifications, markRead, syncNotification)
 
         vm.onEvent(NotificationsUiEvent.MarkAllRead)
 
@@ -93,7 +99,7 @@ class NotificationsViewModelTest {
     fun `TapNotification with screen calls markRead and emits OpenDeepLink nav event`() = runTest {
         every { getNotifications() } returns flowOf(listOf(fakeNotification))
         coJustRun { markRead(any()) }
-        vm = NotificationsViewModel(getNotifications, markRead,syncNotification)
+        vm = NotificationsViewModel(getNotifications, markRead, syncNotification)
 
         vm.navEvent.test {
             vm.onEvent(NotificationsUiEvent.TapNotification(fakeNotification))
@@ -111,7 +117,7 @@ class NotificationsViewModelTest {
     fun `TapNotification without screen calls markRead but emits no nav event`() = runTest {
         every { getNotifications() } returns flowOf(listOf(notificationNoScreen))
         coJustRun { markRead(any()) }
-        vm = NotificationsViewModel(getNotifications, markRead,syncNotification)
+        vm = NotificationsViewModel(getNotifications, markRead, syncNotification)
 
         vm.navEvent.test {
             vm.onEvent(NotificationsUiEvent.TapNotification(notificationNoScreen))
@@ -124,7 +130,7 @@ class NotificationsViewModelTest {
     @Test
     fun `NavigateBack event emits Back nav event`() = runTest {
         every { getNotifications() } returns flowOf(emptyList())
-        vm = NotificationsViewModel(getNotifications, markRead,syncNotification)
+        vm = NotificationsViewModel(getNotifications, markRead, syncNotification)
 
         vm.navEvent.test {
             vm.onEvent(NotificationsUiEvent.NavigateBack)
