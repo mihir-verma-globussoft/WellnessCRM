@@ -24,7 +24,7 @@ import com.crm.enhance_wellness.feature.treatmentanalysis.data.local.entity.Trea
         CachedNotification::class,
         TreatmentAnalysisDraftEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {

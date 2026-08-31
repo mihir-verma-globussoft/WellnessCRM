@@ -20,7 +20,9 @@ import com.crm.enhance_wellness.feature.booking.data.remote.dto.RescheduleAppoin
 import com.crm.enhance_wellness.feature.booking.data.remote.dto.VisitDto
 import com.crm.enhance_wellness.feature.booking.data.remote.dto.WaitlistEntryDto
 import com.crm.enhance_wellness.feature.health.data.remote.dto.ConsentFormDto
+import com.crm.enhance_wellness.feature.health.data.remote.dto.MyPrescriptionsResponseDto
 import com.crm.enhance_wellness.feature.health.data.remote.dto.PrescriptionDto
+import com.crm.enhance_wellness.feature.health.data.remote.dto.SubmitPrescriptionRequestDto
 import com.crm.enhance_wellness.feature.health.data.remote.dto.TreatmentPlanDto
 import com.crm.enhance_wellness.feature.loyalty.data.remote.dto.LoyaltyResponseDto
 import com.crm.enhance_wellness.feature.membership.data.remote.dto.MembershipDto
@@ -185,6 +187,31 @@ interface WellnessApiService {
     @GET("portal/prescriptions/{id}/pdf")
     suspend fun getPrescriptionPdf(
         @Path("id") prescriptionId: Int,
+    ): Response<ResponseBody>
+
+    // Used by the "Request Meds" action to pull the backend's own computed validUntil per
+    // prescription for the depletion reminder — see MyPrescriptionsResponseDto.
+    @GET("my-prescriptions")
+    suspend fun getMyPrescriptions(): Response<MyPrescriptionsResponseDto>
+
+    // Read-only refill/prescription request status list — see PrescriptionRequestDto.
+    // NOT live on this app's configured BuildConfig.BASE_URL host (globuscrm.globussoft.com) —
+    // confirmed there via a valid device token: clean 404 API_ROUTE_NOT_FOUND, route unregistered.
+    // Confirmed present on https://crm.globusdemos.com/api/wellness/ instead (CLAUDE.md's
+    // documented "Production" host, which this app is NOT actually pointed at — see
+    // build.gradle.kts): same literal path returns 401 "Invalid or expired portal token", a
+    // token-specific rejection rather than a route-not-found, i.e. the route exists there.
+    // Path relative to the base is correct either way; only the host differs.
+    // Returns the raw body (not List<PrescriptionRequestDto> directly): the backend sends an
+    // EMPTY body rather than `[]` when a patient has no requests, which crashes Moshi's
+    // strict parser at the root; PrescriptionRequestRepositoryImpl parses defensively.
+    @GET("portal/prescription-requests")
+    suspend fun getPrescriptionRequests(): Response<ResponseBody>
+
+    // Same path, POST — submits a renewal/refill request. See SubmitPrescriptionRequestDto.
+    @POST("portal/prescription-requests")
+    suspend fun submitPrescriptionRequest(
+        @Body body: SubmitPrescriptionRequestDto,
     ): Response<ResponseBody>
 
     @Multipart

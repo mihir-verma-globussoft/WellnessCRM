@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.Healing
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.MedicalServices
+import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
@@ -359,6 +360,7 @@ private fun PortalMenu(onEvent: (DashboardUiEvent) -> Unit) {
             iconTint = cs.secondary,
             tiles = listOf(
                 PortalTile("Prescriptions", "Your medicines", Icons.Default.MedicalServices, DashboardUiEvent.NavigateToPrescriptions),
+                PortalTile("My Products / Medicines", "Refill request status", Icons.Default.Medication, DashboardUiEvent.NavigateToPrescriptionRequests),
                 PortalTile("Treatment Plans", "Active plans", Icons.Default.Healing, DashboardUiEvent.NavigateToTreatmentPlans),
                 PortalTile("Consent Forms", "Signed documents", Icons.Default.Description, DashboardUiEvent.NavigateToConsentForms),
             ),

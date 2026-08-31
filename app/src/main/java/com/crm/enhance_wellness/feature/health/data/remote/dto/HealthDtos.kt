@@ -17,6 +17,23 @@ data class PrescriptionDto(
     val createdAt: String?,
 )
 
+// GET /api/wellness/my-prescriptions — richer prescription payload used only for the
+// "Request Meds" refresh; `validUntil` here is the backend's own computed expiry date, so
+// depletion reminders can use it directly instead of estimating from duration/qty. Other
+// fields in the real response (drugId, dosage, strengthValue, qty, ...) are inconsistently
+// typed across drugs (e.g. drugId is sometimes an Int, sometimes ""), so this DTO only
+// declares the two fields the reminder feature actually needs — Moshi ignores the rest.
+@JsonClass(generateAdapter = true)
+data class MyPrescriptionsResponseDto(
+    val prescriptions: List<MyPrescriptionDto> = emptyList(),
+)
+
+@JsonClass(generateAdapter = true)
+data class MyPrescriptionDto(
+    val id: Int,
+    val validUntil: String? = null,
+)
+
 @JsonClass(generateAdapter = true)
 data class PrescriptionVisitDto(
     val id: Int,
@@ -41,6 +58,58 @@ data class DrugDto(
     val frequency: String?,
     val duration: String?,
     val instructions: String?,
+)
+
+// GET /wellness/portal/prescription-requests — CUSTOMER JWT (verifyPatientToken); the
+// backend filters by the authenticated patient, so no patientId is ever sent by the client.
+// `requestedDrugs` (partial-refill requests) carries string dosage/frequency/duration;
+// `prescription.drugs` (full-prescription requests) carries numeric fields — two different
+// shapes for "a drug" in the same response, so they get separate DTOs. Both stay minimal
+// (name + the display fields this screen actually needs) since fields like drugId/qty are
+// inconsistently typed across entries in this backend (see MyPrescriptionsResponseDto above).
+@JsonClass(generateAdapter = true)
+data class PrescriptionRequestDto(
+    val id: Int,
+    val status: String,
+    val prescriptionId: Int,
+    val doctorName: String?,
+    val isFullPrescription: Boolean,
+    val requestedDrugs: List<RequestedDrugDto>?,
+    val requestedDurationDays: Int?,
+    val notes: String?,
+    val reviewedByName: String?,
+    val reviewedAt: String?,
+    val reviewNote: String?,
+    val createdAt: String?,
+    val prescription: PrescriptionRequestPrescriptionDto?,
+)
+
+@JsonClass(generateAdapter = true)
+data class RequestedDrugDto(
+    val name: String,
+)
+
+@JsonClass(generateAdapter = true)
+data class PrescriptionRequestPrescriptionDto(
+    val id: Int,
+    val drugs: List<PrescriptionRequestDrugDto> = emptyList(),
+)
+
+@JsonClass(generateAdapter = true)
+data class PrescriptionRequestDrugDto(
+    val name: String,
+)
+
+// POST body for /api/wellness/portal/prescription-requests — reverse-engineered from the
+// live web portal's PrescriptionRenewalComposer bundle (crm.globusdemos.com), since this is
+// undocumented. `medicines` is omitted entirely (not sent as null/[]) for a full-prescription
+// request — Moshi's default JsonWriter already skips null fields, matching that behavior.
+@JsonClass(generateAdapter = true)
+data class SubmitPrescriptionRequestDto(
+    val prescriptionId: Int,
+    val medicines: List<String>? = null,
+    val durationDays: Int? = null,
+    val notes: String? = null,
 )
 
 // GET /api/wellness/patients/{patientId}/treatment-plans — CUSTOMER JWT (verifyToken).

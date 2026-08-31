@@ -5,10 +5,12 @@ import com.crm.enhance_wellness.feature.health.data.local.entity.CachedPrescript
 import com.crm.enhance_wellness.feature.health.data.remote.dto.ConsentFormDto
 import com.crm.enhance_wellness.feature.health.data.remote.dto.DrugDto
 import com.crm.enhance_wellness.feature.health.data.remote.dto.PrescriptionDto
+import com.crm.enhance_wellness.feature.health.data.remote.dto.PrescriptionRequestDto
 import com.crm.enhance_wellness.feature.health.data.remote.dto.TreatmentPlanDto
 import com.crm.enhance_wellness.feature.health.domain.model.ConsentForm
 import com.crm.enhance_wellness.feature.health.domain.model.Drug
 import com.crm.enhance_wellness.feature.health.domain.model.Prescription
+import com.crm.enhance_wellness.feature.health.domain.model.PrescriptionRequest
 import com.crm.enhance_wellness.feature.health.domain.model.TreatmentPlan
 import org.json.JSONArray
 import org.json.JSONObject
@@ -154,6 +156,22 @@ fun TreatmentPlanDto.toDomain() = TreatmentPlan(
     totalPrice = totalPrice,
     serviceName = service?.name,
     serviceCategory = service?.category,
+)
+
+fun PrescriptionRequestDto.toDomain() = PrescriptionRequest(
+    id = id,
+    status = status,
+    prescriptionId = prescriptionId,
+    doctorName = doctorName,
+    isFullPrescription = isFullPrescription,
+    requestedDrugNames = requestedDrugs?.map { it.name } ?: emptyList(),
+    prescriptionDrugNames = prescription?.drugs?.map { it.name } ?: emptyList(),
+    requestedDurationDays = requestedDurationDays,
+    notes = notes,
+    reviewedByName = reviewedByName,
+    reviewedAt = reviewedAt,
+    reviewNote = reviewNote,
+    createdAt = createdAt,
 )
 
 fun ConsentFormDto.toDomain() = ConsentForm(

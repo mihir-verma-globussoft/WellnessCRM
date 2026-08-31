@@ -17,7 +17,9 @@ import com.crm.enhance_wellness.feature.booking.domain.repository.AppointmentRep
 import com.crm.enhance_wellness.feature.dashboard.data.repository.DashboardRepositoryImpl
 import com.crm.enhance_wellness.feature.dashboard.domain.repository.DashboardRepository
 import com.crm.enhance_wellness.feature.health.data.repository.PrescriptionRepositoryImpl
+import com.crm.enhance_wellness.feature.health.data.repository.PrescriptionRequestRepositoryImpl
 import com.crm.enhance_wellness.feature.health.domain.repository.PrescriptionRepository
+import com.crm.enhance_wellness.feature.health.domain.repository.PrescriptionRequestRepository
 import com.crm.enhance_wellness.feature.membership.data.repository.MembershipRepositoryImpl
 import com.crm.enhance_wellness.feature.membership.domain.repository.MembershipRepository
 import com.crm.enhance_wellness.feature.notifications.data.repository.NotificationPreferencesRepositoryImpl
@@ -53,6 +55,11 @@ abstract class RepositoryModule {
 
     @Binds @Singleton
     abstract fun bindPrescriptionRepository(impl: PrescriptionRepositoryImpl): PrescriptionRepository
+
+    @Binds @Singleton
+    abstract fun bindPrescriptionRequestRepository(
+        impl: PrescriptionRequestRepositoryImpl,
+    ): PrescriptionRequestRepository
 
     @Binds @Singleton
     abstract fun bindMembershipRepository(impl: MembershipRepositoryImpl): MembershipRepository

@@ -48,6 +48,7 @@ import com.crm.enhance_wellness.feature.health.presentation.screen.ConsentFormPd
 import com.crm.enhance_wellness.feature.health.presentation.screen.ConsentFormsScreen
 import com.crm.enhance_wellness.feature.health.presentation.screen.PrescriptionPdfScreen
 import com.crm.enhance_wellness.feature.health.presentation.screen.PrescriptionsScreen
+import com.crm.enhance_wellness.feature.health.presentation.screen.PrescriptionRequestsScreen
 import com.crm.enhance_wellness.feature.health.presentation.screen.TreatmentPlansScreen
 import com.crm.enhance_wellness.feature.health.presentation.viewmodel.ConsentFormPdfNavEvent
 import com.crm.enhance_wellness.feature.health.presentation.viewmodel.ConsentFormPdfViewModel
@@ -57,6 +58,8 @@ import com.crm.enhance_wellness.feature.health.presentation.viewmodel.Prescripti
 import com.crm.enhance_wellness.feature.health.presentation.viewmodel.PrescriptionPdfViewModel
 import com.crm.enhance_wellness.feature.health.presentation.viewmodel.PrescriptionsNavEvent
 import com.crm.enhance_wellness.feature.health.presentation.viewmodel.PrescriptionsViewModel
+import com.crm.enhance_wellness.feature.health.presentation.viewmodel.PrescriptionRequestsNavEvent
+import com.crm.enhance_wellness.feature.health.presentation.viewmodel.PrescriptionRequestsViewModel
 import com.crm.enhance_wellness.feature.health.presentation.viewmodel.TreatmentPlansNavEvent
 import com.crm.enhance_wellness.feature.health.presentation.viewmodel.TreatmentPlansViewModel
 import com.crm.enhance_wellness.feature.treatmentanalysis.presentation.screen.TreatmentAnalysisScreen
@@ -241,6 +244,7 @@ fun WellnessNavGraph(
                             DashboardNavEvent.ToGiftCards -> navController.navigate(Screen.GiftCards.route)
                             DashboardNavEvent.ToVisitHistory -> navController.navigate(Screen.VisitHistory.route)
                             DashboardNavEvent.ToTreatmentPlans -> navController.navigate(Screen.TreatmentPlans.route)
+                            DashboardNavEvent.ToPrescriptionRequests -> navController.navigate(Screen.PrescriptionRequests.route)
                             DashboardNavEvent.ToConsentForms -> navController.navigate(Screen.ConsentForms.route)
                             DashboardNavEvent.ToWaitlist -> navController.navigate(Screen.Waitlist.route)
                             DashboardNavEvent.ToLogin -> navController.navigate(Screen.Login.route) {
@@ -323,6 +327,8 @@ fun WellnessNavGraph(
                                 Screen.PrescriptionAnalysis.createRoute(event.prescriptionId, event.visitId)
                             )
                             PrescriptionsNavEvent.Back -> navController.popBackStack()
+                            PrescriptionsNavEvent.ToRequestHistory ->
+                                navController.navigate(Screen.PrescriptionRequests.route)
                         }
                     }
                 }
@@ -557,6 +563,22 @@ fun WellnessNavGraph(
                     }
                 }
                 TreatmentPlansScreen(state = state, onEvent = vm::onEvent)
+            }
+
+            composable(
+                route = Screen.PrescriptionRequests.route,
+                deepLinks = listOf(navDeepLink { uriPattern = "globuscrm://screen/prescription_requests" }),
+            ) {
+                val vm: PrescriptionRequestsViewModel = hiltViewModel()
+                val state by vm.uiState.collectAsStateWithLifecycle()
+                LaunchedEffect(Unit) {
+                    vm.navEvent.collect { event ->
+                        when (event) {
+                            PrescriptionRequestsNavEvent.Back -> navController.popBackStack()
+                        }
+                    }
+                }
+                PrescriptionRequestsScreen(state = state, onEvent = vm::onEvent)
             }
 
             composable(

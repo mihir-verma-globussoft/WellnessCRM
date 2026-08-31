@@ -112,7 +112,7 @@ fun StatusChip(
     modifier: Modifier = Modifier,
 ) {
     val (bg, fg) = when (status.lowercase()) {
-        "active", "booked" ->
+        "active", "booked", "approved", "accepted" ->
             MaterialTheme.colorScheme.secondaryContainer to MaterialTheme.colorScheme.onSecondaryContainer
 
         "completed", "arrived", "checked-in" ->
@@ -121,7 +121,7 @@ fun StatusChip(
         "in-treatment" ->
             MaterialTheme.colorScheme.primaryContainer to MaterialTheme.colorScheme.onPrimaryContainer
 
-        "cancelled", "expired" ->
+        "cancelled", "expired", "rejected" ->
             MaterialTheme.colorScheme.errorContainer to MaterialTheme.colorScheme.onErrorContainer
 
         else ->

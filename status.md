@@ -1,7 +1,43 @@
 # WellnessCRM Patient App — Implementation Status
 
-Last updated: 2026-08-26 (session 17 — full audit, live device re-test, defect fixes)
+Last updated: 2026-08-31 (session 21 — fixed stale "Renewal pending" chip + linked request history from PrescriptionsScreen)
 Current phase: Feature-complete (23 routes). One functional gap: no working push channel.
+
+## Session 21b — "My Prescription Requests" entry point on PrescriptionsScreen (2026-08-31)
+
+Web portal's Clinical section has two pages reachable from the sidebar: "My Prescriptions"
+(plain list, as Android already had) and "My Prescription Requests" (full renewal-request
+history with status chips) — separate pages, not one merged view (an earlier pass in this
+session tried merging them inline into one screen; reverted per explicit feedback — keep the
+main Prescriptions page exactly as it was, only add an entry point to the history).
+
+Added a "My Prescription Requests" button at the top of `PrescriptionsScreen`'s list. Tapping
+it sends a new `PrescriptionsNavEvent.ToRequestHistory` nav event, which `NavGraph.kt` routes
+to the existing `Screen.PrescriptionRequests` destination (`PrescriptionRequestsScreen`,
+previously only reachable from the Dashboard's "My Products / Medicines" tile — that tile is
+unchanged, this is a second entry point to the same screen). No new state, no duplicated
+fetch/card code. ✅ `:app:compileDebugKotlin` clean · ✅ health feature unit tests all passing.
+
+## Session 21a — stale renewal-status chip (2026-08-31)
+
+Reported: after a renewal request was accepted/completed on the backend (confirmed via
+notification inbox), the prescription card still showed "Renewal pending". Two real bugs in
+`PrescriptionsViewModel`/`PrescriptionsScreen`, both fixed:
+
+1. `loadOpenRenewalRequests()` silently swallowed failures (`else -> Unit`) and the
+   pull-to-refresh spinner (`isRefreshing`) was wired only to `state.isLoading` (the
+   prescriptions list load), not to the renewal-status fetch — so a refresh could look
+   "done" while the renewal-status call was still in flight or had failed, leaving
+   `openRenewalPrescriptionIds` stale. Added `renewalStatusLoading` to `PrescriptionsUiState`;
+   the spinner now waits on both fetches.
+2. There is no socket push for renewal status (see CLAUDE.md "Real-time Notifications"), and
+   `PrescriptionsViewModel`'s fetch only ran in `init` — returning to an already-open
+   back-stack entry (e.g. from the PDF viewer or Before/After scan) never re-fetched. Added
+   `LifecycleEventEffect(ON_RESUME)` in `PrescriptionsScreen` to re-hit
+   `GET /portal/prescription-requests` every time the screen becomes visible again.
+
+✅ `:app:compileDebugKotlin` clean · ✅ `PrescriptionsViewModelTest` all passing (unchanged
+assertions — `renewalStatusLoading` defaults `false` and isn't asserted by existing tests).
 
 > **Reading note.** Sections below dated 2026-06-04 and earlier are kept as history per the
 > "never delete entries" rule, but they predate five commits (treatment analysis, CameraX,
@@ -76,6 +112,236 @@ Client-side groundwork is done: `SOCKET_URL` / `SOCKET_PATH` are BuildConfig fie
 swallowed. **Set `SOCKET_URL` once a gateway is mounted, or integrate FCM.**
 
 Also still open: `GET /loyalty/{patientId}` is not ownership-scoped on the backend.
+
+---
+
+## Session 18 — Medicine depletion / low-stock reminder (2026-08-28)
+
+Scope: only the reminder-notification piece of the client checklist's "Medicine / Product
+Low-Stock Reminder" item — no My Products screen, no refill request submission flow, no
+configurable threshold UI. Those remain unbuilt.
+
+`feature/health/reminder/` already had a per-dose "take your medicine" `AlarmManager`
+reminder (opt-in per prescription via the existing toggle in `PrescriptionsScreen`).
+
+**First cut (superseded within this session):** added a depletion alarm computed as
+`duration × qty` from the drug's `qty` field on `GET /portal/prescriptions`. Verified
+end-to-end on-device (Samsung SM-M176B) — toggling the reminder correctly scheduled an extra
+`AlarmManager` entry (pending count 120 → 121) and a `BuildConfig.DEBUG` test alarm confirmed
+the notification rendered correctly. Dropped after user feedback: the sample API data makes
+`qty` unreliable for this math (see the Minoxidil sample — `qty` and `dosage` aren't in
+compatible units), and the user explicitly said not to compute duration × qty at all.
+
+**Final design:** a new **"Request Meds" button** on `PrescriptionsScreen` (above the list)
+calls `GET /api/wellness/my-prescriptions` — a richer endpoint (not `/portal/prescriptions`)
+that returns the backend's own computed `validUntil` per prescription. The depletion alarm
+now fires `DEPLETION_REMINDER_LEAD_DAYS` (3) days before `validUntilAt` (from that endpoint)
+when known, falling back to the existing locally-estimated `endAt` (`startAt + duration`,
+no qty) when the patient hasn't tapped the button yet or the backend sent no `validUntil`.
+Tapping "Request Meds" also auto-enables a reminder for any returned prescription that
+doesn't have one yet.
+
+Files touched this session (net, after the qty revert): `HealthDtos.kt`
+(`MyPrescriptionsResponseDto`/`MyPrescriptionDto` — deliberately only model `id` +
+`validUntil`, since other fields like `drugId` are inconsistently typed across drugs in real
+responses and aren't needed here), `WellnessApiService.kt` (`getMyPrescriptions()`),
+`PrescriptionReminderEntity.kt` (+`validUntilAt: Long?`, Room `MIGRATION_3_4`, DB version
+3→4), `MedicationReminderScheduler.kt` (depletion trigger = `validUntilAt ?: endAt`, replacing
+the qty math), `PrescriptionReminderRepository.kt` (`requestMeds()`), `HealthState.kt` /
+`PrescriptionsViewModel.kt` / `PrescriptionsScreen.kt` (the button + event + loading state).
+`Drug.qty`, `ScheduledMedication.qty`/`totalSupplyDays()` and their tests were fully reverted.
+
+✅ Verified on-device (same Samsung SM-M176B, reconnected after the earlier adb drop).
+`assembleDebug` installed clean over the first-cut build — `MIGRATION_3_4` applied without
+a crash (app launched straight to a working Home screen, confirmed via logcat: no
+FATAL/AndroidRuntime/Room/SQLite errors, only a benign unrelated `SQLiteLog` warning).
+Tapped "Request Meds" on `PrescriptionsScreen`: OkHttp log confirms
+`GET https://globuscrm.globussoft.com/api/wellness/my-prescriptions` → **200**, with the
+normal portal patient JWT `Authorization` header — so this non-`/portal/`-prefixed route
+**is** reachable with the existing CUSTOMER token, resolving the one open auth question.
+Response parsed cleanly via `MyPrescriptionsResponseDto` (no crash, despite the DTO
+intentionally not modeling the inconsistently-typed fields). For this account's one
+reminder-enabled prescription (id 306, tenant 144) the response had no matching `validUntil`,
+so the app correctly reported "No medicine finish dates found from the clinic yet." rather
+than silently doing nothing or crashing — confirmed via `sqlite3` on a pulled copy of
+`wellness_db` that `validUntilAt` stayed `NULL` for that row, matching the message. The
+"happy path" (a prescription whose `my-prescriptions` entry *does* have `validUntil`) is
+still only covered by code review + the manual `existing.copy(validUntilAt = ...)` /
+`reminder.validUntilAt ?: reminder.endAt` logic, not a live device run — try this against a
+prescription/tenant whose backend data actually sets `validUntil` when one is available.
+
+---
+
+## Session 19 — "My Products / Medicines" refill-request status screen (2026-08-28)
+
+Scope: Android-only, read-only display of `GET .../portal/prescription-requests` results.
+Explicitly no POST/refill-submission flow (none exists on the backend; not to be invented) —
+this is purely "show the patient what refill/prescription requests already exist and their
+status," matching the client checklist's status-display requirement without the submission UI.
+
+New feature-complete vertical slice, following the same layered pattern as Treatment
+Plans/Consent Forms (no Room cache — this is a live status list, not offline content):
+`PrescriptionRequestDto`/`RequestedDrugDto`/`PrescriptionRequestPrescriptionDto`/
+`PrescriptionRequestDrugDto` (`HealthDtos.kt` — deliberately minimal, same reasoning as
+`MyPrescriptionsResponseDto`: real drug records mix Int/`""` for `drugId` across entries, so
+unused fields are simply not modeled) → `PrescriptionRequestDto.toDomain()` (`HealthMappers.kt`)
+→ `PrescriptionRequest` domain model with a `drugNames` fallback property (requested drugs for
+a partial refill, else the original prescription's drugs for a full-prescription request) and
+a `String.toRefillStatusLabel()` mapper (PENDING→Pending, ACCEPTED→Approved, REJECTED→Rejected,
+COMPLETED→Completed) → `PrescriptionRequestRepository`/`Impl` → `GetPrescriptionRequestsUseCase`
+(explicit 401/403 branches, per the brief) → `PrescriptionRequestsViewModel` (loads on `init`,
+`Refresh` event, pull-to-refresh) → `PrescriptionRequestsScreen` (loading/error/empty/list
+states; each card shows drug names, doctor, status chip, full-vs-partial label, requested date,
+requested duration, patient note, and reviewer/review-date/review-note when present). Wired
+into the Home dashboard's Clinical section as a new "My Products / Medicines" tile (→
+`Screen.PrescriptionRequests`) alongside Prescriptions/Treatment Plans/Consent Forms.
+`StatusChip` (shared component) extended with approved/accepted/rejected color buckets so this
+screen doesn't fall back to the generic gray for every status. Unit tests: DTO→domain mapping
+(partial refill, full-prescription fallback, null prescription/requestedDrugs), status-label
+mapping, and UseCase error branches (401/403/generic HTTP/IOException) — all passing.
+
+### 🔴 Endpoint not reachable on this app's configured backend — blocked, not a client bug
+
+The exact path took real investigation. The user-supplied sample ("GET
+/wellness/portal/prescription-requests") is *not* a literal URL — probed against the app's
+actual `BuildConfig.BASE_URL` host (`https://globuscrm.globussoft.com/api/wellness/` — **not**
+`crm.globusdemos.com`, despite that being CLAUDE.md's documented "Production" host; see
+`app/build.gradle.kts`, all build types) with a real device JWT:
+
+| Path tried (on globuscrm.globussoft.com) | Result |
+|---|---|
+| `/api/wellness/portal/prescription-requests` (the literal path, base-relative) | 404 `API_ROUTE_NOT_FOUND` (clean API 404, route genuinely unregistered) |
+| `/wellness/portal/prescription-requests` (host root, no `/api`) | 200 `text/html` — the SPA's `index.html` catch-all, not the API |
+| `/api/portal/prescription-requests`, `/api/wellness/prescription-requests`, and 6 other variants | All 404 `API_ROUTE_NOT_FOUND` with real auth (their unauthenticated 401s were a red herring — those prefixes gate auth before route matching, so 401 there doesn't mean the route exists) |
+
+The literal path turned out to be correct — just not on this host. The same path against
+`https://crm.globusdemos.com/api/wellness/portal/prescription-requests` (CLAUDE.md's
+documented production host) returns `401 {"error":"Invalid or expired portal token"}` — a
+token-*validation* rejection, not a routing 404, meaning the route **is** registered there;
+the device's `globuscrm.globussoft.com`-issued token simply isn't valid on that separate host.
+
+Implemented against `portal/prescription-requests` (relative to `WellnessApiService`'s base
+URL) — correct wherever `BASE_URL` actually points at a deployment with this route.
+
+### ✅ Confirmed live end-to-end (2026-08-28, later same session)
+
+At the user's request, `app/build.gradle.kts`'s **debug** `BASE_URL` was pointed at
+`https://crm.globusdemos.com/api/wellness/` (release/defaultConfig left untouched — see the
+comment left at that call site explaining why and how to revert). This invalidated the
+device's cached session (issued for `globuscrm.globussoft.com`), so `ganeshsharmayoyo@gmail.com`
+logged in fresh against the new host (tenant "Dr. Enhance Wellness") — `POST /api/auth/login`
+200. Tapping "My Products / Medicines" then hit
+`GET https://crm.globusdemos.com/api/wellness/portal/prescription-requests` → **200**, parsed
+without error, and rendered the correct **empty state** ("No medicine or refill requests
+found") — this account just has no requests. This confirms: the path is exactly right, the
+empty-body defensive parsing works against a real empty response, and the full pipeline
+renders correctly with no crash.
+
+**Still not visually confirmed**: a populated list actually rendering card content (drug
+names, status chip, dates, reviewer info) against live data — this account has zero requests.
+The original sample data's account (patientId 2965, "Mohit Das") is the one with real
+records, but no credentials for it were available this session. The mapping logic for that
+exact JSON shape is covered by passing unit tests (`HealthMappersTest`), so this is a
+low-risk gap, but a real visual check is worth doing if that account's credentials turn up.
+
+Also confirmed by the same live call: the backend's undocumented behavior of sending an
+**empty body** (not `[]`) when a patient has no requests, which crashes Moshi's strict parser
+at the JSON root (`JsonEncodingException at path $`) if parsed via a typed Retrofit return —
+worked around by having `getPrescriptionRequests()` return the raw `ResponseBody` and parsing
+defensively in `PrescriptionRequestRepositoryImpl` (blank body → `emptyList()` before handing
+anything to Moshi). This was discovered against `my-prescriptions` in session 18 too, so it's
+evidently a real, recurring backend quirk on this API rather than a one-off — worth flagging
+to the backend team rather than assuming future endpoints will send `[]`.
+
+### Follow-up same session: real prescription data appeared, session 18's "Request Meds" retested too
+
+Partway through, a real prescription showed up on the logged-in account (a different account
+than the one used above — session switched to `ganeshsharmayoyo@gmail.com`'s Home dashboard
+showing "Devanjon..." mid-session, apparently a teammate logging into the same physical test
+device with an account that has real data; not investigated further since it didn't block
+testing). `GET portal/prescription-requests` is still empty for this prescription specifically
+(no refill *request* exists for it — expected, distinct from the prescription itself existing)
+— confirmed correct via the same graceful empty state, not a bug.
+
+The regular Prescriptions screen, however, now shows a real prescription ("Age Lock (Luxury)",
+Dr. Sanju Ved, 2 medications) — used it to retest session 18's "Request Meds" button and the
+reminder toggle end-to-end against real live data for the first time:
+- **"Request Meds"** → `GET my-prescriptions` 200, reported "No medicine finish dates found
+  from the clinic yet." (this prescription's backend record has no `validUntil` either —
+  consistent, correct handling, not a regression).
+- **Reminder toggle** off → "Medication reminders disabled." → on → "Medication and refill
+  reminders enabled." Pulled `wellness_db` via `run-as`/`sqlite3` and confirmed the
+  `prescription_reminders` row for prescriptionId 504 has `drugsJson` correctly capturing
+  *two* drugs with different dosage/frequency/duration each (`Azelia Biotin And Collagen`:
+  28.0/3-per-day/60 days; `Aquahance Night Repair Serum`: 45.0/5-per-day/7 days) — the
+  multi-drug, differing-frequency parsing path (untested live before now) works correctly.
+  `dumpsys alarm` pending count for the package: 337 (spanning this prescription plus a
+  stale reminder row left over from earlier session-18 testing on a different account/prescription — harmless, same local Room cache, not account-scoped).
+
+---
+
+## Session 20 — Real "Request a renewal" submission flow (2026-08-28)
+
+The client checklist's "Request Refill button... submit refill request to clinic" — explicitly
+out of scope in session 19 pending backend confirmation — turned out to be a real, already-live
+feature: the web portal (`crm.globusdemos.com/wellness/my-prescriptions`) has a working
+"Request a renewal" flow. Reverse-engineered it by fetching the portal's lazy-loaded
+`PrescriptionRenewalComposer-*.js` chunk directly (`curl` + `grep`) rather than guessing:
+
+- **Same path as the read endpoint, different verb**: `POST portal/prescription-requests`
+  (not a new route). Body: `{ prescriptionId, medicines?, durationDays?, notes? }` — `medicines`
+  (array of drug name strings) is **omitted entirely**, not sent as `null`/`[]`, when the
+  patient wants the whole prescription renewed; only present for a partial pick-specific-drugs
+  request. Moshi's default `JsonWriter` already skips null fields (no `.serializeNulls()` call
+  in `NetworkModule`), so a straightforward nullable-field DTO reproduces this automatically.
+- **A companion hook the web app uses to gate its own UI**: fetches the same GET list and keeps
+  a `prescriptionId → request` map filtered to `status ∈ {PENDING, ACCEPTED}` ("open") — used to
+  hide the renewal button and show a pending badge instead. Mirrored exactly.
+
+Implementation: `SubmitPrescriptionRequestDto` + `WellnessApiService.submitPrescriptionRequest`
+(`HealthDtos.kt` / `WellnessApiService.kt`), `PrescriptionRequestRepository.submitRenewalRequest`
++ `SubmitPrescriptionRenewalUseCase` (401/403 handling matching the read UseCase),
+`PrescriptionRequest.isOpen` (mirrors the web's PENDING/ACCEPTED set). **Repurposed session 18's
+global "Request Meds" button** on `PrescriptionsScreen` into a **per-prescription** "Request a
+renewal" action (matching the real feature's actual UX — the web flow is scoped to one
+prescription, not a bulk action) — replaced by a "Renewal pending" chip when
+`openRenewalPrescriptionIds` already has an open request for that card. New `RenewalRequestDialog`
+(AlertDialog): "Renew the complete prescription" checkbox (default on) → per-drug checkboxes
+when off (with the same "pick at least one, or ask for the whole prescription" validation the
+web has) → optional duration-days and notes fields → Send request / Cancel.
+
+**Note on session 18's old "Request Meds" behavior**: `PrescriptionReminderRepository.requestMeds()`
+(the `GET my-prescriptions` → `validUntilAt` refresh for depletion reminders) is left intact in
+the codebase but **no longer has a UI trigger** — the button that called it now does something
+else entirely. If that validUntil-refresh capability is still wanted, it needs a new trigger
+(the code path itself still works, per session 18/19's testing).
+
+### ✅ Confirmed live — read/gating side fully round-tripped through real data
+
+`PrescriptionsViewModel` now loads open requests via `GetPrescriptionRequestsUseCase` alongside
+prescriptions. On-device (same `crm.globusdemos.com` account, prescription #504 "Age Lock
+(Luxury)"), the Prescriptions screen correctly showed a **"Renewal pending"** chip instead of
+the request button — matching the user's own web-portal screenshot exactly — and "My Products /
+Medicines" rendered that same request's full detail correctly: both drug names, **Pending**
+status chip, doctor, "Full prescription refill" label, request date, "Requested duration: 30
+days", and the patient's actual note ("ok"). Every mapped field checks out against a real,
+independently-created backend record (this request was submitted through the *web* portal, not
+by this session — the Android app only had to read and gate on it correctly, which it did).
+
+**Not yet exercised live: the POST itself.** This account's only prescription already has an
+open request, so the "Request a renewal" button is (correctly) hidden and the dialog/submission
+path couldn't be triggered end-to-end this session. The POST body construction is a direct,
+verified mirror of the reverse-engineered web bundle's own logic, and unit tests cover the
+full/partial payload shapes (`PrescriptionsViewModelTest`), but confirm with a real submission
+once a prescription without an open request is available — ideally also checking what the
+backend's actual success-response body looks like (currently unread; only `isSuccessful` is
+checked).
+
+🔴 4 pre-existing, unrelated unit tests now fail (`BackendImageUrlResolverTest`,
+`CatalogMappersTest`, `GiftCardMapperTest`) — they hardcode `globuscrm.globussoft.com` as the
+expected resolved image host, which no longer matches after the debug `BASE_URL` was pointed at
+`crm.globusdemos.com` for this testing session. Not touched — they'll pass again once `BASE_URL`
+reverts, and rewriting them to be host-agnostic is a separate, judgment-call task.
 
 ---
 

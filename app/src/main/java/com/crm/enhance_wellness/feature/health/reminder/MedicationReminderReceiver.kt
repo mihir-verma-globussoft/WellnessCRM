@@ -14,6 +14,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.crm.enhance_wellness.R
+import com.crm.enhance_wellness.core.util.DateUtil
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -27,9 +28,14 @@ class MedicationReminderReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         val prescriptionId = intent.getIntExtra(EXTRA_PRESCRIPTION_ID, -1)
-        val endAt = intent.getLongExtra(EXTRA_END_AT, 0L)
         if (prescriptionId == -1) return
 
+        if (intent.getStringExtra(EXTRA_REMINDER_TYPE) == TYPE_DEPLETION) {
+            showDepletionNotification(context, intent, prescriptionId)
+            return
+        }
+
+        val endAt = intent.getLongExtra(EXTRA_END_AT, 0L)
         if (endAt > 0L && System.currentTimeMillis() > endAt) {
             val pendingResult = goAsync()
             CoroutineScope(Dispatchers.IO).launch {
@@ -39,14 +45,11 @@ class MedicationReminderReceiver : BroadcastReceiver() {
             return
         }
 
-        showNotification(context, intent, prescriptionId)
+        showDoseNotification(context, intent, prescriptionId)
     }
 
-    private fun showNotification(context: Context, intent: Intent, prescriptionId: Int) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
-            PackageManager.PERMISSION_GRANTED
-        ) return
+    private fun showDoseNotification(context: Context, intent: Intent, prescriptionId: Int) {
+        if (!hasNotificationPermission(context)) return
 
         val drugName = intent.getStringExtra(EXTRA_DRUG_NAME).orEmpty().ifBlank { "your medication" }
         val dosage = intent.getStringExtra(EXTRA_DOSAGE)?.ifBlank { null } ?: "recommended"
@@ -80,6 +83,40 @@ class MedicationReminderReceiver : BroadcastReceiver() {
         )
     }
 
+    private fun showDepletionNotification(context: Context, intent: Intent, prescriptionId: Int) {
+        if (!hasNotificationPermission(context)) return
+
+        val drugName = intent.getStringExtra(EXTRA_DRUG_NAME).orEmpty().ifBlank { "your medication" }
+        val depletionAt = intent.getLongExtra(EXTRA_DEPLETION_AT, 0L)
+        val depletionText = if (depletionAt > 0L) "around ${DateUtil.toDisplayDate(depletionAt)}" else "soon"
+        ensureMedicationReminderChannel(context)
+        val shortMessage = "Your supply of $drugName is running low."
+        val detailedMessage = "Your prescribed supply of $drugName is expected to run out $depletionText. " +
+            "Tap to view prescription #$prescriptionId and arrange a refill with your clinic."
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID_MEDICATION_REMINDERS)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle("Medicine running low")
+            .setContentText(shortMessage)
+            .setStyle(
+                NotificationCompat.BigTextStyle().bigText(detailedMessage)
+            )
+            .setContentIntent(createPrescriptionPdfIntent(context, prescriptionId))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_REMINDER)
+            .setAutoCancel(true)
+            .build()
+
+        NotificationManagerCompat.from(context).notify(
+            "depletion-$prescriptionId-$drugName".hashCode(),
+            notification,
+        )
+    }
+
+    private fun hasNotificationPermission(context: Context): Boolean =
+        Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
+            PackageManager.PERMISSION_GRANTED
+
     private fun createPrescriptionPdfIntent(context: Context, prescriptionId: Int): PendingIntent {
         val deepLinkIntent = Intent(
             Intent.ACTION_VIEW,
@@ -106,6 +143,10 @@ class MedicationReminderReceiver : BroadcastReceiver() {
         const val EXTRA_DRUG_NAME = "extra_drug_name"
         const val EXTRA_DOSAGE = "extra_dosage"
         const val EXTRA_END_AT = "extra_end_at"
+        const val EXTRA_DEPLETION_AT = "extra_depletion_at"
+        const val EXTRA_REMINDER_TYPE = "extra_reminder_type"
+        const val TYPE_DOSE = "dose"
+        const val TYPE_DEPLETION = "depletion"
 
         fun ensureMedicationReminderChannel(context: Context) {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return

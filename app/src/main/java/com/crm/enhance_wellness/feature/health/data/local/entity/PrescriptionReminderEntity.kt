@@ -11,4 +11,7 @@ data class PrescriptionReminderEntity(
     val endAt: Long,
     val prescriptionLabel: String?,
     val drugsJson: String,
+    // Authoritative "medicine finishes" date from GET my-prescriptions (validUntil), set only
+    // after the patient taps "Request Meds". Null until then, or if the backend didn't send one.
+    val validUntilAt: Long? = null,
 )

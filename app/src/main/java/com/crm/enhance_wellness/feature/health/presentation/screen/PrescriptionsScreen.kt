@@ -7,6 +7,7 @@ import android.provider.Settings
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,14 +23,18 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -45,8 +50,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import com.crm.enhance_wellness.core.ui.ErrorState
 import com.crm.enhance_wellness.core.ui.WellnessCard
 import com.crm.enhance_wellness.core.util.DateUtil
@@ -62,11 +70,26 @@ fun PrescriptionsScreen(
 ) {
     val context = LocalContext.current
     var isRefreshing by remember { mutableStateOf(false) }
-    LaunchedEffect(state.isLoading) { if (!state.isLoading) isRefreshing = false }
+    LaunchedEffect(state.isLoading, state.renewalStatusLoading) {
+        if (!state.isLoading && !state.renewalStatusLoading) isRefreshing = false
+    }
+    // There is no socket push for renewal-request status (see CLAUDE.md "Real-time
+    // Notifications"), so re-check it via API every time this screen becomes visible again —
+    // e.g. returning from the PDF viewer or Before/After scan to an already-open back-stack
+    // entry, where the ViewModel isn't recreated and its cached status would otherwise go stale.
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        onEvent(PrescriptionsUiEvent.Refresh)
+    }
     LaunchedEffect(state.reminderMessage) {
         state.reminderMessage?.let { message ->
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
             onEvent(PrescriptionsUiEvent.DismissReminderMessage)
+        }
+    }
+    LaunchedEffect(state.renewalMessage) {
+        state.renewalMessage?.let { message ->
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            onEvent(PrescriptionsUiEvent.DismissRenewalMessage)
         }
     }
     LaunchedEffect(state.exactAlarmPermissionPromptNeeded) {
@@ -105,11 +128,26 @@ fun PrescriptionsScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                items(state.prescriptions) { prescription ->
+                item(key = "request_history_button") {
+                    OutlinedButton(
+                        onClick = { onEvent(PrescriptionsUiEvent.ViewRequestHistory) },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Icon(
+                            Icons.Default.History,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text("My Prescription Requests")
+                    }
+                }
+                items(state.prescriptions, key = { it.id }) { prescription ->
                     PrescriptionCard(
                         prescription = prescription,
                         reminderEnabled = prescription.id in state.reminderEnabledIds,
                         reminderInProgress = state.reminderActionInProgressId == prescription.id,
+                        renewalPending = prescription.id in state.openRenewalPrescriptionIds,
                         onClick = { onEvent(PrescriptionsUiEvent.RequestViewPdf(prescription.id)) },
                         onTreatmentScan = {
                             onEvent(PrescriptionsUiEvent.StartTreatmentAnalysis(prescription.id))
@@ -117,6 +155,7 @@ fun PrescriptionsScreen(
                         onReminderChange = { enabled ->
                             onEvent(PrescriptionsUiEvent.ToggleReminder(prescription, enabled))
                         },
+                        onRequestRenewal = { onEvent(PrescriptionsUiEvent.RequestRenewal(prescription)) },
                     )
                 }
             }
@@ -141,6 +180,17 @@ fun PrescriptionsScreen(
             },
         )
     }
+
+    state.renewalDialogPrescription?.let { prescription ->
+        RenewalRequestDialog(
+            prescription = prescription,
+            inProgress = state.renewalSubmitInProgress,
+            onDismiss = { onEvent(PrescriptionsUiEvent.DismissRenewalDialog) },
+            onSubmit = { full, meds, days, notes ->
+                onEvent(PrescriptionsUiEvent.SubmitRenewal(full, meds, days, notes))
+            },
+        )
+    }
 }
 
 @Composable
@@ -148,9 +198,11 @@ private fun PrescriptionCard(
     prescription: Prescription,
     reminderEnabled: Boolean,
     reminderInProgress: Boolean,
+    renewalPending: Boolean,
     onClick: () -> Unit,
     onTreatmentScan: () -> Unit,
     onReminderChange: (Boolean) -> Unit,
+    onRequestRenewal: () -> Unit,
 ) {
     WellnessCard(modifier = Modifier.fillMaxWidth()) {
         Column(
@@ -251,9 +303,160 @@ private fun PrescriptionCard(
                         )
                     }
                 }
+
+                if (renewalPending) {
+                    Surface(
+                        shape = MaterialTheme.shapes.extraSmall,
+                        color = MaterialTheme.colorScheme.tertiaryContainer,
+                        modifier = Modifier.padding(top = 2.dp),
+                    ) {
+                        Text(
+                            text = "Renewal pending",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onTertiaryContainer,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        )
+                    }
+                } else {
+                    TextButton(
+                        onClick = onRequestRenewal,
+                        enabled = prescription.drugs.isNotEmpty(),
+                        modifier = Modifier.padding(top = 2.dp),
+                    ) {
+                        Icon(
+                            Icons.Default.Medication,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text("Request a renewal")
+                    }
+                }
             }
         }
     }
+}
+
+@Composable
+private fun RenewalRequestDialog(
+    prescription: Prescription,
+    inProgress: Boolean,
+    onDismiss: () -> Unit,
+    onSubmit: (fullPrescription: Boolean, selectedMedicines: Set<String>, durationDays: Int?, notes: String?) -> Unit,
+) {
+    var fullPrescription by remember(prescription.id) { mutableStateOf(true) }
+    var selectedMedicines by remember(prescription.id) { mutableStateOf(emptySet<String>()) }
+    var durationText by remember(prescription.id) { mutableStateOf("") }
+    var notesText by remember(prescription.id) { mutableStateOf("") }
+    var validationError by remember(prescription.id) { mutableStateOf<String?>(null) }
+
+    AlertDialog(
+        onDismissRequest = { if (!inProgress) onDismiss() },
+        title = { Text("Request a renewal") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = "Prescription #${prescription.id}" +
+                        (prescription.doctorName?.let { " · Dr $it" } ?: ""),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(enabled = !inProgress) { fullPrescription = !fullPrescription },
+                ) {
+                    Checkbox(checked = fullPrescription, onCheckedChange = { fullPrescription = it }, enabled = !inProgress)
+                    Text("Renew the complete prescription")
+                }
+                if (!fullPrescription) {
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text(
+                            text = "Choose the medicines you need:",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        prescription.drugs.forEach { drug ->
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable(enabled = !inProgress) {
+                                        selectedMedicines = if (drug.name in selectedMedicines) {
+                                            selectedMedicines - drug.name
+                                        } else {
+                                            selectedMedicines + drug.name
+                                        }
+                                    },
+                            ) {
+                                Checkbox(
+                                    checked = drug.name in selectedMedicines,
+                                    onCheckedChange = {
+                                        selectedMedicines = if (it) selectedMedicines + drug.name else selectedMedicines - drug.name
+                                    },
+                                    enabled = !inProgress,
+                                )
+                                Text(drug.name)
+                            }
+                        }
+                    }
+                }
+                OutlinedTextField(
+                    value = durationText,
+                    onValueChange = { durationText = it.filter(Char::isDigit).take(3) },
+                    label = { Text("How long do you need it for? (optional)") },
+                    singleLine = true,
+                    enabled = !inProgress,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = notesText,
+                    onValueChange = { notesText = it },
+                    label = { Text("Anything the clinic should know? (optional)") },
+                    minLines = 2,
+                    enabled = !inProgress,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                if (validationError != null) {
+                    Text(
+                        text = validationError.orEmpty(),
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (!fullPrescription && selectedMedicines.isEmpty()) {
+                        validationError = "Pick at least one medicine, or ask for the whole prescription."
+                        return@Button
+                    }
+                    validationError = null
+                    onSubmit(fullPrescription, selectedMedicines, durationText.toIntOrNull(), notesText.trim().ifBlank { null })
+                },
+                enabled = !inProgress,
+            ) {
+                if (inProgress) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                    )
+                    Spacer(Modifier.width(8.dp))
+                }
+                Text("Send request")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !inProgress) {
+                Text("Cancel")
+            }
+        },
+    )
 }
 
 @Composable

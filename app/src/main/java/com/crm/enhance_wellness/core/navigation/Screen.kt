@@ -20,6 +20,7 @@ sealed class Screen(val route: String) {
             "prescription_analysis/$prescriptionId?visitId=${visitId ?: -1}"
     }
     object TreatmentPlans : Screen("treatment_plans")  // Phase 2
+    object PrescriptionRequests : Screen("prescription_requests")
     object ConsentForms : Screen("consent_forms")       // Phase 2
     object ConsentFormPdf : Screen("consent_form_pdf/{id}") {
         fun createRoute(id: Int) = "consent_form_pdf/$id"
