@@ -9,6 +9,7 @@ import com.crm.enhance_wellness.feature.auth.data.remote.dto.RegisterResponseDto
 import com.crm.enhance_wellness.feature.auth.data.remote.dto.TenantBrandingResponseDto
 import com.crm.enhance_wellness.feature.catalog.data.remote.dto.CatalogServiceCategoryDto
 import com.crm.enhance_wellness.feature.catalog.data.remote.dto.CatalogServiceDto
+import com.crm.enhance_wellness.feature.catalog.data.remote.dto.ServicePackagesResponseDto
 import com.crm.enhance_wellness.feature.booking.data.remote.dto.AddWaitlistDto
 import com.crm.enhance_wellness.feature.booking.data.remote.dto.AppointmentListResponseDto
 import com.crm.enhance_wellness.feature.booking.data.remote.dto.BookAppointmentDto
@@ -179,6 +180,12 @@ interface WellnessApiService {
 
     @GET("service-categories")
     suspend fun getCatalogServiceCategories(@Query("public") public: Boolean = true): Response<List<CatalogServiceCategoryDto>>
+
+    // GET /api/wellness/packages — CUSTOMER JWT.
+    // Reverse-engineered from the patient web portal's Catalog > Packages tab (2026-08-31);
+    // only the read path is confirmed — purchase flow not yet implemented.
+    @GET("packages")
+    suspend fun getServicePackages(): Response<ServicePackagesResponseDto>
 
     // ── Prescriptions ─────────────────────────────────────────────────────────
     @GET("portal/prescriptions")

@@ -1,11 +1,14 @@
 package com.crm.enhance_wellness.feature.catalog.presentation.screen
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -25,14 +28,18 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.MedicalServices
+import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
@@ -44,6 +51,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -51,19 +59,24 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.crm.enhance_wellness.core.ui.BackendImage
 import com.crm.enhance_wellness.core.ui.EmptyState
 import com.crm.enhance_wellness.core.ui.ErrorState
 import com.crm.enhance_wellness.core.ui.WellnessCard
+import com.crm.enhance_wellness.core.util.CurrencyUtil
+import com.crm.enhance_wellness.core.util.DateUtil
 import com.crm.enhance_wellness.feature.catalog.domain.model.Service
 import com.crm.enhance_wellness.feature.catalog.domain.model.ServiceCategory
+import com.crm.enhance_wellness.feature.catalog.domain.model.ServicePackage
 import com.crm.enhance_wellness.feature.catalog.presentation.state.CatalogUiEvent
 import com.crm.enhance_wellness.feature.catalog.presentation.state.CatalogUiState
 
-private val TAB_LABELS = listOf("Services", "Categories", "Memberships")
+private val TAB_LABELS = listOf("Services", "Packages", "Categories", "Memberships")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -95,7 +108,8 @@ fun CatalogTabScreen(
 
         when (selectedTab) {
             0 -> ServiceCatalogContent(state = state, onEvent = onEvent)
-            1 -> ServiceCategoriesContent(
+            1 -> ServicePackagesContent(state = state, onEvent = onEvent)
+            2 -> ServiceCategoriesContent(
                 state = state,
                 onEvent = { event ->
                     if (event is CatalogUiEvent.SelectCategory) {
@@ -106,7 +120,7 @@ fun CatalogTabScreen(
                     }
                 },
             )
-            2 -> membershipsContent()
+            3 -> membershipsContent()
         }
     }
 
@@ -258,6 +272,236 @@ private fun ServiceCard(service: Service, onClick: () -> Unit) {
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ServicePackagesContent(
+    state: CatalogUiState,
+    onEvent: (CatalogUiEvent) -> Unit,
+) {
+    val context = LocalContext.current
+    LaunchedEffect(state.packageActionMessage) {
+        state.packageActionMessage?.let { message ->
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            onEvent(CatalogUiEvent.DismissPackageMessage)
+        }
+    }
+
+    PullToRefreshBox(
+        isRefreshing = state.packagesLoading,
+        onRefresh = { onEvent(CatalogUiEvent.LoadPackages) },
+        modifier = Modifier.fillMaxSize(),
+    ) {
+        when {
+            state.packagesError != null -> Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                ErrorState(message = state.packagesError, onRetry = { onEvent(CatalogUiEvent.LoadPackages) })
+            }
+
+            state.packages.isEmpty() && !state.packagesLoading -> Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                EmptyState(message = "No packages found.", icon = Icons.Default.Inventory2)
+            }
+
+            else -> LazyColumn(
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                items(state.packages, key = { it.id }) { servicePackage ->
+                    PackageCard(
+                        servicePackage = servicePackage,
+                        onBuy = { onEvent(CatalogUiEvent.BuyPackage(servicePackage.id)) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun PackageCard(servicePackage: ServicePackage, onBuy: () -> Unit) {
+    WellnessCard(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top,
+            ) {
+                Text(
+                    text = servicePackage.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f),
+                )
+                Spacer(Modifier.width(8.dp))
+                Surface(
+                    shape = MaterialTheme.shapes.small,
+                    color = if (servicePackage.isActive) {
+                        MaterialTheme.colorScheme.primaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.surfaceVariant
+                    },
+                ) {
+                    Text(
+                        text = if (servicePackage.isActive) "Live" else "Inactive",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = if (servicePackage.isActive) {
+                            MaterialTheme.colorScheme.onPrimaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    )
+                }
+            }
+
+            if (!servicePackage.description.isNullOrBlank()) {
+                Text(
+                    text = servicePackage.description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            if (servicePackage.serviceNames.isNotEmpty()) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    servicePackage.serviceNames.forEach { name ->
+                        SuggestionChip(onClick = {}, label = { Text(name, style = MaterialTheme.typography.labelSmall) })
+                    }
+                }
+            }
+
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Text(
+                    text = "${servicePackage.sessions} sessions",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (servicePackage.discountPercent > 0) {
+                    Text(
+                        text = "· ${servicePackage.discountPercent}% off",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+                if (servicePackage.taxPercent > 0) {
+                    Text(
+                        text = "· +${servicePackage.taxPercent}% tax",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
+            if (!servicePackage.sellByDate.isNullOrBlank() || servicePackage.validityDays != null) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.CalendarMonth,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(14.dp),
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        text = buildString {
+                            if (!servicePackage.sellByDate.isNullOrBlank()) {
+                                append("Sell by ${DateUtil.toDisplayDate(servicePackage.sellByDate)}")
+                            }
+                            if (servicePackage.validityDays != null) {
+                                if (isNotEmpty()) append(" · ")
+                                append("valid ${servicePackage.validityDays} days after purchase")
+                            }
+                        },
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
+            Row(verticalAlignment = Alignment.Bottom) {
+                Text(
+                    text = CurrencyUtil.formatRupees(servicePackage.price),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                if (servicePackage.grossPrice != null && servicePackage.grossPrice > servicePackage.price) {
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = CurrencyUtil.formatRupees(servicePackage.grossPrice),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textDecoration = TextDecoration.LineThrough,
+                        modifier = Modifier.padding(bottom = 3.dp),
+                    )
+                }
+            }
+
+            val owned = servicePackage.ownedPlan
+            if (owned != null) {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text(
+                            text = "You own this package",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        Text(
+                            text = "${owned.completedSessions}/${owned.totalSessions} sessions used",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    LinearProgressIndicator(
+                        progress = {
+                            if (owned.totalSessions > 0) {
+                                (owned.completedSessions.toFloat() / owned.totalSessions).coerceIn(0f, 1f)
+                            } else {
+                                0f
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            } else {
+                Button(
+                    onClick = onBuy,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ShoppingBag,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text("Buy package")
+                }
             }
         }
     }

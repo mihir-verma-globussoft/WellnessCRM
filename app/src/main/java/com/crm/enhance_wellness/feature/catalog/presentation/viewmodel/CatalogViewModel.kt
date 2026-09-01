@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.crm.enhance_wellness.core.util.Result
 import com.crm.enhance_wellness.feature.catalog.domain.usecase.GetCategoriesUseCase
+import com.crm.enhance_wellness.feature.catalog.domain.usecase.GetPackagesUseCase
 import com.crm.enhance_wellness.feature.catalog.domain.usecase.GetServicesUseCase
 import com.crm.enhance_wellness.feature.catalog.presentation.state.CatalogUiEvent
 import com.crm.enhance_wellness.feature.catalog.presentation.state.CatalogUiState
@@ -24,6 +25,7 @@ sealed class CatalogNavEvent {
 class CatalogViewModel @Inject constructor(
     private val getServicesUseCase: GetServicesUseCase,
     private val getCategoriesUseCase: GetCategoriesUseCase,
+    private val getPackagesUseCase: GetPackagesUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CatalogUiState())
@@ -35,12 +37,14 @@ class CatalogViewModel @Inject constructor(
     init {
         loadServices()
         loadCategories()
+        loadPackages()
     }
 
     fun onEvent(event: CatalogUiEvent) {
         when (event) {
             CatalogUiEvent.LoadServices -> loadServices()
             CatalogUiEvent.LoadCategories -> loadCategories()
+            CatalogUiEvent.LoadPackages -> loadPackages()
             is CatalogUiEvent.UpdateSearch ->
                 _uiState.value = _uiState.value.copy(searchQuery = event.query)
             is CatalogUiEvent.SelectCategory ->
@@ -59,6 +63,29 @@ class CatalogViewModel @Inject constructor(
                 )
             is CatalogUiEvent.BookService ->
                 viewModelScope.launch { _navEvent.send(CatalogNavEvent.ToBooking(event.serviceId)) }
+            is CatalogUiEvent.BuyPackage ->
+                _uiState.value = _uiState.value.copy(
+                    packageActionMessage = "Package purchase is coming soon.",
+                )
+            CatalogUiEvent.DismissPackageMessage ->
+                _uiState.value = _uiState.value.copy(packageActionMessage = null)
+        }
+    }
+
+    private fun loadPackages() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(packagesLoading = true, packagesError = null)
+            when (val r = getPackagesUseCase()) {
+                is Result.Success -> _uiState.value = _uiState.value.copy(
+                    packagesLoading = false,
+                    packages = r.data,
+                )
+                is Result.Error -> _uiState.value = _uiState.value.copy(
+                    packagesLoading = false,
+                    packagesError = r.message,
+                )
+                Result.Loading -> Unit
+            }
         }
     }
 

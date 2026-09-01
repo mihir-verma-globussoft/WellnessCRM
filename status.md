@@ -1,7 +1,40 @@
 # WellnessCRM Patient App — Implementation Status
 
-Last updated: 2026-08-31 (session 21 — fixed stale "Renewal pending" chip + linked request history from PrescriptionsScreen)
+Last updated: 2026-08-31 (session 21 — renewal-status fixes, Prescription Requests entry point, new Catalog > Packages tab)
 Current phase: Feature-complete (23 routes). One functional gap: no working push channel.
+
+## Session 21c — Catalog > Packages tab, read-only (2026-08-31)
+
+Web patient portal has a Catalog > Packages tab (`GET /api/packages` — absolute path, not
+under `/api/wellness/`, same pattern as `/api/auth/*` and `/api/payments`) listing bundled
+multi-service plans: name, Live/Inactive badge, the bundled services, session count, discount
+%, tax %, sell-by date, validity window, price with a struck-through gross price, and — if the
+patient already owns one — an `ownedPlan` block (status, completed/total sessions).
+
+Added a "Packages" tab beside "Services" in `CatalogTabScreen`
+(`TAB_LABELS = ["Services", "Packages", "Categories", "Memberships"]`), new
+`ServicePackage`/`OwnedServicePlan` domain models, `ServicePackageDto` (+ nested DTOs) in
+`CatalogDtos.kt`, `WellnessApiService.getServicePackages()`, and `GetPackagesUseCase` — same
+`Result<T>` + Catalog feature layering as the existing Services/Categories tabs, loaded eagerly
+in `CatalogViewModel.init` alongside them.
+
+**Explicitly scoped down per user direction**: only the GET/listing side is implemented. The
+web session's network capture only showed the list call, no purchase (order/confirm) endpoint
+— rather than guess at an unverified payment contract, "Buy package" just shows a
+"Package purchase is coming soon." toast (`CatalogUiEvent.BuyPackage` →
+`packageActionMessage`). Wiring real Razorpay purchase needs the confirmed endpoint first.
+
+Also fixed two pre-existing lint errors on `MedicationReminderReceiver.notify()` calls
+(missing-permission dataflow warning that lint doesn't resolve through the receiver's own
+`hasNotificationPermission()` helper) — same `@SuppressLint("MissingPermission")` pattern
+already used in `WellnessSocketManager.showSystemNotification()`.
+
+✅ `:app:compileDebugKotlin` clean · ✅ no new test regressions — the 4 failing tests
+(`BackendImageUrlResolverTest`, `CatalogMappersTest`, `GiftCardMapperTest`) are pre-existing
+and unrelated: `app/build.gradle.kts`'s debug `BASE_URL` is still temporarily pointed at
+`crm.globusdemos.com` (noted in session 20 above) while those tests hardcode
+`globuscrm.globussoft.com`; confirmed via `git stash` that they fail identically without any
+of this session's changes.
 
 ## Session 21b — "My Prescription Requests" entry point on PrescriptionsScreen (2026-08-31)
 

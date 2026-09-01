@@ -41,3 +41,42 @@ data class CatalogServiceCategoryDto(
 data class CategoryCountDto(
     val services: Int?,
 )
+
+// GET /api/packages — absolute path (not under /api/wellness/), CUSTOMER JWT.
+// Reverse-engineered from the patient web portal's Catalog > Packages tab (2026-08-31);
+// only the read path is confirmed — purchase (Razorpay order/confirm) is not wired yet.
+@JsonClass(generateAdapter = true)
+data class ServicePackagesResponseDto(
+    val packages: List<ServicePackageDto> = emptyList(),
+)
+
+@JsonClass(generateAdapter = true)
+data class ServicePackageDto(
+    val id: Int,
+    val name: String,
+    val description: String?,
+    val sessions: Int,
+    val discountPercent: Int?,
+    val grossPrice: Double?,
+    val price: Double,
+    val currency: String,
+    val taxPercent: Int?,
+    val validityDays: Int?,
+    val sellByDate: String?,
+    val isActive: Boolean,
+    val services: List<PackageServiceDto> = emptyList(),
+    val ownedPlan: OwnedServicePlanDto? = null,
+)
+
+@JsonClass(generateAdapter = true)
+data class PackageServiceDto(
+    val id: Int,
+    val name: String,
+)
+
+@JsonClass(generateAdapter = true)
+data class OwnedServicePlanDto(
+    val status: String,
+    val totalSessions: Int,
+    val completedSessions: Int,
+)

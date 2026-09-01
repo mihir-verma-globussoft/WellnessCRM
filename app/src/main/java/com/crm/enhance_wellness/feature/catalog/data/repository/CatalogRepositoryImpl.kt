@@ -4,6 +4,7 @@ import com.crm.enhance_wellness.core.network.WellnessApiService
 import com.crm.enhance_wellness.feature.catalog.data.mapper.toDomain
 import com.crm.enhance_wellness.feature.catalog.domain.model.Service
 import com.crm.enhance_wellness.feature.catalog.domain.model.ServiceCategory
+import com.crm.enhance_wellness.feature.catalog.domain.model.ServicePackage
 import com.crm.enhance_wellness.feature.catalog.domain.repository.CatalogRepository
 import retrofit2.HttpException
 import javax.inject.Inject
@@ -22,5 +23,11 @@ class CatalogRepositoryImpl @Inject constructor(
         val response = api.getCatalogServiceCategories()
         if (!response.isSuccessful) throw HttpException(response)
         return response.body().orEmpty().map { it.toDomain() }
+    }
+
+    override suspend fun getPackages(): List<ServicePackage> {
+        val response = api.getServicePackages()
+        if (!response.isSuccessful) throw HttpException(response)
+        return response.body()?.packages.orEmpty().map { it.toDomain() }
     }
 }

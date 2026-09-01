@@ -1,6 +1,7 @@
 package com.crm.enhance_wellness.feature.health.reminder
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -48,6 +49,7 @@ class MedicationReminderReceiver : BroadcastReceiver() {
         showDoseNotification(context, intent, prescriptionId)
     }
 
+    @SuppressLint("MissingPermission")
     private fun showDoseNotification(context: Context, intent: Intent, prescriptionId: Int) {
         if (!hasNotificationPermission(context)) return
 
@@ -83,6 +85,7 @@ class MedicationReminderReceiver : BroadcastReceiver() {
         )
     }
 
+    @SuppressLint("MissingPermission")
     private fun showDepletionNotification(context: Context, intent: Intent, prescriptionId: Int) {
         if (!hasNotificationPermission(context)) return
 
