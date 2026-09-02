@@ -1,7 +1,10 @@
 package com.crm.enhance_wellness.core.navigation
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Notifications
@@ -16,7 +19,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+
+// Clinic contact number for the "call clinic" top-bar action. Not tenant-configurable yet.
+private const val CLINIC_PHONE_NUMBER = "+919240232669"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,6 +35,7 @@ fun WellnessTopAppBar(
     onNotificationsClick: () -> Unit,
     onBack: (() -> Unit)? = null,
 ) {
+    val context = LocalContext.current
     TopAppBar(
         title = {
             Text(
@@ -47,6 +55,13 @@ fun WellnessTopAppBar(
             }
         },
         actions = {
+            IconButton(onClick = {
+                context.startActivity(
+                    Intent(Intent.ACTION_DIAL, Uri.fromParts("tel", CLINIC_PHONE_NUMBER, null)),
+                )
+            }) {
+                Icon(imageVector = Icons.Filled.Call, contentDescription = "Call clinic")
+            }
             IconButton(onClick = onToggleDarkTheme) {
                 Icon(
                     imageVector = if (isDarkTheme) Icons.Filled.LightMode else Icons.Filled.DarkMode,
