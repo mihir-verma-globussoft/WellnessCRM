@@ -1,6 +1,7 @@
 package com.crm.enhance_wellness.feature.dashboard.presentation.screen
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -149,14 +150,12 @@ private fun GreetingHeader(patientName: String) {
     ) {
         Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
             Text(
-                // Ellipsis, not basicMarquee: the marquee scrolled perpetually and any
-                // still frame caught the name mid-glyph, so a long name looked like a
-                // rendering bug. Truncation is stable and reads correctly at rest.
                 text = if (patientName.isNotBlank()) "$greeting, $patientName" else greeting,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.basicMarquee(),
             )
             Text(
                 text = "Welcome back",
