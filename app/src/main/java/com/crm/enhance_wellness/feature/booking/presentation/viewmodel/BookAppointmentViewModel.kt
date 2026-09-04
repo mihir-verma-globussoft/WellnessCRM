@@ -11,6 +11,7 @@ import com.crm.enhance_wellness.feature.booking.domain.usecase.GetPortalProducts
 import com.crm.enhance_wellness.feature.booking.presentation.state.BookAppointmentUiEvent
 import com.crm.enhance_wellness.feature.booking.presentation.state.BookAppointmentUiState
 import com.crm.enhance_wellness.feature.booking.presentation.state.DoctorOption
+import com.crm.enhance_wellness.feature.booking.presentation.state.MembershipOption
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -43,6 +44,7 @@ class BookAppointmentViewModel @Inject constructor(
 
     init {
         loadProducts()
+        loadMemberships()
     }
 
     fun onEvent(event: BookAppointmentUiEvent) {
@@ -123,6 +125,22 @@ class BookAppointmentViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(
                     doctors = listOf(DoctorOption(id = null, name = "No preference")),
                 )
+            }
+        }
+    }
+
+    private fun loadMemberships() {
+        viewModelScope.launch {
+            try {
+                val response = apiService.getMyMemberships()
+                if (response.isSuccessful) {
+                    val options = (response.body() ?: emptyList())
+                        .filter { it.status.equals("active", ignoreCase = true) }
+                        .map { MembershipOption(id = it.id, label = "${it.planName} (valid until ${DateUtil.toDisplayDate(it.endDate)})") }
+                    _uiState.value = _uiState.value.copy(memberships = options)
+                }
+            } catch (_: Exception) {
+                // Membership selection is optional; booking still works without it.
             }
         }
     }

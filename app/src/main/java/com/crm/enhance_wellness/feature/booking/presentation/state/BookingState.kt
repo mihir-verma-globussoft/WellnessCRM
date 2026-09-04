@@ -44,6 +44,8 @@ sealed class MyAppointmentsUiEvent {
 
 data class DoctorOption(val id: Int?, val name: String)
 
+data class MembershipOption(val id: Int, val label: String)
+
 // ── Book Appointment (4-step) ─────────────────────────────────────────────────
 data class BookAppointmentUiState(
     val step: Int = 1,
@@ -58,6 +60,7 @@ data class BookAppointmentUiState(
     val selectedTime: String? = null,
     val availableTimeSlots: List<String> = emptyList(),
     val reason: String = "",
+    val memberships: List<MembershipOption> = emptyList(),
     val membershipId: Int? = null,
     val isBooking: Boolean = false,
     val bookingSuccess: Appointment? = null,

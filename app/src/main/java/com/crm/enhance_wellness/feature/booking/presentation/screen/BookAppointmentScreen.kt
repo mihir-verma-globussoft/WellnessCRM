@@ -30,7 +30,10 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -457,6 +460,13 @@ private fun Step4Confirm(state: BookAppointmentUiState, onEvent: (BookAppointmen
             maxLines = 5,
         )
 
+        if (state.memberships.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Text("Membership (Optional)", style = MaterialTheme.typography.labelMedium)
+            Spacer(modifier = Modifier.height(4.dp))
+            MembershipDropdown(state = state, onEvent = onEvent)
+        }
+
         if (state.error != null) {
             Spacer(modifier = Modifier.height(4.dp))
             Text(state.error, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
@@ -471,6 +481,49 @@ private fun Step4Confirm(state: BookAppointmentUiState, onEvent: (BookAppointmen
         ) {
             if (state.isBooking) CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
             else Text("Book Appointment")
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun MembershipDropdown(state: BookAppointmentUiState, onEvent: (BookAppointmentUiEvent) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    val noneLabel = "No membership (admin will assign)"
+    val selectedLabel = state.memberships.firstOrNull { it.id == state.membershipId }?.label ?: noneLabel
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+    ) {
+        OutlinedTextField(
+            value = selectedLabel,
+            onValueChange = {},
+            readOnly = true,
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier = Modifier.fillMaxWidth().menuAnchor(),
+            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+        )
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
+            DropdownMenuItem(
+                text = { Text(noneLabel) },
+                onClick = {
+                    onEvent(BookAppointmentUiEvent.SelectMembership(null))
+                    expanded = false
+                },
+            )
+            state.memberships.forEach { membership ->
+                DropdownMenuItem(
+                    text = { Text(membership.label) },
+                    onClick = {
+                        onEvent(BookAppointmentUiEvent.SelectMembership(membership.id))
+                        expanded = false
+                    },
+                )
+            }
         }
     }
 }
