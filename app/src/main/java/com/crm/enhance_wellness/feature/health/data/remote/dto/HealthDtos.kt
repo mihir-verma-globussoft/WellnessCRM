@@ -153,7 +153,7 @@ data class ConsentFormDto(
     val templateName: String,
     val signedAt: String,
     val patientId: Int,
-    val serviceId: Int,
+    val serviceId: Int?,
     val hasPdfBlob: Boolean,
     val patient: ConsentPatientRefDto?,
     val service: ConsentServiceRefDto?,

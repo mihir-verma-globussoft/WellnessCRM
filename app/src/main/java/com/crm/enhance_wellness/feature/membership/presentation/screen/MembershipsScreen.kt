@@ -129,9 +129,14 @@ fun MembershipsScreen(
         )
     }
 
-    state.selectedPlan?.let { plan ->
+    if (state.selectedPlan != null && !state.showJoinConfirm) {
+        val plan = state.selectedPlan
+        val ownedUntil = state.memberships
+            .firstOrNull { it.planName == plan.name && it.status == "active" }
+            ?.let { DateUtil.toDisplayDate(it.endDate) }
         PlanDetailSheet(
             plan = plan,
+            ownedUntil = ownedUntil,
             onDismiss = { onEvent(MembershipsUiEvent.DismissPlanDetail) },
             onJoin = { onEvent(MembershipsUiEvent.JoinPlan(plan.id)) },
         )
@@ -215,9 +220,14 @@ fun InlineMembershipsTab(
         )
     }
 
-    state.selectedPlan?.let { plan ->
+    if (state.selectedPlan != null && !state.showJoinConfirm) {
+        val plan = state.selectedPlan
+        val ownedUntil = state.memberships
+            .firstOrNull { it.planName == plan.name && it.status == "active" }
+            ?.let { DateUtil.toDisplayDate(it.endDate) }
         PlanDetailSheet(
             plan = plan,
+            ownedUntil = ownedUntil,
             onDismiss = { onEvent(MembershipsUiEvent.DismissPlanDetail) },
             onJoin = { onEvent(MembershipsUiEvent.JoinPlan(plan.id)) },
         )
@@ -402,7 +412,7 @@ private fun ProfessionalPlanCard(
                     }
 
                     Button(
-                        onClick = onJoinNow,
+                        onClick = if (isOwned) onViewDetails else onJoinNow,
                         modifier = Modifier.weight(1f),
                         shape = MaterialTheme.shapes.extraLarge,
                         colors = ButtonDefaults.buttonColors(
@@ -531,6 +541,7 @@ private fun PlanCatalog(plans: List<MembershipPlan>, onSelect: (MembershipPlan) 
 @Composable
 private fun PlanDetailSheet(
     plan: MembershipPlan,
+    ownedUntil: String?,
     onDismiss: () -> Unit,
     onJoin: () -> Unit,
 ) {
@@ -551,12 +562,21 @@ private fun PlanDetailSheet(
             DetailRow("Price", CurrencyUtil.formatRupees(plan.price))
             DetailRow("Duration", "${plan.durationDays} days")
             Spacer(modifier = Modifier.height(8.dp))
-            Button(
-                onClick = onJoin,
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.extraLarge,
-            ) {
-                Text("Join Now")
+            if (ownedUntil != null) {
+                Text(
+                    "You already have this plan, active until $ownedUntil.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Medium,
+                )
+            } else {
+                Button(
+                    onClick = onJoin,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.extraLarge,
+                ) {
+                    Text("Join Now")
+                }
             }
             OutlinedButton(
                 onClick = onDismiss,
