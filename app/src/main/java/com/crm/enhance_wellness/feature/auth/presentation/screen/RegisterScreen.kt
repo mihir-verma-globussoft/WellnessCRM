@@ -114,6 +114,18 @@ fun RegisterScreen(
             ),
         )
 
+        if (state.password.isNotEmpty()) {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                state.passwordRules.forEach {
+                    Text(
+                        text = (if (it.met) "✓ " else "✗ ") + it.label,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (it.met) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
+        }
+
         OutlinedTextField(
             value = state.confirmPassword,
             onValueChange = { onEvent(RegisterUiEvent.ConfirmPasswordChanged(it)) },
@@ -123,11 +135,34 @@ fun RegisterScreen(
             enabled = !state.isLoading,
             visualTransformation = if (state.isPasswordVisible) VisualTransformation.None
             else PasswordVisualTransformation(),
+            isError = state.confirmPassword.isNotEmpty() && state.confirmPassword != state.password,
+            supportingText = if (state.confirmPassword.isNotEmpty() && state.confirmPassword != state.password) {
+                { Text("Passwords do not match") }
+            } else null,
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Password,
                 imeAction = ImeAction.Done,
             ),
         )
+
+        if (state.otpSent) {
+            OutlinedTextField(
+                value = state.otp,
+                onValueChange = { onEvent(RegisterUiEvent.OtpChanged(it)) },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Email verification code *") },
+                supportingText = { Text("We sent a 6-digit code to ${state.email}") },
+                singleLine = true,
+                enabled = !state.isLoading,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+            )
+            Text(
+                text = "Resend code",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.clickable(enabled = !state.isLoading) { onEvent(RegisterUiEvent.ResendOtp) },
+            )
+        }
 
         if (state.error != null) {
             Text(
@@ -154,7 +189,7 @@ fun RegisterScreen(
                     strokeWidth = 2.dp,
                 )
             } else {
-                Text("Create Account")
+                Text(if (state.otpSent) "Verify & Create Account" else "Send Verification Code")
             }
         }
 

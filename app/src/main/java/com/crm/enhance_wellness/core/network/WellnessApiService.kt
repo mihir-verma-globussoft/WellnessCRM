@@ -1,5 +1,10 @@
 package com.crm.enhance_wellness.core.network
 
+import com.crm.enhance_wellness.feature.auth.data.remote.dto.CheckEmailRequestDto
+import com.crm.enhance_wellness.feature.auth.data.remote.dto.CheckEmailResponseDto
+import com.crm.enhance_wellness.feature.auth.data.remote.dto.EmailOtpRequestDto
+import com.crm.enhance_wellness.feature.auth.data.remote.dto.EmailOtpVerifyRequestDto
+import com.crm.enhance_wellness.feature.auth.data.remote.dto.EmailOtpVerifyResponseDto
 import com.crm.enhance_wellness.feature.auth.data.remote.dto.LoginRequestDto
 import com.crm.enhance_wellness.feature.auth.data.remote.dto.LoginResponseDto
 import com.crm.enhance_wellness.feature.auth.data.remote.dto.PatientPermissionsDto
@@ -77,6 +82,15 @@ interface WellnessApiService {
     suspend fun registerCustomer(
         @Body body: RegisterRequestDto,
     ): Response<RegisterResponseDto>
+
+    @POST("/api/auth/check-email")
+    suspend fun checkEmail(@Body body: CheckEmailRequestDto): Response<CheckEmailResponseDto>
+
+    @POST("/api/auth/email-otp/request")
+    suspend fun requestEmailOtp(@Body body: EmailOtpRequestDto): Response<Unit>
+
+    @POST("/api/auth/email-otp/verify")
+    suspend fun verifyEmailOtp(@Body body: EmailOtpVerifyRequestDto): Response<EmailOtpVerifyResponseDto>
 
     // ── Portal Health (SMS availability check) ───────────────────────────────
     @GET("portal/health")

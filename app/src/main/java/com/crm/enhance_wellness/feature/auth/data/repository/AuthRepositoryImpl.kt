@@ -6,6 +6,10 @@ import com.crm.enhance_wellness.core.storage.DataStoreManager
 import com.crm.enhance_wellness.core.storage.EncryptedPrefsManager
 import com.crm.enhance_wellness.feature.auth.data.mapper.toDomain
 import com.crm.enhance_wellness.feature.auth.data.mapper.toPatient
+import com.crm.enhance_wellness.feature.auth.data.remote.dto.CheckEmailRequestDto
+import com.crm.enhance_wellness.feature.auth.data.remote.dto.EmailOtpRequestDto
+import com.crm.enhance_wellness.feature.auth.data.remote.dto.EmailOtpVerifyRequestDto
+import com.crm.enhance_wellness.feature.auth.domain.model.EmailAlreadyRegisteredException
 import com.crm.enhance_wellness.feature.auth.data.remote.dto.LoginRequestDto
 import com.crm.enhance_wellness.feature.auth.data.remote.dto.RegisterRequestDto
 import com.crm.enhance_wellness.feature.auth.data.remote.dto.TenantSummaryDto
@@ -44,13 +48,25 @@ class AuthRepositoryImpl @Inject constructor(
         return patient
     }
 
-    override suspend fun register(email: String, password: String, name: String): Patient {
+    override suspend fun sendRegisterOtp(email: String) {
+        val check = api.checkEmail(CheckEmailRequestDto(email, resolveRegistrationTenantId()))
+        if (!check.isSuccessful) throw HttpException(check)
+        if (check.body()?.exists == true) throw EmailAlreadyRegisteredException()
+        val sent = api.requestEmailOtp(EmailOtpRequestDto(email))
+        if (!sent.isSuccessful) throw HttpException(sent)
+    }
+
+    override suspend fun register(email: String, password: String, name: String, otp: String): Patient {
+        val verify = api.verifyEmailOtp(EmailOtpVerifyRequestDto(email, otp))
+        if (!verify.isSuccessful) throw HttpException(verify)
+        val token = verify.body()?.verificationToken ?: throw HttpException(verify)
         val response = api.registerCustomer(
             RegisterRequestDto(
                 email = email,
                 password = password,
                 name = name,
                 registrationTenantId = resolveRegistrationTenantId(),
+                verificationToken = token,
             )
         )
         if (!response.isSuccessful) throw HttpException(response)

@@ -30,9 +30,9 @@ class RegisterPatientUseCaseTest {
 
     @Test
     fun `returns Success with patient when registration succeeds`() = runTest {
-        coEvery { repository.register("rahul@example.com", "pass1234", "Rahul") } returns fakePatient
+        coEvery { repository.register("rahul@example.com", "pass1234", "Rahul", "123456") } returns fakePatient
 
-        val result = useCase("rahul@example.com", "pass1234", "Rahul")
+        val result = useCase("rahul@example.com", "pass1234", "Rahul", "123456")
 
         assertTrue(result is Result.Success)
         assertEquals(fakePatient, (result as Result.Success).data)
@@ -41,9 +41,9 @@ class RegisterPatientUseCaseTest {
     @Test
     fun `returns INVALID_INPUT on 400 with generic message`() = runTest {
         val response = Response.error<Patient>(400, "".toResponseBody())
-        coEvery { repository.register(any(), any(), any()) } throws HttpException(response)
+        coEvery { repository.register(any(), any(), any(), any()) } throws HttpException(response)
 
-        val result = useCase("rahul@example.com", "pass1234", "Rahul")
+        val result = useCase("rahul@example.com", "pass1234", "Rahul", "123456")
 
         assertTrue(result is Result.Error)
         assertEquals("INVALID_INPUT", (result as Result.Error).code)
@@ -52,9 +52,9 @@ class RegisterPatientUseCaseTest {
     @Test
     fun `returns ALREADY_REGISTERED on 409 conflict`() = runTest {
         val response = Response.error<Patient>(409, "".toResponseBody())
-        coEvery { repository.register(any(), any(), any()) } throws HttpException(response)
+        coEvery { repository.register(any(), any(), any(), any()) } throws HttpException(response)
 
-        val result = useCase("rahul@example.com", "pass1234", "Rahul")
+        val result = useCase("rahul@example.com", "pass1234", "Rahul", "123456")
 
         assertTrue(result is Result.Error)
         assertEquals("ALREADY_REGISTERED", (result as Result.Error).code)
@@ -62,9 +62,9 @@ class RegisterPatientUseCaseTest {
 
     @Test
     fun `returns NETWORK_ERROR on IOException`() = runTest {
-        coEvery { repository.register(any(), any(), any()) } throws IOException()
+        coEvery { repository.register(any(), any(), any(), any()) } throws IOException()
 
-        val result = useCase("rahul@example.com", "pass1234", "Rahul")
+        val result = useCase("rahul@example.com", "pass1234", "Rahul", "123456")
 
         assertTrue(result is Result.Error)
         assertEquals("NETWORK_ERROR", (result as Result.Error).code)

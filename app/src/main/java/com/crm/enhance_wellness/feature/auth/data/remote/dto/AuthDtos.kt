@@ -39,7 +39,24 @@ data class RegisterRequestDto(
     val password: String,
     val name: String,
     val registrationTenantId: Int,
+    // ponytail: field name assumed — confirm against backend register route
+    val verificationToken: String? = null,
 )
+
+@JsonClass(generateAdapter = true)
+data class CheckEmailRequestDto(val email: String, val registrationTenantId: Int)
+
+@JsonClass(generateAdapter = true)
+data class CheckEmailResponseDto(val exists: Boolean)
+
+@JsonClass(generateAdapter = true)
+data class EmailOtpRequestDto(val email: String, val purpose: String = "customer-register")
+
+@JsonClass(generateAdapter = true)
+data class EmailOtpVerifyRequestDto(val email: String, val code: String, val purpose: String = "customer-register")
+
+@JsonClass(generateAdapter = true)
+data class EmailOtpVerifyResponseDto(val verified: Boolean, val verificationToken: String?)
 
 @JsonClass(generateAdapter = true)
 data class RegisterResponseDto(

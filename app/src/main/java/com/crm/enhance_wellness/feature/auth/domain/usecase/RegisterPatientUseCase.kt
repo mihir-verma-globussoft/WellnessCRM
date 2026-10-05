@@ -11,8 +11,8 @@ import javax.inject.Inject
 class RegisterPatientUseCase @Inject constructor(
     private val repository: AuthRepository,
 ) {
-    suspend operator fun invoke(email: String, password: String, name: String): Result<Patient> = try {
-        Result.Success(repository.register(email, password, name))
+    suspend operator fun invoke(email: String, password: String, name: String, otp: String): Result<Patient> = try {
+        Result.Success(repository.register(email, password, name, otp))
     } catch (e: HttpException) {
         val rawBody = runCatching { e.response()?.errorBody()?.string() }.getOrNull() ?: ""
         val backendMessage = runCatching {
