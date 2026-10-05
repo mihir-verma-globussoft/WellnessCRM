@@ -105,8 +105,8 @@ class AuthRepositoryImpl @Inject constructor(
      * in build.gradle.kts and can drift, and the slug is the one that was actually verified
      * against the backend.
      */
-    private suspend fun resolveRegistrationTenantId(): Int =
-        dataStore.getTenantId() ?: BuildConfig.TENANT_ID
+    // Registration always targets tenant 1, per backend requirement.
+    private fun resolveRegistrationTenantId(): Int = 1
 
     // GET /portal/me after login to cache the patient-row ID.
     // Required for loyalty/{patientId}, patients/{patientId}/wallet, etc.
