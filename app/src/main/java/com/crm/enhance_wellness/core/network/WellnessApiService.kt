@@ -237,14 +237,19 @@ interface WellnessApiService {
     ): Response<List<TreatmentPlanDto>>
 
     // ── Consent Forms (Phase 2 UI, data layer ready) ─────────────────────────
-    @GET("patients/{patientId}/consents")
-    suspend fun getConsents(
-        @Path("patientId") patientId: Int,
-    ): Response<List<ConsentFormDto>>
+    // JWT-scoped: returns both legacy consents and e-signature records for the caller.
+    @GET("portal/consents")
+    suspend fun getConsents(): Response<List<ConsentFormDto>>
 
-    @GET("consents/{id}/pdf")
+    @GET("portal/consents/{id}/pdf")
     suspend fun getConsentPdf(
         @Path("id") consentId: Int,
+    ): Response<ResponseBody>
+
+    // E-signature consents: ids live in a different table than legacy consents.
+    @GET("portal/signatures/{requestId}/pdf")
+    suspend fun getSignaturePdf(
+        @Path("requestId") requestId: Int,
     ): Response<ResponseBody>
 
     // ── Memberships ───────────────────────────────────────────────────────────

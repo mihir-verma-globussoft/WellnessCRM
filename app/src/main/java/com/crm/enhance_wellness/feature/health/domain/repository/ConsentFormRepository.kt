@@ -4,5 +4,5 @@ import com.crm.enhance_wellness.feature.health.domain.model.ConsentForm
 
 interface ConsentFormRepository {
     suspend fun getConsentForms(): List<ConsentForm>
-    suspend fun getConsentFormPdf(consentId: Int): ByteArray
+    suspend fun getConsentFormPdf(consentId: Int, isSignature: Boolean, signatureRequestId: Int?): ByteArray
 }

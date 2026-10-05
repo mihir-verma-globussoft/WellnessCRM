@@ -3,6 +3,7 @@ package com.crm.enhance_wellness.feature.health.presentation.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.crm.enhance_wellness.core.util.Result
+import com.crm.enhance_wellness.feature.health.domain.model.ConsentForm
 import com.crm.enhance_wellness.feature.health.domain.usecase.GetConsentFormsUseCase
 import com.crm.enhance_wellness.feature.health.presentation.state.ConsentFormsUiEvent
 import com.crm.enhance_wellness.feature.health.presentation.state.ConsentFormsUiState
@@ -16,7 +17,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 sealed class ConsentFormsNavEvent {
-    data class ToPdf(val consentId: Int) : ConsentFormsNavEvent()
+    data class ToPdf(val form: ConsentForm) : ConsentFormsNavEvent()
     object Back : ConsentFormsNavEvent()
 }
 
@@ -39,7 +40,7 @@ class ConsentFormsViewModel @Inject constructor(
         when (event) {
             is ConsentFormsUiEvent.Refresh -> loadForms()
             is ConsentFormsUiEvent.ViewPdf -> viewModelScope.launch {
-                _navEvent.send(ConsentFormsNavEvent.ToPdf(event.consentId))
+                _navEvent.send(ConsentFormsNavEvent.ToPdf(event.form))
             }
             is ConsentFormsUiEvent.NavigateBack -> viewModelScope.launch {
                 _navEvent.send(ConsentFormsNavEvent.Back)

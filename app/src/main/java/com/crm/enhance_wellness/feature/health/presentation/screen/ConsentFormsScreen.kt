@@ -65,7 +65,7 @@ fun ConsentFormsScreen(
                 items(state.forms, key = { it.id }) { form ->
                     ConsentFormCard(
                         form = form,
-                        onViewPdf = { onEvent(ConsentFormsUiEvent.ViewPdf(form.id)) },
+                        onViewPdf = { onEvent(ConsentFormsUiEvent.ViewPdf(form)) },
                     )
                 }
             }

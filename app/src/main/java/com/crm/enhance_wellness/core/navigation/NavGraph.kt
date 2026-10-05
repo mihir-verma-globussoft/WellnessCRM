@@ -591,7 +591,9 @@ fun WellnessNavGraph(
                     vm.navEvent.collect { event ->
                         when (event) {
                             is ConsentFormsNavEvent.ToPdf -> navController.navigate(
-                                Screen.ConsentFormPdf.createRoute(event.consentId)
+                                Screen.ConsentFormPdf.createRoute(
+                                    event.form.id, event.form.isSignature, event.form.signatureRequestId,
+                                )
                             )
                             ConsentFormsNavEvent.Back -> navController.popBackStack()
                         }
@@ -600,7 +602,14 @@ fun WellnessNavGraph(
                 ConsentFormsScreen(state = state, onEvent = vm::onEvent)
             }
 
-            composable(Screen.ConsentFormPdf.route) {
+            composable(
+                route = Screen.ConsentFormPdf.route,
+                arguments = listOf(
+                    navArgument("id") { type = NavType.IntType },
+                    navArgument("isSignature") { type = NavType.BoolType; defaultValue = false },
+                    navArgument("signatureRequestId") { type = NavType.IntType; defaultValue = -1 },
+                ),
+            ) {
                 val vm: ConsentFormPdfViewModel = hiltViewModel()
                 val state by vm.uiState.collectAsStateWithLifecycle()
                 LaunchedEffect(Unit) {

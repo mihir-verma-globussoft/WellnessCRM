@@ -97,7 +97,7 @@ data class ConsentFormsUiState(
 
 sealed class ConsentFormsUiEvent {
     object Refresh : ConsentFormsUiEvent()
-    data class ViewPdf(val consentId: Int) : ConsentFormsUiEvent()
+    data class ViewPdf(val form: ConsentForm) : ConsentFormsUiEvent()
     object NavigateBack : ConsentFormsUiEvent()
 }
 

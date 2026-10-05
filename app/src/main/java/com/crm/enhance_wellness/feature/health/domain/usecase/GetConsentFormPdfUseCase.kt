@@ -9,8 +9,12 @@ import javax.inject.Inject
 class GetConsentFormPdfUseCase @Inject constructor(
     private val repository: ConsentFormRepository,
 ) {
-    suspend operator fun invoke(consentId: Int): Result<ByteArray> = try {
-        Result.Success(repository.getConsentFormPdf(consentId))
+    suspend operator fun invoke(
+        consentId: Int,
+        isSignature: Boolean,
+        signatureRequestId: Int?,
+    ): Result<ByteArray> = try {
+        Result.Success(repository.getConsentFormPdf(consentId, isSignature, signatureRequestId))
     } catch (e: HttpException) {
         Result.Error("HTTP_${e.code()}", e.message() ?: "Server error", e.code())
     } catch (e: IOException) {

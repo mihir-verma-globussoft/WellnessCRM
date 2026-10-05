@@ -22,8 +22,9 @@ sealed class Screen(val route: String) {
     object TreatmentPlans : Screen("treatment_plans")  // Phase 2
     object PrescriptionRequests : Screen("prescription_requests")
     object ConsentForms : Screen("consent_forms")       // Phase 2
-    object ConsentFormPdf : Screen("consent_form_pdf/{id}") {
-        fun createRoute(id: Int) = "consent_form_pdf/$id"
+    object ConsentFormPdf : Screen("consent_form_pdf/{id}?isSignature={isSignature}&signatureRequestId={signatureRequestId}") {
+        fun createRoute(id: Int, isSignature: Boolean, signatureRequestId: Int?) =
+            "consent_form_pdf/$id?isSignature=$isSignature&signatureRequestId=${signatureRequestId ?: -1}"
     }
     object Memberships : Screen("memberships")
     object Wallet : Screen("wallet")

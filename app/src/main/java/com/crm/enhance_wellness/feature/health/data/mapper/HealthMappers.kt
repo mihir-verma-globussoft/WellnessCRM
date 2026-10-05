@@ -176,8 +176,10 @@ fun PrescriptionRequestDto.toDomain() = PrescriptionRequest(
 
 fun ConsentFormDto.toDomain() = ConsentForm(
     id = id,
-    templateName = templateName,
+    templateName = templateName ?: documentName ?: "Consent form",
     signedAt = signedAt,
     hasPdfBlob = hasPdfBlob,
     serviceName = service?.name,
+    isSignature = source == "signature",
+    signatureRequestId = signatureRequestId,
 )

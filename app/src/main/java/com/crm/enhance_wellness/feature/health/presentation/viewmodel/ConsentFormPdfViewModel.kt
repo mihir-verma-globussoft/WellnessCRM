@@ -27,6 +27,8 @@ class ConsentFormPdfViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val consentId: Int = checkNotNull(savedStateHandle["id"]).toString().toInt()
+    private val isSignature: Boolean = savedStateHandle["isSignature"] ?: false
+    private val signatureRequestId: Int? = savedStateHandle.get<Int>("signatureRequestId")?.takeIf { it >= 0 }
 
     private val _uiState = MutableStateFlow(ConsentFormPdfUiState())
     val uiState: StateFlow<ConsentFormPdfUiState> = _uiState.asStateFlow()
@@ -49,7 +51,7 @@ class ConsentFormPdfViewModel @Inject constructor(
     private fun loadPdf() {
         viewModelScope.launch {
             _uiState.value = ConsentFormPdfUiState(isLoading = true)
-            when (val result = getConsentFormPdf(consentId)) {
+            when (val result = getConsentFormPdf(consentId, isSignature, signatureRequestId)) {
                 is Result.Success -> _uiState.value = ConsentFormPdfUiState(isLoading = false, pdfBytes = result.data)
                 is Result.Error -> _uiState.value = ConsentFormPdfUiState(isLoading = false, error = result.message)
                 Result.Loading -> Unit

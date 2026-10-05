@@ -16,15 +16,23 @@ class ConsentFormRepositoryImpl @Inject constructor(
 ) : ConsentFormRepository {
 
     override suspend fun getConsentForms(): List<ConsentForm> {
-        val patientId = encryptedPrefs.getPatientId()
-            ?: throw IllegalStateException("patientId not cached")
-        val response = api.getConsents(patientId)
+        val response = api.getConsents()
         if (!response.isSuccessful) throw HttpException(response)
         return response.body()!!.map { it.toDomain() }
     }
 
-    override suspend fun getConsentFormPdf(consentId: Int): ByteArray {
-        val response = api.getConsentPdf(consentId)
+    override suspend fun getConsentFormPdf(
+        consentId: Int,
+        isSignature: Boolean,
+        signatureRequestId: Int?,
+    ): ByteArray {
+        val response = if (isSignature) {
+            api.getSignaturePdf(
+                signatureRequestId ?: throw IllegalStateException("Signature consent has no signatureRequestId"),
+            )
+        } else {
+            api.getConsentPdf(consentId)
+        }
         if (!response.isSuccessful) throw HttpException(response)
         return response.body()!!.bytes()
     }

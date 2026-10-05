@@ -150,13 +150,17 @@ data class TreatmentServiceRefDto(
 @JsonClass(generateAdapter = true)
 data class ConsentFormDto(
     val id: Int,
-    val templateName: String,
-    val signedAt: String,
-    val patientId: Int,
-    val serviceId: Int?,
-    val hasPdfBlob: Boolean,
-    val patient: ConsentPatientRefDto?,
-    val service: ConsentServiceRefDto?,
+    val templateName: String? = null,
+    val documentName: String? = null,
+    val signedAt: String? = null,
+    val patientId: Int? = null,
+    val serviceId: Int? = null,
+    val hasPdfBlob: Boolean = true,
+    val source: String? = null,
+    val signatureRequestId: Int? = null,
+    val visitId: Int? = null,
+    val patient: ConsentPatientRefDto? = null,
+    val service: ConsentServiceRefDto? = null,
 )
 
 @JsonClass(generateAdapter = true)
